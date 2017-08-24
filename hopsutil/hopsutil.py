@@ -7,5 +7,5 @@ These utils facilitates development by hiding complexity for programs interactin
 import pydoop.hdfs as hdfs
 import os
 
-def get_hdfs(file):
+def get_hdfs():
     return hdfs.hdfs('default', 0, os.getenv("USER"))
