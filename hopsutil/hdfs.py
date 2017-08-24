@@ -4,8 +4,8 @@ Utility functions to retrieve information about available services and setting u
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
 
-import pydoop.hdfs as hdfs
+import pydoop.hdfs as pyhdfs
 import os
 
-def get_hdfs():
-    return hdfs.hdfs('default', 0, os.getenv("USER"))
+def get():
+    return pyhdfs.hdfs('default', 0, os.getenv("USER"))
