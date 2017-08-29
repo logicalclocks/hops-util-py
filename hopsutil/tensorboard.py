@@ -22,7 +22,8 @@ def register(logdir):
     pydir = os.path.dirname(pypath)
 
     subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
-    tb_url = "http://{0}:{1}".format(addr, port)
+    host = socket.gethostname()
+    tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
     hops_user = os.environ["USER"];
