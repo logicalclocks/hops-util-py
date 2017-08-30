@@ -10,9 +10,9 @@ import os
 import pydoop.hdfs as pyhdfs
 import tensorflow as tf
 
-logdir = os.getcwd
+logdir = os.getcwd()
 
-def registerBoard():
+def registerTensorBoard():
 
     #find free port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
