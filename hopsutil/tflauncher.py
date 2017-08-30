@@ -4,14 +4,10 @@ Utility functions to retrieve information about available services and setting u
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
 
-import threading
-
 def launch(sc, map_fun):
+
+    #TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(1), 1)
 
-    # start TF on a background thread (on Spark driver) to allow for feeding job
-    def _start():
-        nodeRDD.foreachPartition(map_fun)
-
-    t = threading.Thread(target=_start)
-    t.start()
+    #Force execution on executor (driver doesn't have GPU)
+    nodeRDD.foreachPartition(map_fun)
