@@ -33,7 +33,7 @@ def registerTensorBoard():
     project = hops_user_split[0];
     pyhdfs.dump(tb_url, "hdfs:///Projects/" + project + "/Jupyter/.jupyter.tensorboard", user=hops_user)
 
-def registerFileWriter(graph):
+def registerFileWriter(graph=None):
 
     summary_writer = tf.summary.FileWriter(logdir, graph=graph)
     return summary_writer

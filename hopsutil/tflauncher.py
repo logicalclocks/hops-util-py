@@ -6,8 +6,6 @@ These utils facilitates development by hiding complexity for programs interactin
 
 def launch(sc, map_fun):
 
-    #TODO method signature should be manipulated and added an argument to it (iter)
-
     #TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(1), 1)
 
