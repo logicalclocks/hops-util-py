@@ -7,7 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import socket
 import subprocess
 import os
-import pydoop.hdfs as pyhdfs
+import pydoop.hdfs as hdfs
 
 logdir = os.getcwd()
 
@@ -21,17 +21,18 @@ def register_tensorboard():
 
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
-    logdir = os.getcwd()
+    pdir = os.getenv("PDIR")
+    logdir = os.path.dirname(pdir)
 
     subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    hops_user = os.environ["USER"];
+    hops_user = os.environ["HDFS_USER"];
     hops_user_split = hops_user.split("__");
     project = hops_user_split[0];
-    pyhdfs.dump(tb_url, "hdfs:///Projects/" + project + "/Jupyter/.jupyter.tensorboard", user=hops_user)
+    hdfs.dump(tb_url, "hdfs:///Projects/" + project + "/Jupyter/.jupyter.tensorboard", user=hops_user)
 
 
 def get_logdir():
