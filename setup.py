@@ -7,9 +7,9 @@ def read(fname):
 
 setup(
     name='hopsutil',
-    version='0.1.8',
-    author='Ahmad Al-Shishtawy',
-    author_email='alshishtawy@gmail.com',
+    version='0.1.9',
+    author='Robin Andersson',
+    author_email='robin2@kth.se',
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
     license='Apache License 2.0',
     keywords='HOPS, Hadoop',
