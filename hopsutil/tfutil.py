@@ -8,11 +8,10 @@ import socket
 import subprocess
 import os
 import pydoop.hdfs as pyhdfs
-import tensorflow as tf
 
 logdir = os.getcwd()
 
-def registerTensorBoard():
+def register_tensorboard():
 
     #find free port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,6 +21,7 @@ def registerTensorBoard():
 
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
+    logdir = os.getcwd()
 
     subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
     host = socket.gethostname()
@@ -33,7 +33,6 @@ def registerTensorBoard():
     project = hops_user_split[0];
     pyhdfs.dump(tb_url, "hdfs:///Projects/" + project + "/Jupyter/.jupyter.tensorboard", user=hops_user)
 
-def registerFileWriter(graph=None):
 
-    summary_writer = tf.summary.FileWriter(logdir, graph=graph)
-    return summary_writer
+def get_logdir():
+    return logdir
