@@ -11,7 +11,7 @@ import pydoop.hdfs as hdfs
 
 logdir = os.getcwd()
 
-def register_tensorboard():
+def register():
 
     #find free port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
