@@ -16,14 +16,14 @@ logdir = os.path.dirname(logpath)
 
 def register():
 
+    pypath = os.getenv("PYSPARK_PYTHON")
+    pydir = os.path.dirname(pypath)
+
     #find free port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('',0))
     addr, port = s.getsockname()
     s.close()
-
-    pypath = os.getenv("PYSPARK_PYTHON")
-    pydir = os.path.dirname(pypath)
 
     subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
     host = socket.gethostname()
