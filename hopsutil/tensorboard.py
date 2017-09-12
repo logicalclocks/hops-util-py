@@ -9,12 +9,12 @@ import subprocess
 import os
 import pydoop.hdfs as hdfs
 
-pdir = os.getcwd()
-logpath = pdir + "/events"
-os.makedirs(logpath)
-logdir = os.path.dirname(logpath)
+logdir = os.getcwd() + "/tensorboard"
 
 def register():
+
+    global logdir
+    os.makedirs(logdir)
 
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
@@ -30,7 +30,9 @@ def register():
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    hdfs.dump(tb_url, hdfs.project_path() + "/Jupyter/.jupyter.tensorboard", user=hdfs.project_user())
+    #Current applicationId
+    app_id = os.getenv("APP_ID")
+    hdfs.dump(tb_url, hdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hdfs.project_user())
 
 
 def get_logdir():
