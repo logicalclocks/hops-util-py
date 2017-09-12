@@ -8,24 +8,21 @@ import os
 from hopsutil import hdfs
 from hopsutil import tensorboard
 
-args_dict = None
-
-def launch(sc, map_fun):
+def launch(sc, map_fun, args_dict=None):
 
     if args_dict == None:
         num_executors = 1
     else:
         num_executors = args_dict.values()[0].len()
 
+    configured_num = sc.getConf.getInt("spark.executor.instances", 1)
+    assert num_executors <= configured_num
+
     #TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(map_fun, args_dict))
-
-def set_args(args):
-    global args_dict
-    args_dict = args
 
 
 #Helper to put Spark required parameter iter in function signature
