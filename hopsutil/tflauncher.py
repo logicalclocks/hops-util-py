@@ -8,7 +8,8 @@ import os
 from hopsutil import hdfs
 from hopsutil import tensorboard
 
-def launch(sc, map_fun, args_dict=None):
+def launch(spark_session, map_fun, args_dict=None):
+    sc = spark_session.sparkContext
 
     if args_dict == None:
         num_executors = 1
