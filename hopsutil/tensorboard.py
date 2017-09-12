@@ -7,7 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import socket
 import subprocess
 import os
-import pydoop.hdfs as hdfs
+from hopsutil import hdfs
 
 logdir = os.getcwd() + "/tensorboard"
 
@@ -33,7 +33,8 @@ def register():
     #dump tb host:port to hdfs
     #Current applicationId
     app_id = os.getenv("APP_ID")
-    hdfs.dump(tb_url, hdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hdfs.project_user())
+    hdfs_handle = hdfs.get()
+    hdfs_handle.dump(tb_url, hdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hdfs.project_user())
 
 
 def get_logdir():
