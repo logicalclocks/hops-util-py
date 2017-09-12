@@ -9,7 +9,7 @@ import subprocess
 import os
 import pydoop.hdfs as hdfs
 
-pdir = os.getenv("PDIR")
+pdir = os.getcwd()
 logpath = pdir + "/events"
 os.makedirs(logpath)
 logdir = os.path.dirname(logpath)
