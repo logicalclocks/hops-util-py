@@ -41,7 +41,7 @@ def prepare_func(map_fun, args_dict):
                 argIndex += 1
             map_fun(*args)
         else:
-            raise ValueError('You forgot to define args_dict with arguments for TensorFlow function')
+            map_fun()
 
         #Start TensorBoard automatically
         tensorboard.register()
