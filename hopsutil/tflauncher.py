@@ -8,7 +8,7 @@ import os
 from hopsutil import hdfs
 from hopsutil import tensorboard
 
-def launch(sc, map_fun, args_dict):
+def launch(sc, map_fun, args_dict=None):
 
     if args_dict == None:
         num_executors = 1
@@ -28,7 +28,7 @@ def prepare_func(map_fun, args_dict):
     def _wrapper_fun(iter):
 
         #Arguments
-        if args_dict != None:
+        if args_dict:
             argcount = map_fun.func_code.co_argcount
             names = map_fun.func_code.co_varnames
 
@@ -51,15 +51,15 @@ def prepare_func(map_fun, args_dict):
 
         #Create output directory for TensorBoard events for this executor
         hdfs_events_parent_dir = hdfs.project_path() + "/Jupyter/Tensorboard"
-        dir_exists = hdfs.exists(hdfs_events_parent_dir)
-        if dir_exists == False:
-            hdfs.create_directory(hdfs_events_parent_dir)
+        hdfs_handle = hdfs.get()
+        if not hdfs_handle.exists(hdfs_events_parent_dir):
+            hdfs_handle.create_directory(hdfs_events_parent_dir)
         hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + iter
-        hdfs.create_directory(hdfs_events_logdir)
+        hdfs_handle.create_directory(hdfs_events_logdir)
 
         #Write TensorBoard logdir contents to HDFS
         executor_events_dir = tensorboard.get_logdir()
         for filename in os.listdir(executor_events_dir):
-            hdfs.copy(os.path.join(executor_events_dir, filename), hdfs, hdfs_events_logdir)
+            hdfs_handle.copy(os.path.join(executor_events_dir, filename), hdfs_handle, hdfs_events_logdir)
 
     return _wrapper_fun
