@@ -15,9 +15,6 @@ def launch(sc, map_fun, args_dict=None):
     else:
         num_executors = args_dict.values()[0].len()
 
-    configured_num = sc.getConf.getInt("spark.executor.instances", 1)
-    assert num_executors <= configured_num
-
     #TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
