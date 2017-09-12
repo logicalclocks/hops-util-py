@@ -14,7 +14,8 @@ logdir = os.getcwd() + "/tensorboard"
 def register():
 
     global logdir
-    os.makedirs(logdir)
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
 
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)

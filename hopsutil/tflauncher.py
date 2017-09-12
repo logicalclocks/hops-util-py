@@ -8,7 +8,7 @@ import os
 from hopsutil import hdfs
 from hopsutil import tensorboard
 
-def launch(sc, map_fun, args_dict=None):
+def launch(sc, map_fun, args_dict):
 
     if args_dict == None:
         num_executors = 1
@@ -27,10 +27,7 @@ def prepare_func(map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
-        #Start TensorBoard automatically
-        tensorboard.register()
-
-        #Multiple executors
+        #Arguments
         if args_dict != None:
             argcount = map_fun.func_code.co_argcount
             names = map_fun.func_code.co_varnames
@@ -43,6 +40,11 @@ def prepare_func(map_fun, args_dict):
                 argcount -= 1
                 argIndex += 1
             map_fun(*args)
+        else:
+            raise ValueError('You forgot to define args_dict with arguments for TensorFlow function')
+
+        #Start TensorBoard automatically
+        tensorboard.register()
 
         #Current applicationId
         app_id = os.getenv("APP_ID")
