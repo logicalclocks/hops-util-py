@@ -12,7 +12,7 @@ import pydoop.hdfs
 
 logdir = os.getcwd() + "/tensorboard"
 
-def register(sc):
+def register(app_id):
 
     global logdir
     if not os.path.exists(logdir):
@@ -32,7 +32,7 @@ def register(sc):
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, hopshdfs.project_path() + "/Jupyter/." + str(sc.applicationId) + ".tensorboard", user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, hopshdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hopshdfs.project_user())
 
 
 def get_logdir():

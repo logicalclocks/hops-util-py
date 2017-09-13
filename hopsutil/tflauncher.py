@@ -21,10 +21,10 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(sc, map_fun, args_dict))
+    nodeRDD.foreachPartition(prepare_func(str(sc.applicationId), map_fun, args_dict))
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(sc, map_fun, args_dict):
+def prepare_func(app_id, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
@@ -35,7 +35,7 @@ def prepare_func(sc, map_fun, args_dict):
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
         #Start TensorBoard automatically
-        tensorboard.register(sc)
+        tensorboard.register(app_id)
 
         #Arguments
         if args_dict:
