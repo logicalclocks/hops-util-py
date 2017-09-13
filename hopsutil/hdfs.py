@@ -8,7 +8,7 @@ import pydoop.hdfs as hdfs
 import os
 
 def get():
-    return hdfs.hdfs('default', 0, project_user())
+    return hdfs.hdfs('default', 0, user=project_user())
 
 def project_path():
     hops_user = os.environ["SPARK_USER"]

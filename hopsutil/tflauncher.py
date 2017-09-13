@@ -5,7 +5,8 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 
 import os
-from hopsutil import hdfs
+from hopsutil import hdfs as hopshdfs
+import pydoop.hdfs.fs as pydoophdfs
 from hopsutil import tensorboard
 
 def launch(spark_session, map_fun, args_dict=None):
@@ -22,11 +23,12 @@ def launch(spark_session, map_fun, args_dict=None):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(map_fun, args_dict))
 
-
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(map_fun, args_dict):
 
     def _wrapper_fun(iter):
+
+        pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
         #Arguments
         if args_dict:
@@ -51,16 +53,15 @@ def prepare_func(map_fun, args_dict):
         app_id = os.getenv("APP_ID")
 
         #Create output directory for TensorBoard events for this executor
-        hdfs_events_parent_dir = hdfs.project_path() + "/Jupyter/Tensorboard"
-        hdfs_handle = hdfs.get()
-        if not hdfs_handle.exists(hdfs_events_parent_dir):
-            hdfs_handle.create_directory(hdfs_events_parent_dir)
+        hdfs_events_parent_dir = hopshdfs.project_path() + "/Jupyter/Tensorboard"
+        if not pyhdfs_handle.exists(hdfs_events_parent_dir):
+            pyhdfs_handle.create_directory(hdfs_events_parent_dir)
         hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + iter
-        hdfs_handle.create_directory(hdfs_events_logdir)
+        pyhdfs_handle.create_directory(hdfs_events_logdir)
 
         #Write TensorBoard logdir contents to HDFS
         executor_events_dir = tensorboard.get_logdir()
         for filename in os.listdir(executor_events_dir):
-            hdfs_handle.copy(os.path.join(executor_events_dir, filename), hdfs_handle, hdfs_events_logdir)
+            pyhdfs_handle.copy(os.path.join(executor_events_dir, filename), pyhdfs_handle, hdfs_events_logdir)
 
     return _wrapper_fun
