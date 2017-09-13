@@ -29,6 +29,9 @@ def prepare_func(app_id, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
+        for i in iter:
+            executor_num = i
+
         #Temporary crap fix
         os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
@@ -58,7 +61,7 @@ def prepare_func(app_id, map_fun, args_dict):
         hdfs_events_parent_dir = hopshdfs.project_path() + "/Jupyter/Tensorboard"
         if not pyhdfs_handle.exists(hdfs_events_parent_dir):
             pyhdfs_handle.create_directory(hdfs_events_parent_dir)
-        hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + iter
+        hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + executor_num
         pyhdfs_handle.create_directory(hdfs_events_logdir)
 
         #Write TensorBoard logdir contents to HDFS
