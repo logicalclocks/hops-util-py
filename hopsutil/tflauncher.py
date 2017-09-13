@@ -11,6 +11,7 @@ from hopsutil import tensorboard
 
 def launch(spark_session, map_fun, args_dict=None):
     sc = spark_session.sparkContext
+    app_id = str(sc.applicationId)
 
     if args_dict == None:
         num_executors = 1
@@ -21,7 +22,7 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(str(sc.applicationId), map_fun, args_dict))
+    nodeRDD.foreachPartition(prepare_func(app_id, map_fun, args_dict))
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, map_fun, args_dict):
