@@ -30,6 +30,9 @@ def prepare_func(map_fun, args_dict):
 
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
+        #Start TensorBoard automatically
+        tensorboard.register()
+
         #Arguments
         if args_dict:
             argcount = map_fun.func_code.co_argcount
@@ -46,8 +49,6 @@ def prepare_func(map_fun, args_dict):
         else:
             map_fun()
 
-        #Start TensorBoard automatically
-        tensorboard.register()
 
         #Current applicationId
         app_id = os.getenv("APP_ID")
