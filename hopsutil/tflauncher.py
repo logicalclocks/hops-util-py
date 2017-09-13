@@ -61,7 +61,7 @@ def prepare_func(app_id, map_fun, args_dict):
         hdfs_events_parent_dir = hopshdfs.project_path() + "/Jupyter/Tensorboard"
         if not pyhdfs_handle.exists(hdfs_events_parent_dir):
             pyhdfs_handle.create_directory(hdfs_events_parent_dir)
-        hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + executor_num
+        hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + str(executor_num)
         pyhdfs_handle.create_directory(hdfs_events_logdir)
 
         #Write TensorBoard logdir contents to HDFS
