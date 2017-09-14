@@ -16,7 +16,7 @@ def launch(spark_session, map_fun, args_dict=None):
     if args_dict == None:
         num_executors = 1
     else:
-        num_executors = args_dict.values()[0].len()
+        num_executors = len(args_dict.values()[0])
 
     #TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
