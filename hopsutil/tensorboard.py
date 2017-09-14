@@ -27,12 +27,16 @@ def register(app_id):
     addr, port = s.getsockname()
     s.close()
 
-    subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
+    tb_proc = subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
+    tb_pid = tb_proc.pid
+
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, hopshdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hopshdfs.project_user())
+
+    return tb_pid
 
 
 def get_logdir():

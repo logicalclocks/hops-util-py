@@ -8,6 +8,7 @@ import os
 from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs.fs as pydoophdfs
 from hopsutil import tensorboard
+import subprocess
 
 def launch(spark_session, map_fun, args_dict=None):
     sc = spark_session.sparkContext
@@ -39,23 +40,32 @@ def prepare_func(app_id, map_fun, args_dict):
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
         #Start TensorBoard automatically
-        tensorboard.register(app_id)
+        tb_pid = tensorboard.register(app_id)
 
-        #Arguments
-        if args_dict:
-            argcount = map_fun.func_code.co_argcount
-            names = map_fun.func_code.co_varnames
+        try:
+            #Arguments
+            if args_dict:
+                argcount = map_fun.func_code.co_argcount
+                names = map_fun.func_code.co_varnames
 
-            args = []
-            argIndex = 0
-            while argcount > 0:
-                #Get args for executor and run function
-                args.append(args_dict[names[argIndex]][iter])
-                argcount -= 1
-                argIndex += 1
-            map_fun(*args)
-        else:
-            map_fun()
+                args = []
+                argIndex = 0
+                while argcount > 0:
+                    #Get args for executor and run function
+                    args.append(args_dict[names[argIndex]][executor_num])
+                    argcount -= 1
+                    argIndex += 1
+                map_fun(*args)
+            else:
+                map_fun()
+        except:
+            #Always kill tensorboard
+            if tb_pid != 0:
+                subprocess.Popen(["kill", str(tb_pid)])
+            raise
+
+        if tb_pid != 0:
+            subprocess.Popen(["kill", str(tb_pid)])
 
         #Create output directory for TensorBoard events for this executor
         hdfs_events_parent_dir = hopshdfs.project_path() + "/Jupyter/Tensorboard"
@@ -68,5 +78,7 @@ def prepare_func(app_id, map_fun, args_dict):
         executor_events_dir = tensorboard.get_logdir()
         for filename in os.listdir(executor_events_dir):
             pyhdfs_handle.copy(os.path.join(executor_events_dir, filename), pyhdfs_handle, hdfs_events_logdir)
+
+
 
     return _wrapper_fun
