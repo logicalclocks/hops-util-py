@@ -60,12 +60,12 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_timestamp_logdir):
             pyhdfs_handle.create_directory(hdfs_timestamp_logdir)
 
-        hdfs_exec_logdir = hdfs_appid_logdir + "/" + timestamp
+        hdfs_exec_logdir = hdfs_appid_logdir + "/executor." + executor_num
         if not pyhdfs_handle.exists(hdfs_exec_logdir):
             pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
         #Start TensorBoard automatically
-        tb_pid = tensorboard.register(app_id, timestamp, executor_num)
+        tb_pid = tensorboard.register(hdfs_exec_logdir, executor_num)
 
         try:
             #Arguments
