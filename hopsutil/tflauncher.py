@@ -9,10 +9,15 @@ from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs.fs as pydoophdfs
 from hopsutil import tensorboard
 import subprocess
+import datetime
 
 def launch(spark_session, map_fun, args_dict=None):
+
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
+
+    time = datetime.datetime.now()
+    timestamp = "%s.%s.%s" % (time.hour, time.minute, time.second)
 
     if args_dict == None:
         num_executors = 1
@@ -23,15 +28,17 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, map_fun, args_dict))
+    nodeRDD.foreachPartition(prepare_func(app_id, timestamp, map_fun, args_dict))
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(app_id, map_fun, args_dict):
+def prepare_func(app_id, timestamp, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
         for i in iter:
             executor_num = i
+
+        executor_num = str(executor_num)
 
         #Temporary crap fix
         os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
@@ -39,8 +46,26 @@ def prepare_func(app_id, map_fun, args_dict):
 
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
+        #Create output directory for TensorBoard events for this executor
+        #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
+        hdfs_events_parent_dir = hopshdfs.project_path() + "/Logs/Tensorboard"
+        if not pyhdfs_handle.exists(hdfs_events_parent_dir):
+            pyhdfs_handle.create_directory(hdfs_events_parent_dir)
+
+        hdfs_appid_logdir = hdfs_events_parent_dir + "/" + app_id
+        if not pyhdfs_handle.exists(hdfs_appid_logdir):
+            pyhdfs_handle.create_directory(hdfs_appid_logdir)
+
+        hdfs_timestamp_logdir = hdfs_appid_logdir + "/" + timestamp
+        if not pyhdfs_handle.exists(hdfs_timestamp_logdir):
+            pyhdfs_handle.create_directory(hdfs_timestamp_logdir)
+
+        hdfs_exec_logdir = hdfs_appid_logdir + "/" + timestamp
+        if not pyhdfs_handle.exists(hdfs_exec_logdir):
+            pyhdfs_handle.create_directory(hdfs_exec_logdir)
+
         #Start TensorBoard automatically
-        tb_pid = tensorboard.register(app_id)
+        tb_pid = tensorboard.register(app_id, timestamp, executor_num)
 
         try:
             #Arguments
@@ -52,7 +77,7 @@ def prepare_func(app_id, map_fun, args_dict):
                 argIndex = 0
                 while argcount > 0:
                     #Get args for executor and run function
-                    args.append(args_dict[names[argIndex]][executor_num])
+                    args.append(args_dict[names[argIndex]][int(executor_num)])
                     argcount -= 1
                     argIndex += 1
                 map_fun(*args)
@@ -66,19 +91,5 @@ def prepare_func(app_id, map_fun, args_dict):
 
         if tb_pid != 0:
             subprocess.Popen(["kill", str(tb_pid)])
-
-        #Create output directory for TensorBoard events for this executor
-        hdfs_events_parent_dir = hopshdfs.project_path() + "/Jupyter/Tensorboard"
-        if not pyhdfs_handle.exists(hdfs_events_parent_dir):
-            pyhdfs_handle.create_directory(hdfs_events_parent_dir)
-        hdfs_events_logdir = hdfs_events_parent_dir + "/" + app_id + ".exec." + str(executor_num)
-        pyhdfs_handle.create_directory(hdfs_events_logdir)
-
-        #Write TensorBoard logdir contents to HDFS
-        executor_events_dir = tensorboard.get_logdir()
-        for filename in os.listdir(executor_events_dir):
-            pyhdfs_handle.copy(os.path.join(executor_events_dir, filename), pyhdfs_handle, hdfs_events_logdir)
-
-
 
     return _wrapper_fun

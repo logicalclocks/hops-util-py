@@ -10,11 +10,13 @@ import os
 from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs
 
-logdir = os.getcwd() + "/tensorboard"
+logdir = ''
 
-def register(app_id):
+def register(hdfs_exec_dir, exec_id):
 
     global logdir
+    logdir = hdfs_exec_dir
+
     if not os.path.exists(logdir):
         os.makedirs(logdir)
 
@@ -34,10 +36,9 @@ def register(app_id):
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, hopshdfs.project_path() + "/Jupyter/." + app_id + ".tensorboard", user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, logdir + "/tensorboard.endpoint" + exec_id, user=hopshdfs.project_user())
 
     return tb_pid
 
-
-def get_logdir():
+def logdir():
     return logdir
