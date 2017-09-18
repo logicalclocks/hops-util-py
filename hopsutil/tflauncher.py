@@ -38,8 +38,6 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
         for i in iter:
             executor_num = i
 
-        executor_num = str(executor_num)
-
         #Temporary crap fix
         os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
@@ -60,7 +58,7 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_timestamp_logdir):
             pyhdfs_handle.create_directory(hdfs_timestamp_logdir)
 
-        hdfs_exec_logdir = hdfs_appid_logdir + "/executor." + executor_num
+        hdfs_exec_logdir = hdfs_appid_logdir + "/executor." + str(executor_num)
         if not pyhdfs_handle.exists(hdfs_exec_logdir):
             pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
@@ -77,7 +75,7 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
                 argIndex = 0
                 while argcount > 0:
                     #Get args for executor and run function
-                    args.append(args_dict[names[argIndex]][int(executor_num)])
+                    args.append(args_dict[names[argIndex]][executor_num])
                     argcount -= 1
                     argIndex += 1
                 map_fun(*args)
