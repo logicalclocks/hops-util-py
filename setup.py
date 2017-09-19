@@ -1,4 +1,4 @@
-import osi
+import os
 from setuptools import setup
 
 
