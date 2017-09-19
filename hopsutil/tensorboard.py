@@ -10,18 +10,18 @@ import os
 from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs
 
-logdir = ''
+logdir_path = ''
 
 def register(hdfs_exec_dir):
 
     print "EXECDIR"
     print hdfs_exec_dir
 
-    global logdir
-    logdir = str(hdfs_exec_dir)
+    global logdir_path
+    logdir_path = hdfs_exec_dir
 
-    if not os.path.exists(logdir):
-        os.makedirs(logdir)
+    if not os.path.exists(logdir_path):
+        os.makedirs(logdir_path)
 
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
@@ -32,16 +32,16 @@ def register(hdfs_exec_dir):
     addr, port = s.getsockname()
     s.close()
 
-    tb_proc = subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir, "--port=%d"%port, "--debug"])
+    tb_proc = subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir_path, "--port=%d"%port, "--debug"])
     tb_pid = tb_proc.pid
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, logdir + "/tensorboard.endpoint", user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, logdir_path + "/tensorboard.endpoint", user=hopshdfs.project_user())
 
     return tb_pid
 
 def logdir():
-    return logdir
+    return logdir_path
