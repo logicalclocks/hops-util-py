@@ -14,8 +14,11 @@ logdir = ''
 
 def register(hdfs_exec_dir):
 
+    print "EXECDIR"
+    print hdfs_exec_dir
+
     global logdir
-    logdir = hdfs_exec_dir
+    logdir = str(hdfs_exec_dir)
 
     if not os.path.exists(logdir):
         os.makedirs(logdir)
@@ -36,7 +39,7 @@ def register(hdfs_exec_dir):
     tb_url = "http://{0}:{1}".format(host, port)
 
     #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, hdfs_exec_dir + "/tensorboard.endpoint", user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, logdir + "/tensorboard.endpoint", user=hopshdfs.project_user())
 
     return tb_pid
 
