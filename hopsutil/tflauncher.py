@@ -70,7 +70,7 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
             pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
         #Start TensorBoard automatically
-        tb_pid = tensorboard.register(hdfs_exec_logdir, executor_num)
+        tb_pid = tensorboard.register(hdfs_exec_logdir)
 
         try:
             #Arguments
