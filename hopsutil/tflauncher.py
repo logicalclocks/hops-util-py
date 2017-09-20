@@ -11,18 +11,19 @@ from hopsutil import tensorboard
 import subprocess
 import datetime
 
+run_id = 0
+
 def launch(spark_session, map_fun, args_dict=None):
 
     #Temporary crap fix
+    os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
+    os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
     os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
     os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
     #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
-
-    time = datetime.datetime.now()
-    timestamp = "%s.%s.%s" % (time.hour, time.minute, time.second)
 
     if args_dict == None:
         num_executors = 1
@@ -33,10 +34,13 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, timestamp, map_fun, args_dict))
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict))
+
+    global run_id
+    run_id += 1
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(app_id, timestamp, map_fun, args_dict):
+def prepare_func(app_id, run_id, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
@@ -44,6 +48,8 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
             executor_num = i
 
         #Temporary crap fix
+        os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
+        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
@@ -60,16 +66,16 @@ def prepare_func(app_id, timestamp, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_appid_logdir):
             pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
-        hdfs_timestamp_logdir = hdfs_appid_logdir + "/" + timestamp
-        if not pyhdfs_handle.exists(hdfs_timestamp_logdir):
-            pyhdfs_handle.create_directory(hdfs_timestamp_logdir)
+        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + run_id
+        if not pyhdfs_handle.exists(hdfs_run_id_logdir):
+            pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
-        hdfs_exec_logdir = hdfs_timestamp_logdir + "/executor." + str(executor_num)
+        hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + str(executor_num)
         if not pyhdfs_handle.exists(hdfs_exec_logdir):
             pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
         #Start TensorBoard automatically
-        tb_pid = tensorboard.register(hdfs_exec_logdir)
+        tb_pid = tensorboard.register(hdfs_exec_logdir, executor_num)
 
         try:
             #Arguments
