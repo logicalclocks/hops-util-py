@@ -37,7 +37,7 @@ def register(hdfs_exec_dir, exec_num):
 
     #dump tb host:port to hdfs
     path = logdir_path + "/tensorboard.exec" + str(exec_num)
-    pydoop.hdfs.delete(path)
+
     pydoop.hdfs.dump(tb_url, path, user=hopshdfs.project_user())
 
     return tb_pid
