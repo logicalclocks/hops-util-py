@@ -66,7 +66,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_appid_logdir):
             pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
-        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + run_id
+        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + str(run_id)
         if not pyhdfs_handle.exists(hdfs_run_id_logdir):
             pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
