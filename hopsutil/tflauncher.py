@@ -85,15 +85,21 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
 
                 args = []
                 argIndex = 0
+                param_string = ''
                 while argcount > 0:
                     #Get args for executor and run function
-
-                    args.append(args_dict[names[argIndex]][executor_num])
+                    args_dict[names[argIndex]][executor_num]
+                    param_name = names[argIndex]
+                    param_val = args_dict[param_name][executor_num]
+                    param_string += param_name + '=' + param_val + '.'
+                    args.append(param_val)
                     argcount -= 1
                     argIndex += 1
-
+                param_string = param_string[:-1]
+                tb_pid = tensorboard.register(hdfs_appid_logdir, executor_num, param_string)
                 map_fun(*args)
             else:
+                tb_pid = tensorboard.register(hdfs_appid_logdir, executor_num)
                 map_fun()
 
         except:
