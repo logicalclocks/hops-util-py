@@ -102,11 +102,11 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         except:
             #Always kill tensorboard
             if tb_pid != 0:
-                cleanup(tb_pid, tb_hdfs_path)
+                cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
             raise
 
         if tb_pid != 0:
-            cleanup(tb_pid, tb_hdfs_path)
+            cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
