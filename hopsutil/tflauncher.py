@@ -9,7 +9,6 @@ from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs.fs as pydoophdfs
 from hopsutil import tensorboard
 import subprocess
-import datetime
 
 run_id = 0
 
@@ -101,16 +100,15 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
 
         except:
             #Always kill tensorboard
-            if tb_pid != 0:
-                cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
+
+            cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
             raise
 
-        if tb_pid != 0:
-            cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
+        cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
 def cleanup(handle, tb_pid, tb_hdfs_path):
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
-        handle.delete(tb_hdfs_path, user=hopshdfs.project_user())
+        handle.delete(tb_hdfs_path)
