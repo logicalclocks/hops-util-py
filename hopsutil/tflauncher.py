@@ -66,7 +66,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_appid_logdir):
             pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
-        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + str(run_id)
+        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + "runId." + str(run_id)
         if not pyhdfs_handle.exists(hdfs_run_id_logdir):
             pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
@@ -93,19 +93,24 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
+                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
                 map_fun(*args)
             else:
-                tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 map_fun()
 
         except:
             #Always kill tensorboard
             if tb_pid != 0:
-                subprocess.Popen(["kill", str(tb_pid)])
+                cleanup(tb_pid, tb_hdfs_path)
             raise
 
         if tb_pid != 0:
-            subprocess.Popen(["kill", str(tb_pid)])
+            cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
+
+def cleanup(handle, tb_pid, tb_hdfs_path):
+    if tb_pid != 0:
+        subprocess.Popen(["kill", str(tb_pid)])
+        handle.delete(tb_hdfs_path, user=hopshdfs.project_user())

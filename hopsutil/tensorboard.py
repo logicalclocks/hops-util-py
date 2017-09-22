@@ -43,7 +43,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, path, user=hopshdfs.project_user())
 
-    return tb_pid
+    return path, tb_pid
 
 def logdir():
     return logdir_path
