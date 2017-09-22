@@ -54,8 +54,6 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
-        os.environ['HDFS_USER'] = hopshdfs.project_user()
-
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
         #Create output directory for TensorBoard events for this executor
@@ -95,10 +93,10 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                tb_pid = tensorboard.register(hdfs_appid_logdir, executor_num, param_string)
+                tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
                 map_fun(*args)
             else:
-                tb_pid = tensorboard.register(hdfs_appid_logdir, executor_num)
+                tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 map_fun()
 
         except:
