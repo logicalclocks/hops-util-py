@@ -54,6 +54,8 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
+        os.environ['HDFS_USER'] = hopshdfs.project_user()
+
         pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
 
         #Create output directory for TensorBoard events for this executor
@@ -91,7 +93,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                     args_dict[names[argIndex]][executor_num]
                     param_name = names[argIndex]
                     param_val = args_dict[param_name][executor_num]
-                    param_string += param_name + '=' + param_val + '.'
+                    param_string += str(param_name) + '=' + str(param_val) + '.'
                     args.append(param_val)
                     argcount -= 1
                     argIndex += 1
