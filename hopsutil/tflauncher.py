@@ -36,9 +36,8 @@ def launch(spark_session, map_fun, args_dict=None):
                 raise ValueError('Length of each function argument list must be equal')
             currentLen = len(arg_lists[i])
 
-        num_executors = len(args_dict.values()[0])
-        conf_num = sc._conf.get("spark.executor.instances")
-        if conf_num < num_executors:
+        conf_num = int(sc._conf.get("spark.executor.instances"))
+        if conf_num < currentLen:
             raise ValueError(('You configured {0} executors, but trying to run {1} TensorFlow jobs'
                               + ' increase number of executors or reduce number of TensorFlow jobs.')
                              .format(conf_num, num_executors))
