@@ -70,6 +70,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
 
         hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, executor_num)
         tb_pid = 0
+        tb_hdfs_path = ''
 
         try:
             #Arguments
