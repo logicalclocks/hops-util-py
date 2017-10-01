@@ -69,6 +69,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
         hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, executor_num)
+        tb_pid = 0
 
         try:
             #Arguments
