@@ -85,6 +85,9 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         if not pyhdfs_handle.exists(hdfs_run_id_logdir):
             pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
+        logfile = hdfs_run_id_logdir + '/execuctor.' + str(executor_num) + '.log'
+        os.environ['EXEC_LOGFILE'] = logfile
+
         hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + str(executor_num)
         if not pyhdfs_handle.exists(hdfs_exec_logdir):
             pyhdfs_handle.create_directory(hdfs_exec_logdir)
@@ -108,18 +111,19 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
+                hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
                 map_fun(*args)
             else:
+                hopshdfs.log('Starting Spark executor')
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 map_fun()
 
         except:
-            #Always kill tensorboard
-
+            #Always do cleanup
             cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
             raise
-
+        hopshdfs.log('Finished running')
         cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
