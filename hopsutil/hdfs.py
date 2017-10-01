@@ -24,10 +24,10 @@ def project_user():
 def log(string):
     if isinstance(string, basestring):
         logfile = os.environ['EXEC_LOGFILE']
-        hdfs.dump('{0}: {1}'.format(datetime.now().isoformat(), string), logfile, user=project_user())
+        hdfs.dump('{0}: {1}'.format(datetime.datetime.now().isoformat(), string), logfile, user=project_user())
     else:
         logfile = os.environ['EXEC_LOGFILE']
-        hdfs.dump('{0}: {1}'.format(datetime.now().isoformat(), 'ERROR! Can only write string or unicode objects to logfile'),
+        hdfs.dump('{0}: {1}'.format(datetime.datetime.now().isoformat(), 'ERROR! Attempting to write a non-basestring object to logfile'),
                   logfile, user=project_user())
 
 def create_directories(app_id, run_id, executor_num):
