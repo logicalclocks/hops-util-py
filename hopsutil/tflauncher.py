@@ -6,7 +6,6 @@ These utils facilitates development by hiding complexity for programs interactin
 
 import os
 from hopsutil import hdfs as hopshdfs
-import pydoop.hdfs.fs as pydoophdfs
 from hopsutil import tensorboard
 import subprocess
 
@@ -69,28 +68,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
-        pyhdfs_handle = pydoophdfs.hdfs(host='default', port=0, user=hopshdfs.project_user())
-
-        #Create output directory for TensorBoard events for this executor
-        #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
-        hdfs_events_parent_dir = hopshdfs.project_path() + "/Logs/Tensorboard"
-        if not pyhdfs_handle.exists(hdfs_events_parent_dir):
-            pyhdfs_handle.create_directory(hdfs_events_parent_dir)
-
-        hdfs_appid_logdir = hdfs_events_parent_dir + "/" + app_id
-        if not pyhdfs_handle.exists(hdfs_appid_logdir):
-            pyhdfs_handle.create_directory(hdfs_appid_logdir)
-
-        hdfs_run_id_logdir = hdfs_appid_logdir + "/" + "runId." + str(run_id)
-        if not pyhdfs_handle.exists(hdfs_run_id_logdir):
-            pyhdfs_handle.create_directory(hdfs_run_id_logdir)
-
-        logfile = hdfs_run_id_logdir + '/execuctor.' + str(executor_num) + '.log'
-        os.environ['EXEC_LOGFILE'] = logfile
-
-        hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + str(executor_num)
-        if not pyhdfs_handle.exists(hdfs_exec_logdir):
-            pyhdfs_handle.create_directory(hdfs_exec_logdir)
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, executor_num)
 
         try:
             #Arguments
@@ -121,14 +99,15 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
 
         except:
             #Always do cleanup
-            cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
+            cleanup(tb_pid, tb_hdfs_path)
             raise
         hopshdfs.log('Finished running')
-        cleanup(pyhdfs_handle, tb_pid, tb_hdfs_path)
+        cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
-def cleanup(handle, tb_pid, tb_hdfs_path):
+def cleanup(tb_pid, tb_hdfs_path):
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
+        handle = hopshdfs.get()
         handle.delete(tb_hdfs_path)
