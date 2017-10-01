@@ -7,14 +7,14 @@ def read(fname):
 
 setup(
     name='hopsutil',
-    version='0.6.3',
+    version='0.6.4',
     author='Robin Andersson',
     author_email='robin2@kth.se',
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
     license='Apache License 2.0',
     keywords='HOPS, Hadoop',
     url='https://github.com/hopshadoop/hops-util-python',
-    download_url = 'https://github.com/hopshadoop/hops-util-python/archive/0.6.3.tar.gz',
+    download_url = 'https://github.com/hopshadoop/hops-util-python/archive/0.6.4.tar.gz',
     packages=['hopsutil'],
     long_description=read('README.rst'),
     classifiers=[
