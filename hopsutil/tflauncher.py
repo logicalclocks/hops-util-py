@@ -118,3 +118,4 @@ def cleanup(tb_pid, tb_hdfs_path):
         subprocess.Popen(["kill", str(tb_pid)])
         handle = hopshdfs.get()
         handle.delete(tb_hdfs_path)
+        hopshdfs.kill_logger()

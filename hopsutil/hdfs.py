@@ -29,9 +29,8 @@ fd = None
 def init_logger():
     logfile = os.environ['EXEC_LOGFILE']
     fs_handle = get_fs()
-    with fs_handle.open_file(logfile, flags='w') as f:
-        global fd
-        fd = f
+    global fd
+    fd = fs_handle.open_file(logfile, flags='w')
 
 def log(string):
     if isinstance(string, basestring):
@@ -39,6 +38,10 @@ def log(string):
     else:
         fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
         'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+
+def kill_logger():
+    fd.flush()
+    fd.close()
 
 def create_directories(app_id, run_id, executor_num):
     pyhdfs_handle = get()
