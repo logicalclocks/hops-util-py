@@ -9,9 +9,12 @@ import subprocess
 import os
 from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs
+import shutil
 
 logdir_path = None
 events_logdir = None
+params = None
+dir_counter = 0
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
@@ -19,7 +22,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     events_logdir = hdfs_exec_dir
 
     global logdir_path
-    logdir_path = os.getcwd() + '/tensorboard_events'
+    logdir_path = logdir()
+
+    global params
+    params = param_string
 
     if not os.path.exists(logdir_path):
         os.makedirs(logdir_path)
@@ -50,7 +56,20 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     return path, tb_pid
 
 def store():
-    pydoop.hdfs.put(logdir(), events_logdir)
+    pydoop.hdfs.put(logdir_path, events_logdir)
 
 def logdir():
+    if params:
+        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter) + '.' + param_string
+    else:
+        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter) + '.' + param_string
+    global dir_counter
+    dir_counter += 1
     return logdir_path
+
+def clean():
+    shutil.rmtree(logdir_path)
+    global params, logdir_path, events_logdir
+    logdir_path = None
+    events_logdir = None
+    params = None
