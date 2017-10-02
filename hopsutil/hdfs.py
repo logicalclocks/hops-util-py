@@ -38,6 +38,7 @@ def log(string):
     else:
         fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
         'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+    fd.flush()
 
 def kill_logger():
     fd.flush()
@@ -59,7 +60,7 @@ def create_directories(app_id, run_id, executor_num):
     if not pyhdfs_handle.exists(hdfs_run_id_logdir):
         pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
-    logfile = hdfs_run_id_logdir + '/execuctor.' + str(executor_num) + '.log'
+    logfile = hdfs_run_id_logdir + '/executor.' + str(executor_num) + '.log'
     os.environ['EXEC_LOGFILE'] = logfile
 
     hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + str(executor_num)
