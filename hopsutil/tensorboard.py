@@ -57,7 +57,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
 def store():
     handle = hopshdfs.get()
-    handle.create_directory(events_logdir)
+    handle.create_directory(events_logdir + '.' + str(dir_counter))
     for f in os.listdir(logdir_path):
         file = os.join(events_logdir, f)
         handle.copy(file, handle, events_logdir + '/' + f)
