@@ -56,13 +56,14 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     return path, tb_pid
 
 def store():
-    pydoop.hdfs.put(logdir_path, events_logdir)
+    handle = hopshdfs.get()
+    handle.create_directory(events_logdir)
+    for f in os.listdir(logdir_path):
+        file = os.join(events_logdir, f)
+        handle.copy(file, handle, events_logdir + '/' + f)
 
 def logdir():
-    if params:
-        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter) + '.' + param_string
-    else:
-        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter)
+    logdir_path = os.getcwd() + '/tensorboard_events.'
     global dir_counter
     dir_counter += 1
     return logdir_path
