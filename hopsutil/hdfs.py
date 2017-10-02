@@ -24,19 +24,21 @@ def project_user():
     hops_user = os.environ["SPARK_USER"]
     return hops_user
 
-def log(string):
+fd = None
+
+def init_logger():
+    logfile = os.environ['EXEC_LOGFILE']
     fs_handle = get_fs()
+    with fs_handle.open_file(logfile, flags='w') as f:
+        global fd
+        fd = f
+
+def log(string):
     if isinstance(string, basestring):
-        logfile = os.environ['EXEC_LOGFILE']
-        with fs_handle.open_file(logfile, flags='w') as f:
-            f.seek(f.size)
-            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
+        fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
     else:
-        logfile = os.environ['EXEC_LOGFILE']
-        with fs_handle.open_file(logfile, flags='w') as f:
-            f.seek(f.size)
-            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
-            'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+        fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
+        'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
 
 def create_directories(app_id, run_id, executor_num):
     pyhdfs_handle = get()
