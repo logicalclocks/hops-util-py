@@ -57,13 +57,11 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
 def store():
     handle = hopshdfs.get()
-    dir = events_logdir + '.' + str(dir_counter)
-    handle.create_directory(dir)
     global dir_counter
     dir_counter += 1
     for f in os.listdir(logdir_path):
         file = os.path.join(events_logdir, f)
-        handle.copy(file, handle, dir + '/' + f)
+        handle.copy(file, handle, events_logdir + '/' + f)
 
 def logdir():
     logdir_path = os.getcwd() + '/tensorboard_events.'
