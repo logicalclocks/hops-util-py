@@ -114,6 +114,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
     return _wrapper_fun
 
 def cleanup(tb_pid, tb_hdfs_path):
+    hopshdfs.log('Performing cleanup')
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
         handle = hopshdfs.get()
