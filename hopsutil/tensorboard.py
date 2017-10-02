@@ -62,7 +62,7 @@ def logdir():
     if params:
         logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter) + '.' + param_string
     else:
-        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter) + '.' + param_string
+        logdir_path = os.getcwd() + '/tensorboard_events.' + str(dir_counter)
     global dir_counter
     dir_counter += 1
     return logdir_path
