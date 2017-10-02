@@ -59,7 +59,8 @@ def store():
     handle = hopshdfs.get()
     for f in os.listdir(logdir_path):
         file = os.path.join(events_logdir, f)
-        handle.copy(file, handle, events_logdir + '/' + f)
+        hopshdfs.log(file + '            ' + events_logdir + '/' + f)
+        handle.move(file, handle, events_logdir + '/' + f)
 
 def logdir():
     logdir_path = os.getcwd() + '/tensorboard_events'
