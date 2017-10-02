@@ -7,6 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import os
 from hopsutil import hdfs as hopshdfs
 from hopsutil import tensorboard
+import pydoop.hdfs
 import subprocess
 
 run_id = 0
@@ -91,10 +92,12 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
+                pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
                 map_fun(*args)
             else:
+                pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.log('Starting Spark executor')
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 map_fun()
