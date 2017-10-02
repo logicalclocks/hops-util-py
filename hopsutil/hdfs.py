@@ -29,11 +29,12 @@ def log(string):
     if isinstance(string, basestring):
         logfile = os.environ['EXEC_LOGFILE']
         with fs_handle.open_file(logfile) as f:
-            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
+            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n', flags='w')
     else:
         logfile = os.environ['EXEC_LOGFILE']
         with fs_handle.open_file(logfile) as f:
-            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), 'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+            f.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
+            'ERROR! Attempting to write a non-basestring object to logfile') + '\n', flags='w')
 
 def create_directories(app_id, run_id, executor_num):
     pyhdfs_handle = get()
