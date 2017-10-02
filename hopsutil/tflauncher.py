@@ -121,4 +121,4 @@ def cleanup(tb_pid, tb_hdfs_path):
         handle.delete(tb_hdfs_path)
         hopshdfs.kill_logger()
         tensorboard.store()
-        tensorboard.clean_dir()
+        tensorboard.clean()
