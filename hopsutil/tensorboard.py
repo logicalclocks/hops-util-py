@@ -10,12 +10,16 @@ import os
 from hopsutil import hdfs as hopshdfs
 import pydoop.hdfs
 
-logdir_path = ''
+logdir_path = None
+events_logdir = None
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
+    global events_logdir
+    events_logdir = hdfs_exec_dir
+
     global logdir_path
-    logdir_path = hdfs_exec_dir
+    logdir_path = os.getcwd() + '/tensorboard_events'
 
     if not os.path.exists(logdir_path):
         os.makedirs(logdir_path)
@@ -44,6 +48,9 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     pydoop.hdfs.dump(tb_url, path, user=hopshdfs.project_user())
 
     return path, tb_pid
+
+def store():
+    pydoop.hdfs.put(logdir(), events_logdir)
 
 def logdir():
     return logdir_path
