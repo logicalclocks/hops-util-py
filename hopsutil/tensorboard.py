@@ -57,7 +57,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
 def store():
     handle = hopshdfs.get()
-    pydoop.hdfs.delete(events_logdir, recursive=True)
+    handle.delete(events_logdir, recursive=True)
     pydoop.hdfs.put(logdir_path, events_logdir)
 
 def logdir():
