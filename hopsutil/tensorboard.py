@@ -57,15 +57,14 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
 def store():
     handle = hopshdfs.get()
-    hopshdfs.log('listdir ' + logdir_path)
-    for f in os.listdir(logdir_path):
-        hopshdfs.log('os join ' + events_logdir + '    ' + )
-        file = os.path.join(events_logdir, f)
-        hopshdfs.log(file + '            ' + events_logdir + '/' + f)
-        handle.move(file, handle, events_logdir)
+    pydoop.hdfs.delete(events_logdir, recursive=True)
+    pydoop.hdfs.put(logdir_path, events_logdir)
 
 def logdir():
-    logdir_path = os.getcwd() + '/tensorboard_events'
+    if params:
+        logdir_path = os.getcwd() + '/tensorboard_events.' + params
+    else:
+        logdir_path = os.getcwd() + '/tensorboard_events'
     return logdir_path
 
 def clean():
