@@ -49,16 +49,16 @@ def create_directories(app_id, run_id, executor_num):
     #Create output directory for TensorBoard events for this executor
     #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
     hdfs_events_parent_dir = project_path() + "/Logs/Tensorboard"
-    if not pyhdfs_handle.exists(hdfs_events_parent_dir):
-        #pyhdfs_handle.create_directory(hdfs_events_parent_dir)
+    #if not pyhdfs_handle.exists(hdfs_events_parent_dir):
+    #pyhdfs_handle.create_directory(hdfs_events_parent_dir)
 
     hdfs_appid_logdir = hdfs_events_parent_dir + "/" + app_id
-    if not pyhdfs_handle.exists(hdfs_appid_logdir):
-        #pyhdfs_handle.create_directory(hdfs_appid_logdir)
+    #if not pyhdfs_handle.exists(hdfs_appid_logdir):
+    #pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
     hdfs_run_id_logdir = hdfs_appid_logdir + "/" + "runId." + str(run_id)
-    if not pyhdfs_handle.exists(hdfs_run_id_logdir):
-        #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
+    #if not pyhdfs_handle.exists(hdfs_run_id_logdir):
+    #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
     logfile = hdfs_run_id_logdir + '/executor.' + str(executor_num) + '.log'
     os.environ['EXEC_LOGFILE'] = logfile
