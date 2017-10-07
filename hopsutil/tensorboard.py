@@ -53,14 +53,12 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, path, user=hopshdfs.project_user())
 
-    hopshdfs.log('Successfully started TensorBoard')
-
     return path, tb_pid
 
 def store():
     handle = hopshdfs.get()
     #handle.delete(events_logdir, recursive=True)
-    pydoop.hdfs.put(logdir_path, events_logdir, user=hopshdfs.project_user())
+    #pydoop.hdfs.put(logdir_path, events_logdir, user=hopshdfs.project_user())
 
 def logdir():
     if params:
