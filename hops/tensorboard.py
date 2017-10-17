@@ -7,7 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import socket
 import subprocess
 import os
-from hopsutil import hdfs as hopshdfs
+from hops import hdfs as hopshdfs
 import pydoop.hdfs
 import shutil
 

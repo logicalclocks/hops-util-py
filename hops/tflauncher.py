@@ -5,8 +5,8 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 
 import os
-from hopsutil import hdfs as hopshdfs
-from hopsutil import tensorboard
+from hops import hdfs as hopshdfs
+from hops import tensorboard
 import pydoop.hdfs
 import subprocess
 
