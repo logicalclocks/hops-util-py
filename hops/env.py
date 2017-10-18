@@ -20,7 +20,7 @@ def get_gpu_info():
     for line in gpu_info:
         if len(line) > 0:
             name, total_memory, memory_used, gpu_util = line.split(',')
-            gpu_str += '\nType: ' + name + '\n'
+            gpu_str += '\nName: ' + name + '\n'
             gpu_str += 'Total memory: ' + total_memory + '\n'
             gpu_str += 'Currently allocated memory: ' + memory_used + '\n'
             gpu_str += 'Current utilization: ' + gpu_util + '\n'
@@ -31,8 +31,11 @@ def get_gpu_info():
 
 
 def get_num_gpus():
-    gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name"]).decode()
-    gpu_info = gpu_info.split('\n')
+    try:
+        gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name"]).decode()
+        gpu_info = gpu_info.split('\n')
+    except:
+        return 0
 
     count = 0
     for line in gpu_info:
