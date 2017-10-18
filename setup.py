@@ -7,14 +7,14 @@ def read(fname):
 
 setup(
     name='hops',
-    version='1.1.4',
+    version='1.1.5',
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
     license='Apache License 2.0',
     keywords='HOPS, Hadoop, TensorFlow, Spark',
     url='https://github.com/hopshadoop/hops-util-py',
-    download_url = 'https://github.com/hopshadoop/hops-util-py/archive/1.1.4.tar.gz',
+    download_url = 'https://github.com/hopshadoop/hops-util-py/archive/1.1.5.tar.gz',
     packages=['hops'],
     long_description=read('README.rst'),
     classifiers=[
