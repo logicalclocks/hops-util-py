@@ -7,7 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import os
 from hops import hdfs as hopshdfs
 from hops import tensorboard
-from hops import env
+from hops import devices
 import pydoop.hdfs
 import subprocess
 
@@ -44,7 +44,7 @@ def launch(spark_session, map_fun, args_dict=None):
                               + ' increase number of executors or reduce number of TensorFlow jobs.')
                              .format(conf_num, num_executors))
 
-    #TF task should be run on 1 executor
+    #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executors), num_executors)
 
     #Force execution on executor, since GPU is located on executor
@@ -99,7 +99,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
                 hopshdfs.log('Checking for GPUs in the environment')
-                hopshdfs.log(env.get_gpu_info())
+                hopshdfs.log(devices.get_gpu_info())
                 map_fun(*args)
             else:
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
@@ -107,7 +107,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 hopshdfs.log('Starting Spark executor')
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 hopshdfs.log('Checking for GPUs in the environment')
-                hopshdfs.log(env.get_gpu_info())
+                hopshdfs.log(devices.get_gpu_info())
                 map_fun()
 
         except:
