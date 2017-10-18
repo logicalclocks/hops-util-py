@@ -38,7 +38,6 @@ def log(string):
     else:
         fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
         'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
-    fd.flush()
 
 def kill_logger():
     fd.flush()
@@ -48,7 +47,7 @@ def create_directories(app_id, run_id, executor_num):
     pyhdfs_handle = get()
     #Create output directory for TensorBoard events for this executor
     #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
-    hdfs_events_parent_dir = project_path() + "/Logs/Tensorboard"
+    hdfs_events_parent_dir = project_path() + "/Logs/TensorFlow"
     #if not pyhdfs_handle.exists(hdfs_events_parent_dir):
     #pyhdfs_handle.create_directory(hdfs_events_parent_dir)
 

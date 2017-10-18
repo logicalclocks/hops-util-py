@@ -7,21 +7,35 @@ import subprocess
 
 def get_gpu_info():
     # Get the gpu information
-    gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits",
-                                        "--query-gpu=index,memory.total,memory.free,memory.used,utilization.gpu"]).decode()
-    gpu_info = gpu_info.split('\n')
-
-    gpu_info_array = []
+    gpu_str = ''
+    try:
+        gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name,memory.total,memory.used,utilization.gpu"]).decode()
+        gpu_info = gpu_info.split('\n')
+    except:
+        gpu_str = 'Could not find any GPUs accessible for the container'
+        return gpu_str
 
     # Check each gpu
+    gpu_str = ''
     for line in gpu_info:
         if len(line) > 0:
-            gpu_id, total_memory, free_memory, used_memory, gpu_util = line.split(',')
-            gpu_info_array.append((float(total_memory, free_memory, used_memory, gpu_util)))
+            name, total_memory, memory_used, gpu_util = line.split(',')
+            gpu_str += '\nType: ' + name + '\n'
+            gpu_str += 'Total memory: ' + total_memory + '\n'
+            gpu_str += 'Currently allocated memory: ' + memory_used + '\n'
+            gpu_str += 'Current utilization: ' + gpu_util + '\n'
+            gpu_str += '\n'
 
-    return gpu_info_array
+    return gpu_str
+
+
 
 def get_num_gpus():
-    gpu_info = subprocess.check_output(["nvidia-smi"]).decode()
+    gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name"]).decode()
     gpu_info = gpu_info.split('\n')
-    return len(gpu_info)
+
+    count = 0
+    for line in gpu_info:
+        if len(line) > 0:
+            count += 1
+    return count

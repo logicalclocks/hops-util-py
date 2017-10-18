@@ -24,11 +24,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="env.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="env.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/env.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="10" column="40" lean-forward="false" selection-start-line="10" selection-start-column="40" selection-end-line="10" selection-end-column="40" />
+            <state relative-caret-position="198">
+              <caret line="11" column="35" lean-forward="true" selection-start-line="11" selection-start-column="35" selection-end-line="11" selection-end-column="35" />
               <folding />
             </state>
           </provider>
@@ -67,9 +67,14 @@
       <file leaf-file-name="workspace.xml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="12366">
-              <caret line="687" column="48" lean-forward="false" selection-start-line="687" selection-start-column="48" selection-end-line="687" selection-end-column="48" />
-              <folding />
+            <state relative-caret-position="13644">
+              <caret line="758" column="48" lean-forward="false" selection-start-line="758" selection-start-column="48" selection-end-line="758" selection-end-column="48" />
+              <folding>
+                <marker date="1508247481553" expanded="true" signature="47771:47788" ph="..." />
+                <marker date="1508247481553" expanded="true" signature="47771:47806" ph="..." />
+                <marker date="1508247481553" expanded="true" signature="47771:47819" ph="..." />
+                <marker date="1508247481553" expanded="true" signature="47771:47834" ph="..." />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -84,7 +89,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tflauncher.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="tflauncher.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tflauncher.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="180">
@@ -127,9 +132,9 @@
       <list>
         <option value="$PROJECT_DIR$/.idea/modules.xml" />
         <option value="$PROJECT_DIR$/.idea/workspace.xml" />
-        <option value="$PROJECT_DIR$/env.py" />
         <option value="$PROJECT_DIR$/tflauncher.py" />
         <option value="$PROJECT_DIR$/tensorboard.py" />
+        <option value="$PROJECT_DIR$/env.py" />
       </list>
     </option>
   </component>
@@ -174,7 +179,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../TensorFlowOnSpark" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -613,7 +618,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="12366">
           <caret line="687" column="48" lean-forward="false" selection-start-line="687" selection-start-column="48" selection-end-line="687" selection-end-column="48" />
-          <folding />
+          <folding>
+            <marker date="1508247481553" expanded="true" signature="47771:47788" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47806" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47819" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47834" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -735,9 +745,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/.idea/workspace.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="12366">
-          <caret line="687" column="48" lean-forward="false" selection-start-line="687" selection-start-column="48" selection-end-line="687" selection-end-column="48" />
-          <folding />
+        <state relative-caret-position="13644">
+          <caret line="758" column="48" lean-forward="false" selection-start-line="758" selection-start-column="48" selection-end-line="758" selection-end-column="48" />
+          <folding>
+            <marker date="1508247481553" expanded="true" signature="47771:47788" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47806" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47819" ph="..." />
+            <marker date="1508247481553" expanded="true" signature="47771:47834" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -881,14 +896,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/env.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="10" column="40" lean-forward="false" selection-start-line="10" selection-start-column="40" selection-end-line="10" selection-end-column="40" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tensorboard.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="162">
@@ -904,6 +911,14 @@
           <folding>
             <element signature="e#226#235#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/env.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="11" column="35" lean-forward="true" selection-start-line="11" selection-start-column="35" selection-end-line="11" selection-end-column="35" />
+          <folding />
         </state>
       </provider>
     </entry>
