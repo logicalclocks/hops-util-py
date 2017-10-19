@@ -1,4 +1,14 @@
+import pydoop.hdfs
+import subprocess
+from ctypes import cdll
+import os
+import signal
 
+from hops import hdfs as hopshdfs
+from hops import tensorboard
+from hops import devices
+
+from dill.source import getsource
 
 def launch(spark_session, map_fun):
 
@@ -42,11 +52,6 @@ def prepare_func(app_id, run_id, map_fun):
 
     def _wrapper_fun(iter):
 
-        from dill.source import getsource
-        import subprocess
-        import os
-        from hops import devices
-
         function = getsource(map_fun)
         function += '\n' + function.__name__ + '()'
 
@@ -59,15 +64,15 @@ def prepare_func(app_id, run_id, map_fun):
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, executor_num)
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 0)
 
         tb_pid = 0
         tb_hdfs_path = ''
 
         pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
         hopshdfs.init_logger()
-        hopshdfs.log('Starting Spark executor with arguments ' + param_string)
-        tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+        hopshdfs.log('Starting Spark executor with arguments')
+        tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
         gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
         hopshdfs.log(gpu_str)
 
@@ -76,7 +81,7 @@ def prepare_func(app_id, run_id, map_fun):
         f.close()
 
         subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' python.py'], preexec_fn=on_parent_exit('SIGTERM'),
-                         stdout=open('out', 'w'), stdstderr=subprocess.STDOUT, shell=True)
+                         stdout=open('out', 'w+'), stdstderr=subprocess.STDOUT, shell=True)
 
         cleanup(tb_pid, tb)
 
@@ -84,8 +89,6 @@ def prepare_func(app_id, run_id, map_fun):
 
 def on_parent_exit(signame):
 
-    import signal
-    from ctypes import cdll
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
