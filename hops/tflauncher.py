@@ -98,16 +98,18 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
-                hopshdfs.log('Checking for GPUs in the environment')
-                hopshdfs.log(devices.get_gpu_info())
+                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                hopshdfs.log(gpu_str)
+                print(gpu_str)
                 map_fun(*args)
             else:
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor')
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
-                hopshdfs.log('Checking for GPUs in the environment')
-                hopshdfs.log(devices.get_gpu_info())
+                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                hopshdfs.log(gpu_str)
+                print(gpu_str)
                 map_fun()
 
         except:
