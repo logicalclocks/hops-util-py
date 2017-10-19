@@ -10,6 +10,8 @@ from hops import devices
 
 from dill.source import getsource
 
+run_id = 0
+
 def launch(spark_session, map_fun):
 
     #Temporary crap fix
