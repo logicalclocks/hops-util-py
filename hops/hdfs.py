@@ -15,13 +15,13 @@ def get_fs():
     return hdfs.fs.hdfs('default', 0, user=project_user())
 
 def project_path():
-    hops_user = os.environ["SPARK_USER"]
+    hops_user = project_user()
     hops_user_split = hops_user.split("__")
     project = hops_user_split[0]
     return hdfs.path.abspath("/Projects/" + project + "/")
 
 def project_user():
-    hops_user = os.environ["SPARK_USER"]
+    hops_user = os.environ["HDFS_USER"]
     return hops_user
 
 fd = None
