@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name='hops',
-    version='1.1.6',
+    version='1.1.7',
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
