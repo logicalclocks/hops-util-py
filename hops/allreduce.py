@@ -24,23 +24,10 @@ def launch(spark_session, map_fun):
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
-
-    arg_lists = args_dict.values()
-    currentLen = len(arg_lists[0])
-    for i in range(len(arg_lists)):
-        if currentLen != len(arg_lists[i]):
-            raise ValueError('Length of each function argument list must be equal')
-        currentLen = len(arg_lists[i])
-
-    num_executors = currentLen
     conf_num = int(sc._conf.get("spark.executor.instances"))
-    if conf_num < num_executors:
-        raise ValueError(('You configured {0} executors, but trying to run {1} TensorFlow jobs'
-                         + ' increase number of executors or reduce number of TensorFlow jobs.')
-                         .format(conf_num, num_executors))
 
     #Each TF task should be run on 1 executor
-    nodeRDD = sc.parallelize(range(num_executors), num_executors)
+    nodeRDD = sc.parallelize(range(conf_num), conf_num)
 
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun))
