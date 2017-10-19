@@ -62,7 +62,7 @@ def store():
     pydoop.hdfs.put(logdir_path, events_logdir)
 
 def logdir():
-    logdir_path = os.getcwd() + '/tensorboard_events'
+    logdir_path = os.getcwd() + '/tensorboard_events/'
     return logdir_path
 
 def clean():
