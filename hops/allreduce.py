@@ -84,7 +84,6 @@ def prepare_func(app_id, run_id):
         os.listdir(os.getcwd())
 
         #2. Convert notebook to all_reduce.py file
-        cwd = os.getcwd()
         subprocess.check_call(['jupyter nbconvert --to python all_reduce.ipynb'])
 
 
