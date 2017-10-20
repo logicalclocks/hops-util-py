@@ -81,15 +81,22 @@ def prepare_func(app_id, run_id):
         f_nb.flush()
         f_nb.close()
 
-        os.listdir(os.getcwd())
-
         #2. Convert notebook to all_reduce.py file
-        subprocess.check_call(['jupyter nbconvert --to python all_reduce.ipynb'], shell=True)
+
+        #subprocess.Popen(['/srv/hops-gpu/anaconda/anaconda/envs/robin_allreduce/bin/jupyter', 'nbconvert', '--to', 'python', '/home/yarnapp/all_reduce.ipynb'])
 
 
         #3. Run allreduce
-        subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' all_reduce.py'], preexec_fn=on_parent_exit('SIGTERM'),
-                         stdout=open('out', 'w+'), stdstderr=subprocess.STDOUT, shell=True)
+        mpicmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python allreduce.py'
+        mpi = subprocess.Popen(mpicmd,
+                       shell=True,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+        mpi.wait()
+        stdout, stderr = mpi.communicate()
+
+        #subprocess.check_call(['mpirun -np ' + str(devices.get_num_gpus()) + ' all_reduce.py'], preexec_fn=on_parent_exit('SIGTERM'),
+        #                 stdout=open('out', 'w+'), shell=True)
 
         cleanup(tb_pid, tb_hdfs_path)
 
@@ -104,6 +111,7 @@ def on_parent_exit(signame):
     signum = getattr(signal, signame)
     def set_parent_exit_signal():
         # http://linux.die.net/man/2/prctl
+        PR_SET_PDEATHSIG = 1
         result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
         if result != 0:
             raise Exception('prctl failed with error code %s' % result)
