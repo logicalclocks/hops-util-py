@@ -59,7 +59,7 @@ def store():
     handle = hopshdfs.get()
     handle.delete(events_logdir, recursive=True)
     hopshdfs.log('Storing ' + logdir_path + ' in ' + events_logdir)
-    pydoop.hdfs.put(logdir_path, events_logdir, user=hopshdfs.project_user())
+    pydoop.hdfs.put(logdir_path, events_logdir)
 
 def logdir():
     logdir_path = os.getcwd() + '/tensorboard_events/'
