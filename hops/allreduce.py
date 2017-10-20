@@ -78,27 +78,30 @@ def prepare_func(app_id, run_id):
         for line in fd:
             notebook += line
 
-        f = open("all_reduce.ipynb","w+")
-        f.write(notebook)
-        f.close()
+        f_nb = open("all_reduce.ipynb","w+")
+        f_nb.write(notebook)
+        f_nb.flush()
+        f_nb.close()
 
         #2. Convert notebook to all_reduce.py file
-        subprocess.check_call(['jupyter nbconvert --to python all_reduce.ipynb'])
+        cwd = os.getcwd()
+        subprocess.check_call(['jupyter nbconvert --to python ' + cwd + '/all_reduce.ipynb'])
 
         pyfile = ''
         for line in fd:
             if ".allreduce(" not in line:
                 pyfile += line
 
-        f = open("python.py","w+")
-        f.write(pyfile)
-        f.close()
+        f_py = open("python.py","w+")
+        f_py.write(pyfile)
+        f_py.flush()
+        f_py.close()
 
 
         subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' python.py'], preexec_fn=on_parent_exit('SIGTERM'),
                          stdout=open('out', 'w+'), stdstderr=subprocess.STDOUT, shell=True)
 
-        cleanup(tb_pid, tb)
+        cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
