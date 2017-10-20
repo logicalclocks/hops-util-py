@@ -8,8 +8,6 @@ from hops import hdfs as hopshdfs
 from hops import tensorboard
 from hops import devices
 
-from dill.source import getsource
-
 run_id = 0
 
 def launch(spark_session):
@@ -83,22 +81,15 @@ def prepare_func(app_id, run_id):
         f_nb.flush()
         f_nb.close()
 
+        os.listdir(os.getcwd())
+
         #2. Convert notebook to all_reduce.py file
         cwd = os.getcwd()
-        subprocess.check_call(['jupyter nbconvert --to python ' + cwd + '/all_reduce.ipynb'])
-
-        pyfile = ''
-        for line in fd:
-            if ".allreduce(" not in line:
-                pyfile += line
-
-        f_py = open("python.py","w+")
-        f_py.write(pyfile)
-        f_py.flush()
-        f_py.close()
+        subprocess.check_call(['jupyter nbconvert --to python all_reduce.ipynb'])
 
 
-        subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' python.py'], preexec_fn=on_parent_exit('SIGTERM'),
+        #3. Run allreduce
+        subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' all_reduce.py'], preexec_fn=on_parent_exit('SIGTERM'),
                          stdout=open('out', 'w+'), stdstderr=subprocess.STDOUT, shell=True)
 
         cleanup(tb_pid, tb_hdfs_path)
