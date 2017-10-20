@@ -12,7 +12,7 @@ from dill.source import getsource
 
 run_id = 0
 
-def launch(spark_session, map_fun):
+def launch(spark_session):
 
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -32,17 +32,20 @@ def launch(spark_session, map_fun):
     nodeRDD = sc.parallelize(range(conf_num), conf_num)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun))
+    #function = getsource(map_fun)
+    #function += '\n' + function.__name__ + '()'
+
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id))
 
     global run_id
     run_id += 1
 
-def prepare_func(app_id, run_id, map_fun):
+def prepare_func(app_id, run_id):
 
     def _wrapper_fun(iter):
 
-        function = getsource(map_fun)
-        function += '\n' + function.__name__ + '()'
+        for i in iter:
+            executor_num = i
 
         #Temporary crap fix
         os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -65,9 +68,32 @@ def prepare_func(app_id, run_id, map_fun):
         gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
         hopshdfs.log(gpu_str)
 
-        f = open("python.py","w+")
-        f.write(function)
+        #1. Download notebook file
+        proj_path = hopshdfs.project_path()
+        proj_path += '/Jupyter'
+        proj_path += '/all_reduce.ipynb'
+        fs_handle = hopshdfs.get_fs()
+        fd = fs_handle.open_file(proj_path, flags='r')
+        notebook = ''
+        for line in fd:
+            notebook += line
+
+        f = open("all_reduce.ipynb","w+")
+        f.write(notebook)
         f.close()
+
+        #2. Convert notebook to all_reduce.py file
+        subprocess.check_call(['jupyter nbconvert --to python all_reduce.ipynb'])
+
+        pyfile = ''
+        for line in fd:
+            if ".allreduce(" not in line:
+                pyfile += line
+
+        f = open("python.py","w+")
+        f.write(pyfile)
+        f.close()
+
 
         subprocess.check_call(['mpirun -np ' + devices.get_num_gpus() + ' python.py'], preexec_fn=on_parent_exit('SIGTERM'),
                          stdout=open('out', 'w+'), stdstderr=subprocess.STDOUT, shell=True)
