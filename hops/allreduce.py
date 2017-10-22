@@ -81,7 +81,8 @@ def prepare_func(app_id, run_id, nb_path):
         f_nb.close()
 
         # 2. Convert notebook to all_reduce.py file
-        conversion_cmd = 'jupyter nbconvert --to python ' + filename
+        jupyter_runnable = os.path.abspath(os.path.join(os.environ['PYSPARK_PYTHON'], os.pardir)) + '/jupyter'
+        conversion_cmd = jupyter_runnable + ' nbconvert --to python ' + filename
         conversion = subprocess.Popen(conversion_cmd,
                            shell=True,
                            stdout=subprocess.PIPE,
