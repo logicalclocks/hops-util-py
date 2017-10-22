@@ -2,6 +2,7 @@ import pydoop.hdfs
 import subprocess
 from ctypes import cdll
 import os
+import stat
 import signal
 
 from hops import hdfs as hopshdfs
@@ -30,9 +31,6 @@ def launch(spark_session):
     nodeRDD = sc.parallelize(range(conf_num), conf_num)
 
     #Force execution on executor, since GPU is located on executor
-    #function = getsource(map_fun)
-    #function += '\n' + function.__name__ + '()'
-
     nodeRDD.foreachPartition(prepare_func(app_id, run_id))
 
     global run_id
@@ -69,41 +67,50 @@ def prepare_func(app_id, run_id):
         #1. Download notebook file
         proj_path = hopshdfs.project_path()
         proj_path += '/Jupyter'
-        proj_path += '/all_reduce.ipynb'
+        proj_path += '/allreduce.ipynb'
         fs_handle = hopshdfs.get_fs()
         fd = fs_handle.open_file(proj_path, flags='r')
         notebook = ''
         for line in fd:
             notebook += line
 
-        f_nb = open("all_reduce.ipynb","w+")
+        f_nb = open("allreduce.ipynb","w+")
         f_nb.write(notebook)
         f_nb.flush()
         f_nb.close()
 
-        #2. Convert notebook to all_reduce.py file
+        # 2. Convert notebook to all_reduce.py file
+        conversion_cmd = 'jupyter nbconvert --to python allreduce.ipynb'
+        conversion = subprocess.Popen(conversion_cmd,
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        conversion.wait()
+        stdout, stderr = conversion.communicate()
+        print(stdout)
+        print(stderr)
 
-        #subprocess.Popen(['/srv/hops-gpu/anaconda/anaconda/envs/robin_allreduce/bin/jupyter', 'nbconvert', '--to', 'python', '/home/yarnapp/all_reduce.ipynb'])
+        # 3. Make py file runnable
+        st = os.stat('allreduce.py')
+        os.chmod('allreduce.py', st.st_mode | stat.S_IEXEC)
 
-
-        #3. Run allreduce
-        mpicmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python allreduce.py'
-        mpi = subprocess.Popen(mpicmd,
+        # 4. Run allreduce
+        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python allreduce.py'
+        mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
+                       stderr=subprocess.PIPE,
+                       preexec_fn=on_parent_exit('SIGTERM'))
         mpi.wait()
         stdout, stderr = mpi.communicate()
-
-        #subprocess.check_call(['mpirun -np ' + str(devices.get_num_gpus()) + ' all_reduce.py'], preexec_fn=on_parent_exit('SIGTERM'),
-        #                 stdout=open('out', 'w+'), shell=True)
+        print(stdout)
+        print(stderr)
 
         cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
 def on_parent_exit(signame):
-
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
