@@ -93,12 +93,12 @@ def prepare_func(app_id, run_id, nb_path):
         print(stderr)
 
         # 3. Make py file runnable
-        py_runnable = filename.split('.')[0] + '.py'
+        py_runnable = os.getcwd() + '/' + filename.split('.')[0] + '.py'
         st = os.stat(py_runnable)
         os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
         # 4. Run allreduce
-        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python ' + py_runnable
+        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,
