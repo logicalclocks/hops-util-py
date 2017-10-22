@@ -11,7 +11,7 @@ from hops import devices
 
 run_id = 0
 
-def launch(spark_session):
+def launch(spark_session, notebook):
 
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -31,12 +31,12 @@ def launch(spark_session):
     nodeRDD = sc.parallelize(range(conf_num), conf_num)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id))
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook))
 
     global run_id
     run_id += 1
 
-def prepare_func(app_id, run_id):
+def prepare_func(app_id, run_id, nb_path):
 
     def _wrapper_fun(iter):
 
@@ -60,27 +60,28 @@ def prepare_func(app_id, run_id):
         pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
         hopshdfs.init_logger()
         hopshdfs.log('Starting Spark executor with arguments')
-        tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
+        if executor_num == 0:
+            tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
+
         gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
         hopshdfs.log(gpu_str)
+        print(gpu_str)
 
         #1. Download notebook file
-        proj_path = hopshdfs.project_path()
-        proj_path += '/Jupyter'
-        proj_path += '/allreduce.ipynb'
         fs_handle = hopshdfs.get_fs()
-        fd = fs_handle.open_file(proj_path, flags='r')
+        fd = fs_handle.open_file(nb_path, flags='r')
         notebook = ''
         for line in fd:
             notebook += line
 
-        f_nb = open("allreduce.ipynb","w+")
+        path, filename = os.path.split(nb_path)
+        f_nb = open(filename,"w+")
         f_nb.write(notebook)
         f_nb.flush()
         f_nb.close()
 
         # 2. Convert notebook to all_reduce.py file
-        conversion_cmd = 'jupyter nbconvert --to python allreduce.ipynb'
+        conversion_cmd = 'jupyter nbconvert --to python ' + filename
         conversion = subprocess.Popen(conversion_cmd,
                            shell=True,
                            stdout=subprocess.PIPE,
@@ -91,11 +92,12 @@ def prepare_func(app_id, run_id):
         print(stderr)
 
         # 3. Make py file runnable
-        st = os.stat('allreduce.py')
-        os.chmod('allreduce.py', st.st_mode | stat.S_IEXEC)
+        py_runnable = filename.split('.')[0] + '.py'
+        st = os.stat(py_runnable)
+        os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
         # 4. Run allreduce
-        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python allreduce.py'
+        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' python ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,
