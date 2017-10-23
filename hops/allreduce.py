@@ -10,6 +10,7 @@ from ctypes import cdll
 import os
 import stat
 import signal
+import sys
 
 from hops import hdfs as hopshdfs
 from hops import tensorboard
@@ -19,7 +20,8 @@ run_id = 0
 
 def launch(spark_session, notebook):
 
-    print('Starting TensorFlow AllReduce job')
+    print('Starting TensorFlow job, follow progress on TensorBoard in Jupyter UI \n')
+    sys.stdout.flush()
 
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -44,7 +46,8 @@ def launch(spark_session, notebook):
     global run_id
     run_id += 1
 
-    print('Finished job')
+    print('Finished TensorFlow job \n')
+    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + run_id + ' for logfile and TensorBoard logdir')
 
 def prepare_func(app_id, run_id, nb_path):
 

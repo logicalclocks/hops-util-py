@@ -10,12 +10,14 @@ from hops import tensorboard
 from hops import devices
 import pydoop.hdfs
 import subprocess
+import sys
 
 run_id = 0
 
 def launch(spark_session, map_fun, args_dict=None):
 
-    print('Starting TensorFlow job')
+    print('Starting TensorFlow job, follow progress on TensorBoard in Jupyter UI \n')
+    sys.stdout.flush()
 
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -55,7 +57,8 @@ def launch(spark_session, map_fun, args_dict=None):
     global run_id
     run_id += 1
 
-    print('Finished TensorFlow job')
+    print('Finished TensorFlow job \n')
+    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + run_id + ' for logfile and TensorBoard logdir')
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, run_id, map_fun, args_dict):
