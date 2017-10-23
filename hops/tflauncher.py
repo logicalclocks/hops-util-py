@@ -15,6 +15,8 @@ run_id = 0
 
 def launch(spark_session, map_fun, args_dict=None):
 
+    print('Starting TensorFlow job')
+
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
     os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
@@ -52,6 +54,8 @@ def launch(spark_session, map_fun, args_dict=None):
 
     global run_id
     run_id += 1
+
+    print('Finished TensorFlow job')
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, run_id, map_fun, args_dict):
