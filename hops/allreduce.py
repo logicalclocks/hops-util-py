@@ -20,7 +20,7 @@ run_id = 0
 
 def launch(spark_session, notebook):
 
-    print('Starting TensorFlow job, follow progress on TensorBoard in Jupyter UI \n')
+    print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
 
     #Temporary crap fix
@@ -47,7 +47,7 @@ def launch(spark_session, notebook):
     run_id += 1
 
     print('Finished TensorFlow job \n')
-    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + str(run_id) + ' for logfile and TensorBoard logdir')
+    print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
 
 def prepare_func(app_id, run_id, nb_path):
 
