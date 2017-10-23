@@ -1,3 +1,9 @@
+"""
+Utility functions to retrieve information about available services and setting up security for the Hops platform.
+
+These utils facilitates development by hiding complexity for programs interacting with Hops services.
+"""
+
 import pydoop.hdfs
 import subprocess
 from ctypes import cdll
@@ -63,7 +69,7 @@ def prepare_func(app_id, run_id, nb_path):
         if executor_num == 0:
             tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
 
-        gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+        gpu_str = '\n\nChecking for GPUs in the environment\n' + devices.get_gpu_info()
         hopshdfs.log(gpu_str)
         print(gpu_str)
 
@@ -80,7 +86,7 @@ def prepare_func(app_id, run_id, nb_path):
         f_nb.flush()
         f_nb.close()
 
-        # 2. Convert notebook to all_reduce.py file
+        # 2. Convert notebook to py file
         jupyter_runnable = os.path.abspath(os.path.join(os.environ['PYSPARK_PYTHON'], os.pardir)) + '/jupyter'
         conversion_cmd = jupyter_runnable + ' nbconvert --to python ' + filename
         conversion = subprocess.Popen(conversion_cmd,
@@ -106,6 +112,11 @@ def prepare_func(app_id, run_id, nb_path):
                        preexec_fn=on_parent_exit('SIGTERM'))
         mpi.wait()
         stdout, stderr = mpi.communicate()
+        return_code = mpi.returncode
+
+        if return_code != 0:
+            raise Exception('mpirun failed with the following outputs: \n' + (stdout, stderr))
+
         print(stdout)
         print(stderr)
 
