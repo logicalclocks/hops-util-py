@@ -58,7 +58,7 @@ def launch(spark_session, map_fun, args_dict=None):
     run_id += 1
 
     print('Finished TensorFlow job \n')
-    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + run_id + ' for logfile and TensorBoard logdir')
+    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + str(run_id) + ' for logfile and TensorBoard logdir')
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, run_id, map_fun, args_dict):

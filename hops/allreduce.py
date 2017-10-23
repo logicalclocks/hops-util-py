@@ -47,7 +47,7 @@ def launch(spark_session, notebook):
     run_id += 1
 
     print('Finished TensorFlow job \n')
-    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + run_id + ' for logfile and TensorBoard logdir')
+    print('\nMake sure to check /Logs/TensorFlow/' + app_id + '/' + str(run_id) + ' for logfile and TensorBoard logdir')
 
 def prepare_func(app_id, run_id, nb_path):
 
