@@ -124,7 +124,9 @@ def prepare_func(app_id, run_id, nb_path):
         return_code = mpi.returncode
 
         if return_code != 0:
-            raise Exception('mpirun failed with the following outputs: \n' + (stdout, stderr))
+            raise Exception('mpirun FAILED with the following outputs:' +
+                            '\n\n STDOUT: ' + stdout +
+                            '\n\n STDERR: ' + stderr)
 
         print(stdout)
         print(stderr)
