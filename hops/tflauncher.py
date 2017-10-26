@@ -54,11 +54,11 @@ def launch(spark_session, map_fun, args_dict=None):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict))
 
-    global run_id
-    run_id += 1
-
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
+
+    global run_id
+    run_id += 1
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, run_id, map_fun, args_dict):
@@ -76,8 +76,6 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
         #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
-
-        os.environ['HADOOP_PROXY_USER'] = os.environ['HDFS_USER']
 
         hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, executor_num)
         tb_pid = 0

@@ -12,7 +12,7 @@ def get_gpu_info():
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name,memory.total,memory.used,utilization.gpu"]).decode()
         gpu_info = gpu_info.split('\n')
     except:
-        gpu_str = 'Could not find any GPUs accessible for the container'
+        gpu_str = '\nCould not find any GPUs accessible for the container\n'
         return gpu_str
 
     # Check each gpu

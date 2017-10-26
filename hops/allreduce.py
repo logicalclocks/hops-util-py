@@ -43,11 +43,11 @@ def launch(spark_session, notebook):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook))
 
-    global run_id
-    run_id += 1
-
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
+
+    global run_id
+    run_id += 1
 
 def prepare_func(app_id, run_id, nb_path):
 
