@@ -113,7 +113,8 @@ def prepare_func(app_id, run_id, nb_path):
         os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
         # 4. Run allreduce
-        mpi_cmd = 'mpirun -np ' + str(devices.get_num_gpus()) + ' ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
+        mpi_np = os.environ['MPI_NP']
+        mpi_cmd = 'mpirun -np ' + str(mpi_np) + ' ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,
