@@ -15,7 +15,7 @@ setup(
     license='Apache License 2.0',
     keywords='Hops, Hadoop, TensorFlow, Spark',
     url='https://github.com/hopshadoop/hops-util-py',
-    download_url = 'https://github.com/hopshadoop/hops-util-py/archive/' + __version__ + '.tar.gz',
+    download_url = 'http://snurran.sics.se/hops/hops-util-py/hops-' + __version__ + '.tar.gz',
     packages=['hops'],
     long_description=read('README.rst'),
     classifiers=[
@@ -25,5 +25,5 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ],
-    install_requires=[]
+    install_requires=['hopsfacets']
 )
