@@ -10,4 +10,4 @@ python ./setup.py sdist
 echo "Uploading the package to PyPi"
 twine upload dist/*
 
-scp dist/* glassfish@snurran.sics.se/hops/hops-util-py/1.4.3.tar.gz
+scp dist/* glassfish@snurran.sics.se/hops/hops-util-py/
