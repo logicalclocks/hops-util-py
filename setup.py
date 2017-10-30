@@ -1,20 +1,21 @@
 import os
 from setuptools import setup
 
+exec(open('hops/version.py').read())
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name='hops',
-    version='1.4.3',
+    version=__version__,
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
     license='Apache License 2.0',
     keywords='Hops, Hadoop, TensorFlow, Spark',
     url='https://github.com/hopshadoop/hops-util-py',
-    download_url = 'https://github.com/hopshadoop/hops-util-py/archive/1.4.3.tar.gz',
+    download_url = 'https://github.com/hopshadoop/hops-util-py/archive/' + version + '.tar.gz',
     packages=['hops'],
     long_description=read('README.rst'),
     classifiers=[
