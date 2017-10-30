@@ -3,7 +3,7 @@ import hopsfacets.generic_feature_statistics_generator.GenericFeatureStatisticsG
 import base64
 
 def dive(jsonstr):
-    HTML_TEMPLATE = """<link rel="import" href="/hopsworks/nbextensions/facets-dist/facets-jupyter.html">
+    HTML_TEMPLATE = """<link rel="import" href="/nbextensions/facets-dist/facets-jupyter.html">
             <facets-dive id="elem" height="600"></facets-dive>
             <script>
               var data = {jsonstr};
@@ -19,7 +19,7 @@ def overview(train_data, test_data):
                                       {'name': 'test', 'table': test_data}])
     protostr = base64.b64encode(proto.SerializeToString()).decode("utf-8")
 # Display the facets overview visualization for this data
-    HTML_TEMPLATE = """<link rel="import" href="/hopsworks/nbextensions/facets-dist/facets-jupyter.html" >
+    HTML_TEMPLATE = """<link rel="import" href="/nbextensions/facets-dist/facets-jupyter.html" >
             <facets-overview id="elem"></facets-overview>
             <script>
               document.querySelector("#elem").protoInput = "{protostr}";
