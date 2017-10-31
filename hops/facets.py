@@ -1,5 +1,5 @@
 from IPython.core.display import display, HTML
-import hopsfacets.generic_feature_statistics_generator.GenericFeatureStatisticsGenerator as GenericFeatureStatisticsGenerator
+from hopsfacets import generic_feature_statistics_generator as generic_feature_statistics_generator
 import base64
 
 def dive(jsonstr):
@@ -14,7 +14,7 @@ def dive(jsonstr):
     
 def overview(train_data, test_data):
     # Calculate the feature statistics proto from the datasets and stringify it for use in facets overview
-    gfsg = GenericFeatureStatisticsGenerator()
+    gfsg = generic_feature_statistics_generator.GenericFeatureStatisticsGenerator()
     proto = gfsg.ProtoFromDataFrames([{'name': 'train', 'table': train_data},
                                       {'name': 'test', 'table': test_data}])
     protostr = base64.b64encode(proto.SerializeToString()).decode("utf-8")
