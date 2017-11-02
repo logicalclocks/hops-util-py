@@ -8,6 +8,7 @@ import socket
 import subprocess
 import os
 from hops import hdfs as hopshdfs
+from hops import util
 import pydoop.hdfs
 import shutil
 
@@ -39,7 +40,8 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     addr, port = s.getsockname()
     s.close()
 
-    tb_proc = subprocess.Popen([pypath, "%s/tensorboard"%pydir, "--logdir=%s"%logdir_path, "--port=%d"%port, "--debug"])
+    tb_path = util.find_tensorboard()
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port], env=os.environ)
     tb_pid = tb_proc.pid
 
     host = socket.gethostname()
