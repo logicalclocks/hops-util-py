@@ -43,7 +43,10 @@ def kill_logger():
     fd.flush()
     fd.close()
 
-def create_directories(app_id, run_id, executor_num):
+def create_directories(app_id, run_id, executor_num, param_string=None):
+    if param_string == None:
+        param_string = 'no_args'
+
     pyhdfs_handle = get()
     #Create output directory for TensorBoard events for this executor
     #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
@@ -59,10 +62,10 @@ def create_directories(app_id, run_id, executor_num):
     #if not pyhdfs_handle.exists(hdfs_run_id_logdir):
     #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
-    logfile = hdfs_run_id_logdir + '/executor.' + str(executor_num) + '.log'
+    logfile = hdfs_run_id_logdir + '/executor.' + param_string + '.log'
     os.environ['EXEC_LOGFILE'] = logfile
 
-    hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + str(executor_num)
+    hdfs_exec_logdir = hdfs_run_id_logdir + "/executor." + param_string
     #if not pyhdfs_handle.exists(hdfs_exec_logdir):
     pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
