@@ -67,7 +67,7 @@ def logdir():
     return logdir_path
 
 def clean():
-    shutil.rmtree(logdir_path + '*')
+    shutil.rmtree(logdir_path)
     global params, logdir_path, events_logdir
     logdir_path = None
     events_logdir = None
