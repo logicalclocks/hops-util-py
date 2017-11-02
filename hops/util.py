@@ -16,7 +16,7 @@ def _find_in_path(path, file):
     return False
 
 def find_tensorboard():
-    pypath = sys.executable
+    pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
     search_path = os.pathsep.join([pydir, os.environ['PATH'], os.environ['PYTHONPATH']])
     tb_path = _find_in_path(search_path, 'tensorboard')

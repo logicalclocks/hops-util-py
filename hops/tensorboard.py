@@ -32,7 +32,6 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         os.makedirs(logdir_path)
 
     pypath = os.getenv("PYSPARK_PYTHON")
-    pydir = os.path.dirname(pypath)
 
     #find free port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,7 +40,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     s.close()
 
     tb_path = util.find_tensorboard()
-    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port], env=os.environ)
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir_path, "--port=%d" % port], env=os.environ)
     tb_pid = tb_proc.pid
 
     host = socket.gethostname()
