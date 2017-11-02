@@ -126,8 +126,9 @@ def cleanup(tb_pid, tb_hdfs_path):
     hopshdfs.log('Performing cleanup')
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
-        handle = hopshdfs.get()
-        handle.delete(tb_hdfs_path)
-        tensorboard.store()
-        tensorboard.clean()
-        hopshdfs.kill_logger()
+        
+    handle = hopshdfs.get()
+    handle.delete(tb_hdfs_path)
+    tensorboard.store()
+    tensorboard.clean()
+    hopshdfs.kill_logger()
