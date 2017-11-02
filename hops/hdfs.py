@@ -33,11 +33,12 @@ def init_logger():
     fd = fs_handle.open_file(logfile, flags='w')
 
 def log(string):
-    if isinstance(string, basestring):
-        fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
-    else:
-        fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
-        'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+    if fd:
+        if isinstance(string, basestring):
+            fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
+        else:
+            fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
+            'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
 
 def kill_logger():
     fd.flush()
