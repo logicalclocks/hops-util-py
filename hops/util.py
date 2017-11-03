@@ -6,6 +6,8 @@ These utils facilitates development by hiding complexity for programs interactin
 
 import os
 import sys
+import signal
+from ctypes import cdll
 
 def _find_in_path(path, file):
     """Find a file in a given path string."""
@@ -23,3 +25,17 @@ def find_tensorboard():
     if not tb_path:
         raise Exception("Unable to find 'tensorboard' in: {}".format(search_path))
     return tb_path
+
+def on_parent_exit(signame):
+    """
+    Return a function to be run in a child process which will trigger
+    SIGNAME to be sent when the parent process dies
+    """
+    signum = getattr(signal, signame)
+    def set_parent_exit_signal():
+        # http://linux.die.net/man/2/prctl
+        PR_SET_PDEATHSIG = 1
+        result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
+        if result != 0:
+            raise Exception('prctl failed with error code %s' % result)
+    return set_parent_exit_signal

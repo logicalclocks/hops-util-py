@@ -6,15 +6,14 @@ These utils facilitates development by hiding complexity for programs interactin
 
 import pydoop.hdfs
 import subprocess
-from ctypes import cdll
 import os
 import stat
-import signal
 import sys
 
 from hops import hdfs as hopshdfs
 from hops import tensorboard
 from hops import devices
+from hops import util
 
 run_id = 0
 
@@ -117,7 +116,7 @@ def prepare_func(app_id, run_id, nb_path):
                        shell=True,
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE,
-                       preexec_fn=on_parent_exit('SIGTERM'))
+                       preexec_fn=util.on_parent_exit('SIGTERM'))
         mpi.wait()
         stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
@@ -133,20 +132,6 @@ def prepare_func(app_id, run_id, nb_path):
         cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
-
-def on_parent_exit(signame):
-    """
-    Return a function to be run in a child process which will trigger
-    SIGNAME to be sent when the parent process dies
-    """
-    signum = getattr(signal, signame)
-    def set_parent_exit_signal():
-        # http://linux.die.net/man/2/prctl
-        PR_SET_PDEATHSIG = 1
-        result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
-        if result != 0:
-            raise Exception('prctl failed with error code %s' % result)
-    return set_parent_exit_signal
 
 def cleanup(tb_pid, tb_hdfs_path):
     hopshdfs.log('Performing cleanup')

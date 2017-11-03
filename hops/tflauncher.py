@@ -14,7 +14,7 @@ import sys
 
 run_id = 0
 
-def launch(spark_session, map_fun, args_dict=None):
+def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
@@ -45,7 +45,7 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict))
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
@@ -54,7 +54,7 @@ def launch(spark_session, map_fun, args_dict=None):
     run_id += 1
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(app_id, run_id, map_fun, args_dict):
+def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):
 
     def _wrapper_fun(iter):
 
@@ -115,14 +115,14 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
 
         except:
             #Always do cleanup
-            cleanup(tb_pid, tb_hdfs_path)
+            cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard)
             raise
         hopshdfs.log('Finished running')
-        cleanup(tb_pid, tb_hdfs_path)
+        cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard)
 
     return _wrapper_fun
 
-def cleanup(tb_pid, tb_hdfs_path):
+def cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard):
     hopshdfs.log('Performing cleanup')
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
@@ -130,5 +130,5 @@ def cleanup(tb_pid, tb_hdfs_path):
     handle = hopshdfs.get()
     handle.delete(tb_hdfs_path)
     tensorboard.store()
-    tensorboard.clean()
+    tensorboard.clean(reuse_tensorboard)
     hopshdfs.kill_logger()
