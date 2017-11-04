@@ -52,7 +52,7 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     global run_id
     run_id += 1
-    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
+    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
 
 #Helper to put Spark required parameter iter in function signature
 def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):

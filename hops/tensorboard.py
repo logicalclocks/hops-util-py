@@ -111,7 +111,11 @@ def start_visualization(hdfs_root_logdir, app_id):
             executor_num = i
             pypath = os.getenv("PYSPARK_PYTHON")
 
+
         logdir = os.getcwd() + '/tensorboard_events/'
+        if os.path.exists(logdir):
+            shutil.rmtree(logdir)
+            os.makedirs(logdir)
         pydoop.hdfs.get(hdfs_root_logdir, logdir)
 
         #find free port
