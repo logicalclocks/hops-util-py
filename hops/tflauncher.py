@@ -19,6 +19,9 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
 
+    sc = spark_session.sparkContext
+    app_id = str(sc.applicationId)
+
     runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
     exec_files = pydoop.hdfs.list_directory(runid_path)
     for f in exec_files:
@@ -34,9 +37,6 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
     os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
     #os.environ['HADOOP_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['HADOOP_CLASSPATH']
-
-    sc = spark_session.sparkContext
-    app_id = str(sc.applicationId)
 
     if args_dict == None:
         num_executions = 1
@@ -59,7 +59,7 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     global run_id
     run_id += 1
-    
+
     exec_files = pydoop.hdfs.list_directory(runid_path)
     for f in exec_files:
         if f.contains("tensorboard.exec"):
