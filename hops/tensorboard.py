@@ -109,7 +109,19 @@ def start_visualization(hdfs_root_logdir):
         tb_path = util.find_tensorboard()
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
                                env=os.environ, preexec_fn=util.on_parent_exit('SIGTERM'))
+
+        host = socket.gethostname()
+        tb_url = "http://{0}:{1}".format(host, port)
+
+        app_id = str(sc.applicationId)
+        tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "tensorboard.exec" + str(executor_num)
+
+        #dump tb host:port to hdfs
+        pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
+
         tb_proc.wait()
         stdout, stderr = tb_proc.communicate()
         print(stdout)
         print(stderr)
+
+    return _wrapper_fun
