@@ -14,6 +14,22 @@ import sys
 
 run_id = 0
 
+def deletion_op(app_id, run_id):
+    def _wrapper_fun(iter):
+
+        for i in iter:
+            executor_num = i
+
+        if executor_num == 0:
+            runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
+            handle = hopshdfs.get()
+            exec_files = handle.list_directory(runid_path)
+            for f in exec_files:
+                if f.contains("tensorboard.exec"):
+                    handle.delete(f)
+        return _wrapper_fun
+
+
 def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
@@ -21,13 +37,6 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
-
-    runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
-    handle = hopshdfs.get()
-    exec_files = handle.list_directory(runid_path)
-    for f in exec_files:
-        if f.contains("tensorboard.exec"):
-            handle.delete(f)
 
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
@@ -51,19 +60,18 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
+    nodeRDD.foreachPartition(deletion_op(app_id, run_id))
+
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard))
+
+    nodeRDD.foreachPartition(deletion_op(app_id, run_id))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
 
     global run_id
     run_id += 1
-
-    exec_files = handle.list_directory(runid_path)
-    for f in exec_files:
-        if f.contains("tensorboard.exec"):
-            handle.delete(f)
 
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
 
