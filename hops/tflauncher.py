@@ -19,6 +19,13 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
 
+    runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
+    exec_files = pydoop.hdfs.list_directory(runid_path)
+    for f in exec_files:
+        if f.contains("tensorboard.exec"):
+            handle = hopshdfs.get()
+            handle.delete(f)
+
     #Temporary crap fix
     os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
     os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
@@ -52,6 +59,13 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     global run_id
     run_id += 1
+    
+    exec_files = pydoop.hdfs.list_directory(runid_path)
+    for f in exec_files:
+        if f.contains("tensorboard.exec"):
+            handle = hopshdfs.get()
+            handle.delete(f)
+
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
 
 #Helper to put Spark required parameter iter in function signature
