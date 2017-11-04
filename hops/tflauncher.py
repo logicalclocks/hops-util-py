@@ -27,7 +27,7 @@ def deletion_op(app_id, run_id):
             for f in exec_files:
                 if f.contains("tensorboard.exec"):
                     handle.delete(f)
-        return _wrapper_fun
+    return _wrapper_fun
 
 
 def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
