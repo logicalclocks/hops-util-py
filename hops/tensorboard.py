@@ -17,7 +17,8 @@ events_logdir = None
 exec_logdir = None
 params = None
 dir_counter = 0
-tb_registered = False
+tb_pid = 0
+endpoint = None
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
@@ -25,22 +26,20 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     events_logdir = hdfs_exec_dir
 
     global root_logdir_path
-    root_logdir_path = logdir()
+    root_logdir_path = root_logdir()
 
     global params
     params = param_string
 
+    if not os.path.exists(root_logdir_path):
+        os.makedirs(root_logdir_path)
+
     global exec_logdir
-    exec_logdir = root_logdir_path + exec_logdir + '.' + params
+    exec_logdir = root_logdir_path + '/tensorboard' + '.' + params
     os.makedirs(exec_logdir)
 
-
-    global tb_registered
-    if tb_registered == True:
-
-        if not os.path.exists(root_logdir_path):
-            os.makedirs(root_logdir_path)
-
+    global tb_pid
+    if tb_pid == 0:
         pypath = os.getenv("PYSPARK_PYTHON")
 
         #find free port
@@ -48,23 +47,19 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         s.bind(('',0))
         addr, port = s.getsockname()
         s.close()
-
         tb_path = util.find_tensorboard()
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % exec_logdir, "--port=%d" % port],
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % root_logdir_path, "--port=%d" % port],
                                    env=os.environ, preexec_fn=util.on_parent_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
         host = socket.gethostname()
         tb_url = "http://{0}:{1}".format(host, port)
-        path = endpoint_dir + "/tensorboard.exec" + str(exec_num)
+        global endpoint
+        endpoint = endpoint_dir + "/tensorboard.exec" + str(exec_num)
 
         #dump tb host:port to hdfs
-        pydoop.hdfs.dump(tb_url, path, user=hopshdfs.project_user())
-
-    if tb_pid != 0:
-        tb_registered = True
-
-    return path, tb_pid
+        pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
+    return endpoint, tb_pid
 
 def store():
     handle = hopshdfs.get()
@@ -72,15 +67,18 @@ def store():
     hopshdfs.log('Storing ' + exec_logdir + ' in ' + events_logdir)
     pydoop.hdfs.put(exec_logdir, events_logdir)
 
-def logdir():
-    root_logdir_path = os.getcwd() + '/tensorboard_events/'
+def root_logdir():
+    root_logdir_path = os.getcwd() + '/tensorboard_events'
     return root_logdir_path
+
+def logdir():
+    return exec_logdir
 
 def clean(keep_previous_runs):
     if not keep_previous_runs:
         shutil.rmtree(exec_logdir)
-    global params, logdir_path, events_logdir
-    logdir_path = None
+    global params, exec_logdir, events_logdir
+    exec_logdir = None
     events_logdir = None
     params = None
     global dir_counter

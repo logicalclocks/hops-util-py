@@ -98,6 +98,7 @@ def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, param_string=param_string)
+
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
@@ -124,11 +125,11 @@ def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):
 
 def cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard):
     hopshdfs.log('Performing cleanup')
-    if tb_pid != 0:
-        subprocess.Popen(["kill", str(tb_pid)])
-        
-    handle = hopshdfs.get()
-    handle.delete(tb_hdfs_path)
+    #if tb_pid != 0:
+    #subprocess.Popen(["kill", str(tb_pid)])
+
+    #handle = hopshdfs.get()
+    #handle.delete(tb_hdfs_path)
     tensorboard.store()
     tensorboard.clean(reuse_tensorboard)
     hopshdfs.kill_logger()
