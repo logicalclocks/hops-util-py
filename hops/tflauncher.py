@@ -23,10 +23,10 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     app_id = str(sc.applicationId)
 
     runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id)
-    exec_files = pydoop.hdfs.list_directory(runid_path)
+    handle = hopshdfs.get()
+    exec_files = handle.list_directory(runid_path)
     for f in exec_files:
         if f.contains("tensorboard.exec"):
-            handle = hopshdfs.get()
             handle.delete(f)
 
     #Temporary crap fix
@@ -60,10 +60,9 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     global run_id
     run_id += 1
 
-    exec_files = pydoop.hdfs.list_directory(runid_path)
+    exec_files = handle.list_directory(runid_path)
     for f in exec_files:
         if f.contains("tensorboard.exec"):
-            handle = hopshdfs.get()
             handle.delete(f)
 
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
