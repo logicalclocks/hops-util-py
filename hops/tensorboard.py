@@ -83,3 +83,33 @@ def clean(keep_previous_runs):
     params = None
     global dir_counter
     dir_counter += 1
+
+def visualize(spark_session, hdfs_root_logdir):
+    sc = spark_session.sparkContext
+    num_executions = 1#Each TF task should be run on 1 executor
+    nodeRDD = sc.parallelize(range(num_executions), num_executions)
+    nodeRDD.foreachPartition(start_visualization(hdfs_root_logdir))
+
+def start_visualization(hdfs_root_logdir):
+
+    def _wrapper_fun(iter):
+
+        for i in iter:
+            executor_num = i
+            pypath = os.getenv("PYSPARK_PYTHON")
+
+        logdir = os.getcwd() + '/tensorboard_events/'
+        pydoop.hdfs.get(hdfs_root_logdir, logdir)
+
+        #find free port
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('',0))
+        addr, port = s.getsockname()
+        s.close()
+        tb_path = util.find_tensorboard()
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
+                               env=os.environ, preexec_fn=util.on_parent_exit('SIGTERM'))
+        tb_proc.wait()
+        stdout, stderr = tb_proc.communicate()
+        print(stdout)
+        print(stderr)
