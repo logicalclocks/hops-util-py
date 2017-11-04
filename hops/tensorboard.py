@@ -85,12 +85,15 @@ def clean(keep_previous_runs):
     dir_counter += 1
 
 def visualize(spark_session, hdfs_root_logdir):
+
     sc = spark_session.sparkContext
+    app_id = str(sc.applicationId)
+
     num_executions = 1#Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
-    nodeRDD.foreachPartition(start_visualization(hdfs_root_logdir))
+    nodeRDD.foreachPartition(start_visualization(hdfs_root_logdir, app_id))
 
-def start_visualization(hdfs_root_logdir):
+def start_visualization(hdfs_root_logdir, app_id):
 
     def _wrapper_fun(iter):
 
@@ -120,8 +123,7 @@ def start_visualization(hdfs_root_logdir):
         host = socket.gethostname()
         tb_url = "http://{0}:{1}".format(host, port)
 
-        app_id = str(sc.applicationId)
-        tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "tensorboard.exec" + str(executor_num)
+        tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec" + str(executor_num)
 
         #dump tb host:port to hdfs
         pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
