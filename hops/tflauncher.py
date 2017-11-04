@@ -30,10 +30,11 @@ def deletion_op(app_id, run_id):
         if executor_num == 0:
             runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
             handle = hopshdfs.get()
-            exec_files = handle.list_directory(runid_path)
-            for f in exec_files:
-                if f.contains("tensorboard.exec"):
-                    handle.delete(f)
+            if handle.exists(run_id):
+                exec_files = handle.list_directory(runid_path)
+                for f in exec_files:
+                    if f.contains("tensorboard.exec"):
+                        handle.delete(f)
     return _wrapper_fun
 
 
