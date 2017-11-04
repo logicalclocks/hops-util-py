@@ -35,7 +35,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         os.makedirs(root_logdir_path)
 
     global exec_logdir
-    exec_logdir = root_logdir_path + '/tensorboard' + '.' + params
+    if params:
+        exec_logdir = root_logdir_path + '/' + params
+    else:
+        exec_logdir = root_logdir_path
     os.makedirs(exec_logdir)
 
     global tb_pid

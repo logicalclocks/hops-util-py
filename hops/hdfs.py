@@ -24,6 +24,12 @@ def project_user():
     hops_user = os.environ["HADOOP_USER_NAME"]
     return hops_user
 
+def project_name():
+    hops_user = project_user()
+    hops_user_split = hops_user.split("__")
+    project = hops_user_split[0]
+    return project
+
 fd = None
 
 def init_logger():
