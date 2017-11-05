@@ -14,7 +14,7 @@ import sys
 
 run_id = 0
 
-def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
+def launch(spark_session, map_fun, args_dict=None):
 
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
@@ -45,7 +45,7 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard))
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
@@ -56,7 +56,7 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):
+def prepare_func(app_id, run_id, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
@@ -118,14 +118,14 @@ def prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard):
 
         except:
             #Always do cleanup
-            cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard)
+            cleanup(tb_pid, tb_hdfs_path)
             raise
         hopshdfs.log('Finished running')
-        cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard)
+        cleanup(tb_pid, tb_hdfs_path)
 
     return _wrapper_fun
 
-def cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard):
+def cleanup(tb_pid, tb_hdfs_path):
     hopshdfs.log('Performing cleanup')
     #if tb_pid != 0:
     #subprocess.Popen(["kill", str(tb_pid)])
@@ -133,5 +133,5 @@ def cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard):
     handle = hopshdfs.get()
     handle.delete(tb_hdfs_path)
     tensorboard.store()
-    tensorboard.clean(reuse_tensorboard)
+    tensorboard.clean()
     hopshdfs.kill_logger()

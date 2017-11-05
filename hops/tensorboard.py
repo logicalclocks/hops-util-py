@@ -52,7 +52,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         s.close()
         tb_path = util.find_tensorboard()
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % root_logdir_path, "--port=%d" % port],
-                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM', endpoint))
+                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
         host = socket.gethostname()

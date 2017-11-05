@@ -27,7 +27,7 @@ def find_tensorboard():
         raise Exception("Unable to find 'tensorboard' in: {}".format(search_path))
     return tb_path
 
-def on_executor_exit(signame, endpoint):
+def on_executor_exit(signame):
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
@@ -35,9 +35,6 @@ def on_executor_exit(signame, endpoint):
     signum = getattr(signal, signame)
     def set_parent_exit_signal():
         # http://linux.die.net/man/2/prctl
-
-        handle = hopshdfs.get()
-        handle.delete(endpoint)
 
         PR_SET_PDEATHSIG = 1
         result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
