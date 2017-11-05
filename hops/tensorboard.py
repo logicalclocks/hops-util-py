@@ -52,7 +52,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         s.close()
         tb_path = util.find_tensorboard()
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % root_logdir_path, "--port=%d" % port],
-                                   env=os.environ, preexec_fn=util.on_parent_exit('SIGTERM'))
+                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM', endpoint))
         tb_pid = tb_proc.pid
 
         host = socket.gethostname()
@@ -61,7 +61,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         endpoint = endpoint_dir + "/tensorboard.exec" + str(exec_num)
 
         #dump tb host:port to hdfs
-        pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
     return endpoint, tb_pid
 
 def store():

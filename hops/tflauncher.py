@@ -14,30 +14,6 @@ import sys
 
 run_id = 0
 
-def deletion_op(app_id, run_id):
-    def _wrapper_fun(iter):
-
-        for i in iter:
-            executor_num = i
-
-        os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-        os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-        os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-
-        if executor_num == 0:
-            runid_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
-            handle = hopshdfs.get()
-            if handle.exists(runid_path):
-                exec_files = handle.list_directory(runid_path)
-                for f in exec_files:
-                    if f.contains("tensorboard.exec"):
-                        handle.delete(f)
-    return _wrapper_fun
-
-
 def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
 
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
@@ -68,12 +44,8 @@ def launch(spark_session, map_fun, args_dict=None, reuse_tensorboard=True):
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
-    nodeRDD.foreachPartition(deletion_op(app_id, run_id))
-
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict, reuse_tensorboard))
-
-    nodeRDD.foreachPartition(deletion_op(app_id, run_id))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
@@ -158,8 +130,8 @@ def cleanup(tb_pid, tb_hdfs_path, reuse_tensorboard):
     #if tb_pid != 0:
     #subprocess.Popen(["kill", str(tb_pid)])
 
-    #handle = hopshdfs.get()
-    #handle.delete(tb_hdfs_path)
+    handle = hopshdfs.get()
+    handle.delete(tb_hdfs_path)
     tensorboard.store()
     tensorboard.clean(reuse_tensorboard)
     hopshdfs.kill_logger()
