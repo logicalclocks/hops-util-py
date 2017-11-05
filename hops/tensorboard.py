@@ -77,9 +77,8 @@ def root_logdir():
 def logdir():
     return exec_logdir
 
-def clean(keep_previous_runs):
-    if not keep_previous_runs:
-        shutil.rmtree(exec_logdir)
+def clean():
+    shutil.rmtree(exec_logdir)
     global params, exec_logdir, events_logdir
     exec_logdir = None
     events_logdir = None
