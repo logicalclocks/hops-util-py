@@ -34,7 +34,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
     if not os.path.exists(root_logdir_path):
         os.makedirs(root_logdir_path)
-    print("WORKS?")
+
     global exec_logdir
     if params:
         exec_logdir = root_logdir_path + '/' + params
@@ -45,7 +45,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
     global tb_pid
     if tb_pid == 0:
         pypath = os.getenv("PYSPARK_PYTHON")
-        print("GOO")
+
         #find free port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('',0))
@@ -61,10 +61,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         tb_url = "http://{0}:{1}".format(host, port)
         global endpoint
         endpoint = endpoint_dir + "/tensorboard.exec" + str(exec_num)
-        print("YOYOYO")
+
         #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
-    print("ITS FINE")
+
     return endpoint, tb_pid
 
 def store():

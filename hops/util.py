@@ -9,6 +9,8 @@ import sys
 import signal
 from ctypes import cdll
 from hops import hdfs as hopshdfs
+import itertools
+from operator import itemgetter
 
 def _find_in_path(path, file):
     """Find a file in a given path string."""
@@ -53,3 +55,27 @@ def num_param_servers():
     from pyspark.conf import SparkConf
     sc = spark.sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
+
+def csv_to_args(path):
+    print("TODO")
+
+def grid_params(dict):
+    keys = dict.keys()
+    val_arr = []
+    for key in keys:
+        val_arr.append(dict[key])
+
+    permutations = list(itertools.product(*val_arr))
+
+    args_dict = {}
+    slice_index = 0
+    for key in keys:
+        args_arr = []
+        for val in zip(*permutations)[slice_index]:
+            args_arr.append(val)
+        slice_index += 1
+        args_dict[key] = args_arr
+    return args_dict
+
+
+
