@@ -131,6 +131,8 @@ def cleanup(tb_pid, tb_hdfs_path):
     #subprocess.Popen(["kill", str(tb_pid)])
 
     handle = hopshdfs.get()
+    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
+        handle.delete(tb_hdfs_path)
     handle.delete(tb_hdfs_path)
     tensorboard.store()
     tensorboard.clean()

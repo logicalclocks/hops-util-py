@@ -40,7 +40,12 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         exec_logdir = root_logdir_path + '/' + params
     else:
         exec_logdir = root_logdir_path
-    os.makedirs(exec_logdir)
+
+    if not os.path.exists(exec_logdir):
+        os.makedirs(exec_logdir)
+    else:
+        shutil.rmtree(exec_logdir)
+        os.makedirs(exec_logdir)
 
     global tb_pid
     if tb_pid == 0:
