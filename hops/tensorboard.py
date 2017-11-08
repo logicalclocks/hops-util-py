@@ -11,6 +11,7 @@ from hops import hdfs as hopshdfs
 from hops import util
 import pydoop.hdfs
 import shutil
+from os.path import splitext
 
 root_logdir_path = None
 events_logdir = None
@@ -122,7 +123,14 @@ def start_visualization(hdfs_root_logdir, app_id):
         if os.path.exists(logdir):
             shutil.rmtree(logdir)
             os.makedirs(logdir)
-        pydoop.hdfs.get(hdfs_root_logdir, logdir)
+
+
+        handle = hopshdfs.get()
+        hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
+        for entry in hdfs_logdir_entries:
+            file_name, extension = splitext(entry['name'])
+            if not extension == '.log':
+                pydoop.hdfs.get(entry['name'], logdir)
 
         #find free port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
