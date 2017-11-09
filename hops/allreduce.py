@@ -118,20 +118,27 @@ def prepare_func(app_id, run_id, nb_path):
                        shell=True,
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE,
-                       preexec_fn=util.on_parent_exit('SIGTERM'))
+                       preexec_fn=util.on_executor_exit('SIGTERM'),
+                       bufsize=1)
 
         while mpi.poll() is None:
-            output = mpi.stdout.readline()
-            print (output)
+            (stdout, stderr) = mpi.communicate()
+            for line in stdout.splitlines():
+                print >> sys.stdout, line
+            for line in stderr.splitlines():
+                print >> sys.stderr, line
 
         #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
-        if return_code != 0:
-            raise Exception('mpirun FAILED')
+        (stdout, stderr) = mpi.communicate()
+        for line in stdout.splitlines():
+            print >> sys.stdout, line
+        for line in stderr.splitlines():
+            print >> sys.stderr, line
 
-        print(stdout)
-        print(stderr)
+        if return_code != 0:
+            raise Exception('mpirun FAILED, check the logs')
 
         cleanup(tb_pid, tb_hdfs_path)
 
