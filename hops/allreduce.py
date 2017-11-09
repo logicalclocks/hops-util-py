@@ -117,14 +117,16 @@ def prepare_func(app_id, run_id, nb_path):
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE,
                        preexec_fn=util.on_parent_exit('SIGTERM'))
-        mpi.wait()
-        stdout, stderr = mpi.communicate()
+
+        while mpi.poll() is None:
+            output = mpi.stdout.readline()
+            print (output)
+
+        #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
         if return_code != 0:
-            raise Exception('mpirun FAILED with the following outputs:' +
-                            '\n\n STDOUT: ' + stdout +
-                            '\n\n STDERR: ' + stderr)
+            raise Exception('mpirun FAILED')
 
         print(stdout)
         print(stderr)
