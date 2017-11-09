@@ -111,7 +111,9 @@ def prepare_func(app_id, run_id, nb_path):
 
         # 4. Run allreduce
         mpi_np = os.environ['MPI_NP']
-        mpi_cmd = 'mpirun -np ' + str(mpi_np) + ' ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
+        mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() +\
+                  '/timeline.json mpirun -np ' + str(devices.get_num_gpus()) +\
+                  ' -x HOROVOD_TIMELINE ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,
