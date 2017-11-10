@@ -9,6 +9,7 @@ import subprocess
 import os
 import stat
 import sys
+import threading
 
 from hops import hdfs as hopshdfs
 from hops import tensorboard
@@ -124,18 +125,21 @@ def prepare_func(app_id, run_id, nb_path):
                        preexec_fn=util.on_executor_exit('SIGTERM'),
                        bufsize=1)
 
-        while mpi.poll() is None:
-            (stdout, stderr) = mpi.communicate()
-            for line in stdout.splitlines():
-                print >> sys.stdout, line
-            for line in stderr.splitlines():
-                print >> sys.stderr, line
+        lines = []
+        def reader():
+            for line in mpi.stdout:
+                lines.append(line)
+                sys.stdout.write(line)
+        t = threading.Thread(target=reader)
+        t.start()
+        mpi.wait()
+        t.join()
 
         #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
         if return_code != 0:
-            raise Exception('mpirun FAILED, check the logs')
+            raise Exception('mpirun FAILED: \n\n' + lines)
 
         cleanup(tb_pid, tb_hdfs_path)
 
