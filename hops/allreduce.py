@@ -110,10 +110,13 @@ def prepare_func(app_id, run_id, nb_path):
         os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
         # 4. Run allreduce
-        mpi_np = os.environ['MPI_NP']
-        mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() +\
-                  '/timeline.json mpirun -np ' + str(devices.get_num_gpus()) +\
-                  ' -x HOROVOD_TIMELINE ' + os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
+        #mpi_np = os.environ['MPI_NP']
+        mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
+                  ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
+                  ' mpirun -np ' + str(devices.get_num_gpus()) + \
+                  ' -x HOROVOD_TIMELINE ' + \
+                  ' -x TENSORBOARD_LOGDIR ' + \
+                  os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
                        stdout=subprocess.PIPE,

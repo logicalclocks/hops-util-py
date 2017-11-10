@@ -84,6 +84,8 @@ def root_logdir():
     return root_logdir_path
 
 def logdir():
+    if "TENSORBOARD_LOGDIR" in os.environ:
+        return os.environ['TENSORBOARD_LOGDIR']
     return exec_logdir
 
 def clean():
