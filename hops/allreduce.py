@@ -131,12 +131,6 @@ def prepare_func(app_id, run_id, nb_path):
         #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
-        (stdout, stderr) = mpi.communicate()
-        for line in stdout.splitlines():
-            print >> sys.stdout, line
-        for line in stderr.splitlines():
-            print >> sys.stderr, line
-
         if return_code != 0:
             raise Exception('mpirun FAILED, check the logs')
 
@@ -146,11 +140,12 @@ def prepare_func(app_id, run_id, nb_path):
 
 def cleanup(tb_pid, tb_hdfs_path):
     hopshdfs.log('Performing cleanup')
-    if tb_pid != 0:
-        subprocess.Popen(["kill", str(tb_pid)])
+    #if tb_pid != 0:
+    #subprocess.Popen(["kill", str(tb_pid)])
 
     handle = hopshdfs.get()
-    handle.delete(tb_hdfs_path)
+    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
+        handle.delete(tb_hdfs_path)
     tensorboard.store()
     tensorboard.clean()
     hopshdfs.kill_logger()
