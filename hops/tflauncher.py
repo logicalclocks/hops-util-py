@@ -16,9 +16,6 @@ run_id = 0
 
 def launch(spark_session, map_fun, args_dict=None):
 
-    print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
-    sys.stdout.flush()
-
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
