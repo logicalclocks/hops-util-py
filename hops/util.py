@@ -44,15 +44,11 @@ def on_executor_exit(signame):
             raise Exception('prctl failed with error code %s' % result)
     return set_parent_exit_signal
 
-def num_executors():
-    from pyspark.context import SparkContext
-    from pyspark.conf import SparkConf
+def num_executors(spark):
     sc = spark.sparkContext
     return int(sc._conf.get("spark.executor.instances"))
 
-def num_param_servers():
-    from pyspark.context import SparkContext
-    from pyspark.conf import SparkConf
+def num_param_servers(spark):
     sc = spark.sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
 
