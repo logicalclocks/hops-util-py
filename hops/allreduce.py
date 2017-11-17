@@ -127,21 +127,19 @@ def prepare_func(app_id, run_id, nb_path):
                        preexec_fn=util.on_executor_exit('SIGTERM'),
                        bufsize=1)
 
-        lines = []
-        def reader():
-            for line in mpi.stdout:
-                lines.append(line)
-                sys.stdout.write(line)
-        t = threading.Thread(target=reader)
-        t.start()
         mpi.wait()
-        t.join()
+        stdout, stderr = mpi.communicate()
+
+
+
 
         #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
         if return_code != 0:
-            raise Exception('mpirun FAILED: \n\n' + lines)
+            raise Exception('mpirun FAILED with the following outputs:' +
+                      '\n\n STDOUT: ' + stdout +
+                      '\n\n STDERR: ' + stderr)
 
         cleanup(tb_pid, tb_hdfs_path)
 
