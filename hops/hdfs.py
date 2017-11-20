@@ -24,7 +24,11 @@ def project_path(project_name):
     return hdfs.path.abspath("/Projects/" + project_name + "/")
 
 def project_user():
-    hops_user = os.environ["HADOOP_USER_NAME"]
+    hops_user = None
+    try:
+        hops_user = os.environ["HADOOP_USER_NAME"]
+    except:
+        hops_user = os.environ["HDFS_USER"]
     return hops_user
 
 def project_name():
