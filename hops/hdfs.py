@@ -14,14 +14,13 @@ def get():
 def get_fs():
     return hdfs.fs.hdfs('default', 0, user=project_user())
 
-def project_path():
+def project_path(project_name=None):
+    if project_name:
+        return hdfs.path.abspath("/Projects/" + project_name + "/")
     hops_user = project_user()
     hops_user_split = hops_user.split("__")
     project = hops_user_split[0]
     return hdfs.path.abspath("/Projects/" + project + "/")
-
-def project_path(project_name):
-    return hdfs.path.abspath("/Projects/" + project_name + "/")
 
 def project_user():
     hops_user = None
@@ -54,8 +53,9 @@ def log(string):
             'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
 
 def kill_logger():
-    fd.flush()
-    fd.close()
+    if not fd == None:
+        fd.flush()
+        fd.close()
 
 def create_directories(app_id, run_id, executor_num, param_string=None):
     if param_string == None:

@@ -75,9 +75,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
 def store():
     handle = hopshdfs.get()
-    handle.delete(events_logdir, recursive=True)
-    hopshdfs.log('Storing ' + exec_logdir + ' in ' + events_logdir)
-    pydoop.hdfs.put(exec_logdir, events_logdir)
+    if not events_logdir == None:
+        handle.delete(events_logdir, recursive=True)
+        hopshdfs.log('Storing ' + exec_logdir + ' in ' + events_logdir)
+        pydoop.hdfs.put(exec_logdir, events_logdir)
 
 def root_logdir():
     root_logdir_path = os.getcwd() + '/tensorboard_events'
