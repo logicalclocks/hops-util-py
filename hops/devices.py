@@ -31,6 +31,11 @@ def get_gpu_info():
 
 
 def get_num_gpus():
+    """ Get the number of GPUs available in the environment
+
+    Returns:
+      Number of GPUs available in the environment
+    """
     try:
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name"]).decode()
         gpu_info = gpu_info.split('\n')

@@ -15,6 +15,13 @@ import sys
 run_id = 0
 
 def launch(spark_session, map_fun, args_dict=None):
+    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+
+    Args:
+      :spark_session: SparkSession object
+      :map_fun: The TensorFlow function to run
+      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+    """
 
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)

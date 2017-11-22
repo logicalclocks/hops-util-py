@@ -45,10 +45,18 @@ def on_executor_exit(signame):
     return set_parent_exit_signal
 
 def num_executors(spark):
+    """ Get the number of executors configured for Jupyter
+    Returns:
+      Number of configured executors for Jupyter
+    """
     sc = spark.sparkContext
     return int(sc._conf.get("spark.executor.instances"))
 
 def num_param_servers(spark):
+    """ Get the number of parameter servers configured for Jupyter
+    Returns:
+      Number of configured parameter servers for Jupyter
+    """
     sc = spark.sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
 
@@ -56,6 +64,10 @@ def csv_to_args(path):
     print("TODO")
 
 def grid_params(dict):
+    """ Generate all possible combinations (cartesian product) of the hyperparameter values
+    Returns:
+      A new dictionary with a grid of all the possible hyperparameter combinations
+    """
     keys = dict.keys()
     val_arr = []
     for key in keys:

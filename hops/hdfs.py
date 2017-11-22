@@ -9,12 +9,30 @@ import os
 import datetime
 
 def get():
+    """ Get a handle to pydoop hdfs
+
+    Returns:
+      Pydoop hdfs handle
+    """
     return hdfs.hdfs('default', 0, user=project_user())
 
 def get_fs():
+    """ Get a handle to pydoop fs
+
+    Returns:
+      Pydoop fs handle
+    """
     return hdfs.fs.hdfs('default', 0, user=project_user())
 
 def project_path(project_name=None):
+    """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
+    appended with the name of your dataset.
+
+    Args:
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+    """
+
     if project_name:
         return hdfs.path.abspath("/Projects/" + project_name + "/")
     hops_user = project_user()

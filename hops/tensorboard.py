@@ -1,8 +1,4 @@
-"""
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
-
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
-"""
+""" This module is used to manage the life-cycle of the TensorBoard """
 
 import socket
 import subprocess
@@ -85,6 +81,13 @@ def root_logdir():
     return root_logdir_path
 
 def logdir():
+    """ Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
+    logdir for TensorBoard. Any files written to this directory will be put in your HopsWorks project Logs dataset, so writing the model to this folder could be an alternative
+     solution to writing it directly to HopsFS
+
+    Returns:
+      The local directory to write TensorBoard events and summaries to
+    """
     if "TENSORBOARD_LOGDIR" in os.environ:
         return os.environ['TENSORBOARD_LOGDIR']
     return exec_logdir
@@ -99,6 +102,13 @@ def clean():
     dir_counter += 1
 
 def visualize(spark_session, hdfs_root_logdir):
+    """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
+    them all in the same TensorBoard. tflauncher.launch returns the path in HopsFS which should be handed as argument for this method to visualize all runs.
+
+    Args:
+      :spark_session: SparkSession object
+      :hdfs_root_logdir: the path in HopsFS to enter as the logdir for TensorBoard
+    """
 
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)

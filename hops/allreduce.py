@@ -19,6 +19,12 @@ from hops import util
 run_id = 0
 
 def launch(spark_session, notebook):
+    """ Run notebook pointed to in HopsFS as a python file in mpirun
+
+    Args:
+      :spark_session: SparkSession object
+      :notebook: The path in HopsFS to the notebook
+    """
 
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
