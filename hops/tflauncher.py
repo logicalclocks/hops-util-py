@@ -11,6 +11,8 @@ from hops import devices
 import pydoop.hdfs
 import subprocess
 import sys
+import threading
+import time
 
 run_id = 0
 
@@ -84,6 +86,10 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
         tb_pid = 0
         tb_hdfs_path = ''
 
+        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        if devices.get_num_gpus() > 0:
+            t.start()
+
         try:
             #Arguments
             if args_dict:
@@ -123,21 +129,21 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
                 map_fun()
-
         except:
             #Always do cleanup
             cleanup(tb_pid, tb_hdfs_path)
+            if devices.get_num_gpus() > 0:
+                t.terminate()
             raise
         hopshdfs.log('Finished running')
         cleanup(tb_pid, tb_hdfs_path)
+        if devices.get_num_gpus() > 0:
+            t.terminate()
 
     return _wrapper_fun
 
 def cleanup(tb_pid, tb_hdfs_path):
     hopshdfs.log('Performing cleanup')
-    #if tb_pid != 0:
-    #subprocess.Popen(["kill", str(tb_pid)])
-
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)

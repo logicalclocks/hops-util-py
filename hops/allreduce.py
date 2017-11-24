@@ -118,6 +118,10 @@ def prepare_func(app_id, run_id, nb_path):
         st = os.stat(py_runnable)
         os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
+        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        if devices.get_num_gpus() > 0:
+            t.start()
+
         # 4. Run allreduce
         #mpi_np = os.environ['MPI_NP']
         mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
@@ -135,11 +139,12 @@ def prepare_func(app_id, run_id, nb_path):
 
         mpi.wait()
         stdout, stderr = mpi.communicate()
+        print(stdout)
+        print(stderr)
 
+        if devices.get_num_gpus() > 0:
+            t.terminate()
 
-
-
-        #stdout, stderr = mpi.communicate()
         return_code = mpi.returncode
 
         if return_code != 0:

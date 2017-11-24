@@ -4,6 +4,7 @@ Utility functions to retrieve information about available services and setting u
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
 import subprocess
+import time
 
 def get_gpu_info():
     # Get the gpu information
@@ -28,7 +29,26 @@ def get_gpu_info():
 
     return gpu_str
 
+def get_gpu_util():
+    gpu_str = ''
+    try:
+        gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name,memory.total,memory.used,utilization.gpu"]).decode()
+        gpu_info = gpu_info.split('\n')
+    except:
+        return gpu_str
 
+    gpu_str = '\n------------------------------ GPU usage information ------------------------------\n'
+    for line in gpu_info:
+        if len(line) > 0:
+            name, total_memory, memory_used, gpu_util = line.split(',')
+            gpu_str += '[Type: ' + name + ', Memory Usage: ' + memory_used + ' /' + total_memory + ' (MB), Current utilization: ' + gpu_util + '%]\n'
+    gpu_str += '-----------------------------------------------------------------------------------\n'
+    return gpu_str
+
+def print_periodic_gpu_utilization():
+    while True:
+        print(get_gpu_util())
+        time.sleep(10)
 
 def get_num_gpus():
     """ Get the number of GPUs available in the environment
