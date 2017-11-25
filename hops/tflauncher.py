@@ -133,12 +133,14 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
             #Always do cleanup
             cleanup(tb_pid, tb_hdfs_path)
             if devices.get_num_gpus() > 0:
-                t.terminate()
+                t.do_run = False
+                t.join()
             raise
         hopshdfs.log('Finished running')
         cleanup(tb_pid, tb_hdfs_path)
         if devices.get_num_gpus() > 0:
-            t.terminate()
+            t.do_run = False
+            t.join()
 
     return _wrapper_fun
 

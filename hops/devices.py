@@ -5,6 +5,7 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 import subprocess
 import time
+import threading
 
 def get_gpu_info():
     # Get the gpu information
@@ -46,7 +47,8 @@ def get_gpu_util():
     return gpu_str
 
 def print_periodic_gpu_utilization():
-    while True:
+    t = threading.currentThread()
+    while getattr(t, "do_run", True):
         print(get_gpu_util())
         time.sleep(10)
 

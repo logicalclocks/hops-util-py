@@ -143,7 +143,8 @@ def prepare_func(app_id, run_id, nb_path):
         print(stderr)
 
         if devices.get_num_gpus() > 0:
-            t.terminate()
+            t.do_run = False
+            t.join()
 
         return_code = mpi.returncode
 
