@@ -135,8 +135,10 @@ def prepare_func(app_id, run_id, nb_path):
         mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                   ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
                   ' mpirun -np ' + str(mpi_np) + \
+                  ' -bind-to none -map-by slot ' + \
                   ' -x HOROVOD_TIMELINE ' + \
                   ' -x TENSORBOARD_LOGDIR ' + \
+                  ' -x NCCL_DEBUG=INFO ' + \
                   os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
