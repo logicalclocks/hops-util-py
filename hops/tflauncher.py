@@ -53,7 +53,7 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id, map_fun, args_dict))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
@@ -64,7 +64,7 @@ def launch(spark_session, map_fun, args_dict=None):
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
 
 #Helper to put Spark required parameter iter in function signature
-def prepare_func(app_id, run_id, map_fun, args_dict):
+def _prepare_func(app_id, run_id, map_fun, args_dict):
 
     def _wrapper_fun(iter):
 
@@ -101,7 +101,6 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 param_string = ''
                 while argcount > 0:
                     #Get args for executor and run function
-                    args_dict[names[argIndex]][executor_num]
                     param_name = names[argIndex]
                     param_val = args_dict[param_name][executor_num]
                     param_string += str(param_name) + '=' + str(param_val) + '.'
@@ -131,20 +130,20 @@ def prepare_func(app_id, run_id, map_fun, args_dict):
                 map_fun()
         except:
             #Always do cleanup
-            cleanup(tb_pid, tb_hdfs_path)
+            cleanup(tb_hdfs_path)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
         hopshdfs.log('Finished running')
-        cleanup(tb_pid, tb_hdfs_path)
+        cleanup(tb_hdfs_path)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
 
     return _wrapper_fun
 
-def cleanup(tb_pid, tb_hdfs_path):
+def cleanup(tb_hdfs_path):
     hopshdfs.log('Performing cleanup')
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):

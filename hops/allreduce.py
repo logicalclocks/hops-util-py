@@ -10,6 +10,7 @@ import os
 import stat
 import sys
 import threading
+import time
 
 from hops import hdfs as hopshdfs
 from hops import tensorboard
@@ -118,33 +119,40 @@ def prepare_func(app_id, run_id, nb_path):
         st = os.stat(py_runnable)
         os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
-        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        t_gpus = threading.Thread(target=devices.print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
-            t.start()
+            t_gpus.start()
+
+
+        mpi_logfile_path = os.getcwd() + '/mpirun.log'
+        if os.path.exists(mpi_logfile_path):
+            os.remove(mpi_logfile_path)
+
+        mpi_logfile = open(mpi_logfile_path, 'w')
 
         # 4. Run allreduce
-        #mpi_np = os.environ['MPI_NP']
+        mpi_np = os.environ['MPI_NP']
         mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                   ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
-                  ' mpirun -np ' + str(devices.get_num_gpus()) + \
+                  ' mpirun -np ' + str(mpi_np) + \
                   ' -x HOROVOD_TIMELINE ' + \
                   ' -x TENSORBOARD_LOGDIR ' + \
                   os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
         mpi = subprocess.Popen(mpi_cmd,
                        shell=True,
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE,
-                       preexec_fn=util.on_executor_exit('SIGTERM'),
-                       bufsize=1)
+                       stdout=mpi_logfile,
+                       stderr=mpi_logfile,
+                       preexec_fn=util.on_executor_exit('SIGTERM'))
+
+        t_log = threading.Thread(target=print_log)
+        t_log.start()
 
         mpi.wait()
         stdout, stderr = mpi.communicate()
-        print(stdout)
-        print(stderr)
 
         if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join()
+            t_gpus.do_run = False
+            t_gpus.join()
 
         return_code = mpi.returncode
 
@@ -153,15 +161,38 @@ def prepare_func(app_id, run_id, nb_path):
                       '\n\n STDOUT: ' + stdout +
                       '\n\n STDERR: ' + stderr)
 
-        cleanup(tb_pid, tb_hdfs_path)
+        cleanup(tb_hdfs_path)
+
+        t_log.do_run = False
+        t_log.join()
 
     return _wrapper_fun
 
-def cleanup(tb_pid, tb_hdfs_path):
-    hopshdfs.log('Performing cleanup')
-    #if tb_pid != 0:
-    #subprocess.Popen(["kill", str(tb_pid)])
+def print_log():
+    mpi_logfile_path = os.getcwd() + '/mpirun.log'
+    mpi_logfile = open(mpi_logfile_path, 'r')
+    t = threading.currentThread()
+    while getattr(t, "do_run", True):
+        where = mpi_logfile.tell()
+        line = mpi_logfile.readline()
+        if not line:
+            time.sleep(1)
+            mpi_logfile.seek(where)
+        else:
+            print line
 
+    # Get the last outputs
+    line = mpi_logfile.readline()
+    while line:
+        where = mpi_logfile.tell()
+        print line
+        line = mpi_logfile.readline()
+        mpi_logfile.seek(where)
+
+
+
+def cleanup(tb_hdfs_path):
+    hopshdfs.log('Performing cleanup')
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
