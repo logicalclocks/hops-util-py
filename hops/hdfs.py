@@ -75,7 +75,7 @@ def kill_logger():
         fd.flush()
         fd.close()
 
-def create_directories(app_id, run_id, executor_num, param_string=None):
+def create_directories(app_id, run_id, param_string=None):
     if param_string == None:
         param_string = 'no_args'
 

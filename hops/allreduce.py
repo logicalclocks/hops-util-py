@@ -74,7 +74,7 @@ def prepare_func(app_id, run_id, nb_path):
         os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['CLASSPATH']
         os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 0)
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id)
 
         tb_pid = 0
         tb_hdfs_path = ''
@@ -150,7 +150,6 @@ def prepare_func(app_id, run_id, nb_path):
         t_log.start()
 
         mpi.wait()
-        stdout, stderr = mpi.communicate()
 
         if devices.get_num_gpus() > 0:
             t_gpus.do_run = False
@@ -159,12 +158,12 @@ def prepare_func(app_id, run_id, nb_path):
         return_code = mpi.returncode
 
         if return_code != 0:
-            raise Exception('mpirun FAILED with the following outputs:' +
-                      '\n\n STDOUT: ' + stdout +
-                      '\n\n STDERR: ' + stderr)
+            cleanup(tb_hdfs_path)
+            t_log.do_run = False
+            t_log.join()
+            raise Exception('mpirun FAILED, look in the logs for the error')
 
         cleanup(tb_hdfs_path)
-
         t_log.do_run = False
         t_log.join()
 
