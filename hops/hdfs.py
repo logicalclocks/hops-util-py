@@ -94,10 +94,10 @@ def create_directories(app_id, run_id, param_string=None):
     #if not pyhdfs_handle.exists(hdfs_run_id_logdir):
     #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
-    logfile = hdfs_run_id_logdir + '/' + param_string + '.log'
+    logfile = hdfs_run_id_logdir + '/' + str(param_string) + '.log'
     os.environ['EXEC_LOGFILE'] = logfile
 
-    hdfs_exec_logdir = hdfs_run_id_logdir + "/" + param_string
+    hdfs_exec_logdir = hdfs_run_id_logdir + "/" + str(param_string)
     #if not pyhdfs_handle.exists(hdfs_exec_logdir):
     pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
