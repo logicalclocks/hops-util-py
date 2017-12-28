@@ -101,6 +101,10 @@ def create_directories(app_id, run_id, param_string=None):
     #if not pyhdfs_handle.exists(hdfs_exec_logdir):
     pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
-    hdfs.chmod(hdfs_events_parent_dir, "g+w")
+    try:
+        hdfs.chmod(hdfs_events_parent_dir, "g+w")
+    except IOError:
+        # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable
+        pass
 
     return hdfs_exec_logdir, hdfs_appid_logdir
