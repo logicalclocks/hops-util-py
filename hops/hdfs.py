@@ -64,11 +64,11 @@ def init_logger():
 
 def log(string):
     if fd:
-        if isinstance(string, basestring):
+        if isinstance(string, str):
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
         else:
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
-            'ERROR! Attempting to write a non-basestring object to logfile') + '\n')
+            'ERROR! Attempting to write a non-string object to logfile') + '\n')
 
 def kill_logger():
     if not fd == None:

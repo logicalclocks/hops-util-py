@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import six
 
 run_id = 0
 
@@ -42,7 +43,7 @@ def launch(spark_session, map_fun, args_dict=None):
     if args_dict == None:
         num_executions = 1
     else:
-        arg_lists = args_dict.values()
+        arg_lists = list(args_dict.values())
         currentLen = len(arg_lists[0])
         for i in range(len(arg_lists)):
             if currentLen != len(arg_lists[i]):
@@ -53,12 +54,12 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Force execution on executor, since GPU is located on executor
+    global run_id
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
 
     print('Finished TensorFlow job \n')
     print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
 
-    global run_id
     run_id += 1
 
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/runId.' + str(run_id-1)
@@ -93,8 +94,8 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
         try:
             #Arguments
             if args_dict:
-                argcount = map_fun.func_code.co_argcount
-                names = map_fun.func_code.co_varnames
+                argcount = six.get_function_code(map_fun).co_argcount
+                names = six.get_function_code(map_fun).co_varnames
 
                 args = []
                 argIndex = 0

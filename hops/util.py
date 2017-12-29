@@ -79,7 +79,7 @@ def grid_params(dict):
     slice_index = 0
     for key in keys:
         args_arr = []
-        for val in zip(*permutations)[slice_index]:
+        for val in list(zip(*permutations))[slice_index]:
             args_arr.append(val)
         slice_index += 1
         args_dict[key] = args_arr
