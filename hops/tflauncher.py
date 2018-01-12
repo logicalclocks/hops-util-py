@@ -145,7 +145,6 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
     return _wrapper_fun
 
 def cleanup(tb_hdfs_path):
-    hopshdfs.log('Performing cleanup')
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)

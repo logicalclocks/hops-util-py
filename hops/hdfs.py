@@ -7,6 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import pydoop.hdfs as hdfs
 import os
 import datetime
+from six import string_types
 
 def get():
     """ Get a handle to pydoop hdfs
@@ -64,7 +65,7 @@ def init_logger():
 
 def log(string):
     if fd:
-        if isinstance(string, str):
+        if isinstance(s, string_types):
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
         else:
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),

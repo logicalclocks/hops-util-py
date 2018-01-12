@@ -6,41 +6,43 @@ These utils facilitates development by hiding complexity for programs interactin
 
 from hops import hdfs
 
-import pydoop.hdfs
 import os
+import pydoop.hdfs
 
 # model_path could be local or in HDFS, return path in hopsworks where it is placed
-def export_model(model_name, model_path):
+def export_model(local_model_path, model_name, model_version):
 
     project_path = hdfs.project_path()
 
     # Create directory with model name
-    fs_handle = hdfs.get_fs()
     hdfs_handle = hdfs.get()
-    model_name_root_directory = project_path + '/Models/TensorFlow/' + str(model_name)
+    model_name_root_directory = project_path + '/Models/' + str(model_name) + '/' + str(model_version) + '/'
+    hdfs_handle.create_directory(model_name_root_directory)
 
-    if not fs_handle.exists(model_name_root_directory):
-        model_version_directory = model_name_root_directory + '/v1'
-        hdfs_handle.create_directory(model_version_directory)
-        pydoop.hdfs.put(model_path, model_version_directory)
-    else:
-        # Find current version
-        version_directories = fs_handle.list_directory(model_name_root_directory)
-        print(version_directories)
-        highest_version = 1
-        for entry in version_directories:
-            try:
-                project_path_index = entry['name'].find('/Projects/')
-                path, filename = os.path.split(entry['name'][project_path_index:])
-                current_version_number = int(filename[1:])
-                if current_version_number > highest_version:
-                    highest_version = current_version_number
-            except:
-                print('Found invalid entry in ' + model_name_root_directory)
-                print(filename)
 
-        model_version_directory = model_name_root_directory + '/v' + str(highest_version + 1)
-        hdfs_handle.create_directory(model_version_directory)
-        pydoop.hdfs.put(model_path, model_version_directory)
+    for (path, dirs, files) in os.walk(local_model_path):
 
-    return model_name_root_directory
+        hdfs_export_subpath = path.replace(local_model_path, '')
+
+        current_hdfs_dir = model_name_root_directory + '/' + hdfs_export_subpath
+
+        if not hdfs_handle.exists(current_hdfs_dir):
+            hdfs_handle.create_directory(model_name_root_directory)
+
+        for f in files:
+            if not hdfs_handle.exists(current_hdfs_dir + '/' + f):
+                print("PUT ", path + '/' + f, current_hdfs_dir)
+                pydoop.hdfs.put(path + '/' + f, current_hdfs_dir)
+
+        for d in dirs:
+            if not hdfs_handle.exists(current_hdfs_dir + '/' + d):
+                print("PUT ", path + '/' + d, current_hdfs_dir + '/')
+                pydoop.hdfs.put(path + '/' + d, current_hdfs_dir + '/')
+        break
+
+
+
+
+
+
+
