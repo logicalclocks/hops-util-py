@@ -65,7 +65,7 @@ def init_logger():
 
 def log(string):
     if fd:
-        if isinstance(s, string_types):
+        if isinstance(string, string_types):
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
         else:
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(),
