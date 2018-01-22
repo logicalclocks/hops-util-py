@@ -109,3 +109,28 @@ def create_directories(app_id, run_id, param_string=None):
         pass
 
     return hdfs_exec_logdir, hdfs_appid_logdir
+
+def copy_to_project(local_path, relative_hdfs_path):
+
+
+    if "PDIR" in os.environ:
+        full_local = os.environ['PDIR'] + '/' + local_path
+    else:
+        full_local = local_path
+
+    project_path = hdfs.project_path()
+    project_hdfs_path = project_path + '/' + relative_hdfs_path
+
+    hdfs.put(full_local, project_hdfs_path)
+
+def copy_from_project(relative_hdfs_path, local_path):
+
+    if "PDIR" in os.environ:
+        full_local = os.environ['PDIR'] + '/' + local_path
+    else:
+        full_local = local_path
+
+    project_path = hdfs.project_path()
+    project_path_file_path = project_path + '/' + relative_hdfs_path
+
+    hdfs.get(project_path_file_path, full_local)
