@@ -72,9 +72,12 @@ def log(string):
             'ERROR! Attempting to write a non-string object to logfile') + '\n')
 
 def kill_logger():
-    if not fd == None:
-        fd.flush()
-        fd.close()
+    if fd:
+        try:
+            fd.flush()
+            fd.close()
+        except:
+            pass
 
 def create_directories(app_id, run_id, param_string=None):
     if param_string == None:
