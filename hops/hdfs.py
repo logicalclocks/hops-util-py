@@ -79,9 +79,7 @@ def kill_logger():
         except:
             pass
 
-def create_directories(app_id, run_id, param_string=None):
-    if param_string == None:
-        param_string = 'no_args'
+def create_directories(app_id, run_id, param_string):
 
     pyhdfs_handle = get()
     #Create output directory for TensorBoard events for this executor
@@ -118,7 +116,7 @@ def copy_to_project(local_path, relative_hdfs_path):
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
-        full_local = local_path
+        full_local = os.getcwd() + '/' + local_path
 
     proj_path = project_path()
     project_hdfs_path = proj_path + '/' + relative_hdfs_path
@@ -130,7 +128,7 @@ def copy_from_project(relative_hdfs_path, local_path):
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
-        full_local = local_path
+        full_local = os.getcwd() + '/' + local_path
 
     proj_path = project_path()
     project_hdfs_path = proj_path + '/' + relative_hdfs_path

@@ -44,16 +44,11 @@ def get_serving_endpoint(project, model):
 
     endpoint = os.environ['REST_ENDPOINT']
 
-    host_port_pair = endpoint.split(':')
+    protocol_endpoint = endpoint.split('://')
 
-    if host_port_pair[0].startsWith('http://'):
-        pass
+    endpoint_split = protocol_endpoint[1].split(':')
 
-
-
-
-
-    connection = httplib.HTTPConnection(endpoint)
+    connection = httplib.HTTPConnection(endpoint_split[0], int(endpoint_split[1]))
 
     headers = {'Content-type': 'application/json'}
 
@@ -67,21 +62,14 @@ def get_serving_endpoint(project, model):
     json_contents = {'project': project,
                      'model': model,
                      'keyStorePwd': keyStorePwd,
-                     'keyStore': keyStore,
+                     'keyStore': keyStore
                      }
     json_embeddable = json.dumps(json_contents)
 
-    connection.request('GET', '/hopsworks-api/api/appservice', json_embeddable, headers)
+    connection.request('GET', '/hopsworks-api/api/appservice/tfserving', json_embeddable, headers)
 
     response = connection.getresponse()
-    print(response.read().decode())
 
+    respBody = response.read()
 
-    
-
-
-
-
-
-
-
+    responseObject = json.loads(respBody)

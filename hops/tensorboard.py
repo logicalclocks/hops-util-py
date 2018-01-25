@@ -13,38 +13,22 @@ root_logdir_path = None
 events_logdir = None
 exec_logdir = None
 params = None
-dir_counter = 0
 tb_pid = 0
 tb_url = None
 endpoint = None
 
-def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
+def register(hdfs_exec_dir, endpoint_dir, exec_num):
 
     global events_logdir
     events_logdir = hdfs_exec_dir
 
-    global root_logdir_path
-    root_logdir_path = root_logdir()
-
-    global params
-    params = param_string
-
-    if not os.path.exists(root_logdir_path):
-        os.makedirs(root_logdir_path)
-
-    global exec_logdir
-    if params:
-        exec_logdir = root_logdir_path + '/' + params
-    else:
-        exec_logdir = root_logdir_path
-
-    if not os.path.exists(exec_logdir):
-        os.makedirs(exec_logdir)
-    else:
-        shutil.rmtree(exec_logdir)
-        os.makedirs(exec_logdir)
-
     global tb_pid
+
+    if tb_pid != 0:
+        subprocess.Popen(["kill", str(tb_pid)])
+        
+    tb_pid = 0
+
     if tb_pid == 0:
         pypath = os.getenv("PYSPARK_PYTHON")
 
@@ -54,7 +38,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
         addr, port = s.getsockname()
         s.close()
         tb_path = util.find_tensorboard()
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % root_logdir_path, "--port=%d" % port],
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % port],
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
@@ -69,17 +53,6 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, param_string=None):
 
     return endpoint, tb_pid
 
-def store():
-    handle = hopshdfs.get()
-    if not events_logdir == None and not exec_logdir == None:
-        handle.delete(events_logdir, recursive=True)
-        hopshdfs.log('Storing ' + exec_logdir + ' in ' + events_logdir)
-        pydoop.hdfs.put(exec_logdir, events_logdir)
-
-def root_logdir():
-    root_logdir_path = os.getcwd() + '/tensorboard_events'
-    return root_logdir_path
-
 def logdir():
     """ Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
     logdir for TensorBoard. Any files written to this directory will be put in your HopsWorks project Logs dataset, so writing the model to this folder could be an alternative
@@ -88,18 +61,13 @@ def logdir():
     Returns:
       The local directory to write TensorBoard events and summaries to
     """
-    if "TENSORBOARD_LOGDIR" in os.environ:
-        return os.environ['TENSORBOARD_LOGDIR']
     return exec_logdir
 
 def clean():
-    #shutil.rmtree(exec_logdir)
     global params, exec_logdir, events_logdir
     exec_logdir = None
     events_logdir = None
     params = None
-    global dir_counter
-    dir_counter += 1
 
 def visualize(spark_session, hdfs_root_logdir):
     """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
@@ -113,7 +81,7 @@ def visualize(spark_session, hdfs_root_logdir):
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
-    num_executions = 1#Each TF task should be run on 1 executor
+    num_executions = 1
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
     nodeRDD.foreachPartition(start_visualization(hdfs_root_logdir, app_id))
 
