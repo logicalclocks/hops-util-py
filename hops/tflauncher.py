@@ -148,5 +148,4 @@ def cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
-    tensorboard.clean()
     hopshdfs.kill_logger()

@@ -11,8 +11,6 @@ from os.path import splitext
 
 root_logdir_path = None
 events_logdir = None
-exec_logdir = None
-params = None
 tb_pid = 0
 tb_url = None
 endpoint = None
@@ -26,7 +24,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
 
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
-        
+
     tb_pid = 0
 
     if tb_pid == 0:
@@ -61,13 +59,8 @@ def logdir():
     Returns:
       The local directory to write TensorBoard events and summaries to
     """
-    return exec_logdir
-
-def clean():
-    global params, exec_logdir, events_logdir
-    exec_logdir = None
-    events_logdir = None
-    params = None
+    global events_logdir
+    return events_logdir
 
 def visualize(spark_session, hdfs_root_logdir):
     """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
