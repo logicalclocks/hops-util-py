@@ -59,6 +59,9 @@ def logdir():
     Returns:
       The local directory to write TensorBoard events and summaries to
     """
+    if 'TENSORBOARD_LOGDIR' in os.environ:
+        return os.environ['TENSORBOARD_LOGDIR']
+
     global events_logdir
     return events_logdir
 
