@@ -8,9 +8,13 @@ from hops import hdfs
 
 import os
 import pydoop.hdfs
-import httplib
 import json
 import base64
+
+try:
+    import http.client as http
+except ImportError:
+    import httplib as http
 
 # model_path could be local or in HDFS, return path in hopsworks where it is placed
 def export(local_model_path, model_name, model_version):
@@ -44,18 +48,32 @@ def get_serving_endpoint(project, model):
 
     endpoint = os.environ['REST_ENDPOINT']
 
-    protocol_endpoint = endpoint.split('://')
+    #hardcode disabled for now
+    os.environ['SSL_ENABLED'] = 'false'
 
-    endpoint_split = protocol_endpoint[1].split(':')
-
-    connection = httplib.HTTPConnection(endpoint_split[0], int(endpoint_split[1]))
+    if os.environ['SSL_ENABLED'] == 'true':
+        connection = http.HTTPSConnection(endpoint)
+    else:
+        connection = http.HTTPConnection(endpoint)
 
     headers = {'Content-type': 'application/json'}
 
-    with open(os.getcwd() + '/material_passwd') as f:
+
+    material_passwd = os.getcwd() + '/material_passwd'
+
+    if not os.path.exists(material_passwd):
+        raise AssertionError('material_passwd is not present in current working directory')
+
+    with open(material_passwd) as f:
         keyStorePwd = f.read()
 
-    with open(os.getcwd() + '/k_certificate') as f:
+
+    k_certificate = os.getcwd() + '/k_certificate'
+
+    if not os.path.exists(material_passwd):
+        raise AssertionError('k_certificate is not present in current working directory')
+
+    with open(k_certificate) as f:
         keyStore = f.read()
         keyStore = base64.b64encode(keyStore)
 
@@ -64,12 +82,17 @@ def get_serving_endpoint(project, model):
                      'keyStorePwd': keyStorePwd,
                      'keyStore': keyStore
                      }
+
     json_embeddable = json.dumps(json_contents)
 
-    connection.request('GET', '/hopsworks-api/api/appservice/tfserving', json_embeddable, headers)
+    connection.request('POST', '/hopsworks-api/api/appservice/tfserving', json_embeddable, headers)
 
     response = connection.getresponse()
-
     respBody = response.read()
-
     responseObject = json.loads(respBody)
+
+    host = responseObject['host']
+    port = responseObject['port']
+
+    return str(host) + ':' + str(port)
+
