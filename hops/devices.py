@@ -69,3 +69,23 @@ def get_num_gpus():
         if len(line) > 0:
             count += 1
     return count
+
+def get_minor_gpu_device_numbers():
+
+    gpu_info = []
+    try:
+        gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=pci.bus_id"]).decode()
+    except:
+        return gpu_info
+
+    gpu_info = gpu_info.split('\n')
+    device_id_list = []
+    for line in gpu_info:
+        if len(line) > 0:
+            pci_bus_id = line.split(',')
+            device_id_list.append(pci_bus_id)
+
+
+
+
+
