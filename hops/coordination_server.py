@@ -135,7 +135,6 @@ class Server(MessageSocket):
     def __init__(self, count):
         assert count > 0
         self.reservations = Reservations(count)
-        self.gpu_presence = GPUPresence(count)
 
     def await_reservations(self):
         """Block until all reservations are received."""
@@ -144,19 +143,6 @@ class Server(MessageSocket):
             time.sleep(1)
         logging.info("all reservations completed")
         return self.reservations.get()
-
-    def await_gpu_check(self):
-        """Block until all reservations done"""
-        while not self.gpu_presence.done():
-            logging.info("waiting for {0} gpu checks".format(self.reservations.remaining()))
-            time.sleep(1)
-        logging.info("all gpu checks completed")
-        #If GPU(s) have been requested for workers
-        gpu_presence_arr = self.gpu_presence.get()
-        for gpu_present in gpu_presence_arr:
-            if gpu_present:
-                return True
-        return False
 
     def _handle_message(self, sock, msg):
         logging.debug("received: {0}".format(msg))
