@@ -48,16 +48,21 @@ def get_serving_endpoint(project, model):
 
     endpoint = os.environ['REST_ENDPOINT']
 
+    if 'http' in endpoint:
+        last_index = endpoint.rfind('/')
+        endpoint = endpoint[last_index+1:]
+
+    host_port_pair = endpoint.split(':')
+
     #hardcode disabled for now
     os.environ['SSL_ENABLED'] = 'false'
 
     if os.environ['SSL_ENABLED'] == 'true':
-        connection = http.HTTPSConnection(endpoint)
+        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     else:
-        connection = http.HTTPConnection(endpoint)
+        connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
 
     headers = {'Content-type': 'application/json'}
-
 
     material_passwd = os.getcwd() + '/material_passwd'
 
