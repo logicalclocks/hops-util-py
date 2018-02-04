@@ -44,7 +44,7 @@ def export(local_model_path, model_name, model_version):
                 pydoop.hdfs.put(path + '/' + d, current_hdfs_dir + '/')
         break
 
-def get_serving_endpoint(project, model):
+def get_serving_endpoint(model, project=None):
 
     endpoint = os.environ['REST_ENDPOINT']
 
@@ -72,7 +72,6 @@ def get_serving_endpoint(project, model):
     with open(material_passwd) as f:
         keyStorePwd = f.read()
 
-
     k_certificate = os.getcwd() + '/k_certificate'
 
     if not os.path.exists(material_passwd):
@@ -81,6 +80,9 @@ def get_serving_endpoint(project, model):
     with open(k_certificate) as f:
         keyStore = f.read()
         keyStore = base64.b64encode(keyStore)
+
+    if not project:
+        project = hdfs.project_name()
 
     json_contents = {'project': project,
                      'model': model,
