@@ -5,12 +5,10 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 
 import os
-import sys
 import signal
 from ctypes import cdll
-from hops import hdfs as hopshdfs
 import itertools
-from operator import itemgetter
+import socket
 
 def _find_in_path(path, file):
     """Find a file in a given path string."""
@@ -84,6 +82,12 @@ def grid_params(dict):
         slice_index += 1
         args_dict[key] = args_arr
     return args_dict
+
+def get_ip_address():
+    """Simple utility to get host IP address"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
 
 
 
