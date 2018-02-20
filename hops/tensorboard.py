@@ -77,60 +77,37 @@ def visualize(spark_session, hdfs_root_logdir):
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
-    num_executions = 1
-    nodeRDD = sc.parallelize(range(num_executions), num_executions)
-    nodeRDD.foreachPartition(start_visualization(hdfs_root_logdir, app_id))
+    pypath = os.getenv("PYSPARK_PYTHON")
 
-def start_visualization(hdfs_root_logdir, app_id):
-
-    def _wrapper_fun(iter):
-
-        os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-        os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.1.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-        os.environ['CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-        os.environ['CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['CLASSPATH']
-        os.environ['SPARK_DIST_CLASSPATH'] = "/srv/hops-gpu/hadoop/share/hadoop/hdfs/lib/hops-leader-election-2.8.2.2.jar:" + os.environ['SPARK_DIST_CLASSPATH']
-
-        for i in iter:
-            executor_num = i
-            pypath = os.getenv("PYSPARK_PYTHON")
-
-        logdir = os.getcwd() + '/tensorboard_events/'
-        if os.path.exists(logdir):
-            shutil.rmtree(logdir)
-            os.makedirs(logdir)
+    logdir = os.getcwd() + '/tensorboard_events/'
+    if os.path.exists(logdir):
+       shutil.rmtree(logdir)
+       os.makedirs(logdir)
 
 
-        handle = hopshdfs.get()
-        hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
-        for entry in hdfs_logdir_entries:
-            file_name, extension = splitext(entry['name'])
-            if not extension == '.log':
-                pydoop.hdfs.get(entry['name'], logdir)
+    handle = hopshdfs.get()
+    hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
+    for entry in hdfs_logdir_entries:
+        file_name, extension = splitext(entry['name'])
+        if not extension == '.log':
+            pydoop.hdfs.get(entry['name'], logdir)
 
-        #find free port
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('',0))
-        addr, port = s.getsockname()
-        s.close()
-        tb_path = util.find_tensorboard()
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
+    #find free port
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('',0))
+    addr, port = s.getsockname()
+    s.close()
+    tb_path = util.find_tensorboard()
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
-        host = socket.gethostname()
-        tb_url = "http://{0}:{1}".format(host, port)
+    host = socket.gethostname()
+    tb_url = "http://{0}:{1}".format(host, port)
+    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
+    #dump tb host:port to hdfs
+    pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 
-        tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec" + str(executor_num)
-
-        #dump tb host:port to hdfs
-        pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
-
-        tb_proc.wait()
-        stdout, stderr = tb_proc.communicate()
-        print(stdout)
-        print(stderr)
-
-    return _wrapper_fun
+    tb_proc.wait()
+    stdout, stderr = tb_proc.communicate()
+    print(stdout)
+    print(stderr)
