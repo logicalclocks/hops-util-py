@@ -1,3 +1,13 @@
+import random
+from hops import hdfs
+from collections import OrderedDict
+from hops import tflauncher
+import six
+
+objective_function=None
+spark_session=None
+diff_evo=None
+
 def get_accuracy(v):
     if sep in v["_c0"]:
         i = v["_c0"].find(sep)
@@ -12,23 +22,16 @@ def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
     Retrieves all accuracies from the parallel executions (each one is in a
     different file, one per combination of wrapper function parameter)
     '''
-    from hops import hdfs
-    print(tensorboard_hdfs_logdir)
-    hdfs.log(tensorboard_hdfs_logdir)
     results=[]
 
     #Important, this must be ordered equally than _parse_to_dict function
-    population_dict = ['learning_rate', 'dropout',
-                       'num_steps','batch_size','filters','filters_end','kernel','kernel_end']
+    population_dict = diff_evo.get_dict()
+
     for i in range(number_params):
-        path_to_log=tensorboard_hdfs_logdir+"/"
+        path_to_log=tensorboard_hdfs_logdir+"/runId." + str(tflauncher.run_id - 1) + "/"
         for k in population_dict:
             path_to_log+=k+"="+str(args_dict[k][i])+"."
         path_to_log+="log"
-        print("Path to log: ")
-        hdfs.log("Path to log: ")
-        print(path_to_log)
-        hdfs.log(path_to_log)
         raw = spark.read.csv(path_to_log, sep="\n")
 
         r = raw.rdd.flatMap(lambda v: get_accuracy(v)).collect()
@@ -43,69 +46,21 @@ def execute_all(population_dict):
     Returns a list of accuracies (or metric returned in the wrapper) in the
     same order as in the population_dict.
     '''
-    from hops import tflauncher
+
     number_params=[len(v) for v in population_dict.values()][0]
-    tensorboard_hdfs_logdir = tflauncher.launch(spark, wrapper_mnist, population_dict)
-    return get_all_accuracies(tensorboard_hdfs_logdir, population_dict,number_params)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-Differential evolution algorithm extended to allow for categorical and integer values for optimization of hyperparameter
-space in Neural Networks, including an option for parallelization.
-
-This algorithm will create a full population to be evaluated, unlike typical differential evolution where each
-individual get compared and selected sequentially. This allows the user to send a whole population of parameters
-to a cluster and run computations in parallel, after which each individual gets evaluated with their respective
-target or trial vector.
-
-User will have to define:
-- Objective function to be optimized
-- Bounds of each parameter (all possible values)
-- The Types of each parameter, in order to be able to evaluate categorical, integer or floating values.
-- Direction of the optimization, i.e. maximization or minimization
-- Number of iterations, i.e. the amount of generations the algorithm will run
-- The population size, rule of thumb is to take between 5-10 time the amount of parameters to optimize
-- Mutation faction between [0, 2)
-- Crossover between [0, 1], the higher the value the more mutated values will crossover
-'''
-
-import random
-from hops import hdfs
+    print("THIS ISTHE DICT")
+    print(population_dict)
+    tensorboard_hdfs_logdir = tflauncher.launch(spark_session, objective_function, population_dict)
+    return get_all_accuracies(tensorboard_hdfs_logdir, population_dict, number_params)
 
 class DifferentialEvolution:
     _types = ['float', 'int', 'cat']
     _generation = 0
     _scores = []
-    _parameter_list = []
+    _ordered_population_dict = []
+    _param_names = []
 
-    def __init__(self, objective_function, parbounds, types, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
+    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
         self.objective_function = objective_function
         self.parbounds = parbounds
         self.direction = direction
@@ -114,9 +69,10 @@ class DifferentialEvolution:
         self.n = popsize
         self.F = mutationfactor
         self.CR = crossover
+        self._ordered_population_dict = ordered_dict
 
-        for parameter in self.parbounds:
-            self._parameter_list.append(parameter[0])
+        for entry in ordered_dict:
+            self._param_names.append(entry)
 
         #self.m = -1 if maximize else 1
 
@@ -124,11 +80,10 @@ class DifferentialEvolution:
     def solve(self):
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
-        hdfs.log(str(population))
-        print(str(population))
         for _ in range(self.maxiter):
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
+
             population = self._selection(population, trial_population)
 
             new_gen_avg = sum(self._scores)/self.n
@@ -138,9 +93,6 @@ class DifferentialEvolution:
             else:
                 new_gen_best = min(self._scores)
             new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
-
-            hdfs.log("Generation: " + str(self._generation) + " || " + "Average score: " + str(new_gen_avg)+
-                     ", best score: " + str(new_gen_best) + "best param: " + str(new_gen_best_param))
 
             print("Generation: " + str(self._generation) + " || " + "Average score: " + str(new_gen_avg)+
                   ", best score: " + str(new_gen_best) + "best param: " + str(new_gen_best_param))
@@ -261,11 +213,6 @@ class DifferentialEvolution:
         parsed_trial_population =  self._parse_to_dict(parsed_trial_population)
         trial_population_scores = self.objective_function(parsed_trial_population)
 
-        hdfs.log('Pop scores: ' + str(self._scores))
-        print('Pop scores: ' + str(self._scores))
-        hdfs.log('Trial scores: ' + str(trial_population_scores))
-        print('Trial scores: ' + str(trial_population_scores))
-
         for i in range(self.n):
             trial_vec_score_i = trial_population_scores[i]
             target_vec_score_i = self._scores[i]
@@ -296,35 +243,71 @@ class DifferentialEvolution:
     # for parallelization purposes one can parse the population from a list to a  dictionary format
     # User only has to add the parameters he wants to optimize to population_dict
     def _parse_to_dict(self, population):
-        population_dict = {'learning_rate':[], 'dropout':[],
-                           'num_steps':[],'batch_size':[],'filters':[],'filters_end':[],'kernel':[],'kernel_end':[]}
+
+        # reset entries
+        for entry in self._ordered_population_dict:
+            self._ordered_population_dict[entry] = []
+
+
         for indiv in population:
-            population_dict['learning_rate'].append(indiv[0])
-            population_dict['dropout'].append(indiv[1])
-            population_dict['num_steps'].append(indiv[2])
-            population_dict['batch_size'].append(indiv[3])
-            population_dict['filters'].append(indiv[4])
-            population_dict['filters_end'].append(indiv[5])
-            population_dict['kernel'].append(indiv[6])
-            population_dict['kernel_end'].append(indiv[7])
+            index = 0
+            for param in self._param_names:
+                self._ordered_population_dict[param].append(indiv[index])
+                index = index + 1
 
+        return self._ordered_population_dict
 
-        return population_dict
+    def get_dict(self):
+        return self._ordered_population_dict
 
+def search(spark, search_dict, function, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
 
+    global spark_session
+    spark_session = spark
 
+    global objective_function
+    objective_function = function
 
-    def evolutionary_search(spark, bounds):
-#Observe that, for some combinations of parameters the network might exceed default RAM allocation on Hops
+    #search_dict = {'learning_rate': [0.001,0.02], 'dropout': [0.5,0.9], 'num_steps': [50,300], 'batch_size': [100,200],'filters': [25, 45], 'filters_end': [55, 75],'kernel': [3,7], 'kernel_end': [1,4]}
 
-#The parameters can be float, int or cat (categorical, tuple of values), this parameters must be specified in
-#function _parse_to_dict
-diff_evo = DifferentialEvolution(execute_all,
-                                 [('learning_rate', 0.001, 0.02),('dropout',0.5,0.9),('num_steps',50,300),('batch_size',100,200),('filters',25, 45),('filters_end',55, 75),('kernel', 3,7),('kernel_end',1,4)],
-                                 ['float','float','int','int','int', 'int','int','int'],
-                                 direction='max', maxiter=10,popsize=30)
+    argcount = six.get_function_code(function).co_argcount
+    arg_names = six.get_function_code(function).co_varnames
 
-results = diff_evo.solve()
+    ordered_arr = []
 
-print("Population: ", results[0])
-print("Scores: ", results[1])
+    argIndex = 0
+    while argcount != 0:
+        ordered_arr.append((arg_names[argIndex], search_dict[arg_names[argIndex]]))
+        argcount = argcount - 1
+        argIndex = argIndex + 1
+
+    ordered_dict = OrderedDict(ordered_arr)
+
+    bounds_list = []
+    types_list = []
+
+    for entry in ordered_dict:
+        bounds_list.append((ordered_dict[entry][0], ordered_dict[entry][1]))
+
+        if isinstance(ordered_dict[entry][0], int):
+            types_list.append('int')
+        elif isinstance(ordered_dict[entry][0], float):
+            types_list.append('float')
+        else:
+            raise ValueError("Not supported value type " + entry)
+
+    global diff_evo
+    diff_evo = DifferentialEvolution(execute_all,
+                                     bounds_list,
+                                     types_list,
+                                     ordered_dict,
+                                     direction=direction,
+                                     maxiter=maxiter,
+                                     popsize=popsize,
+                                     crossover=crossover,
+                                     mutationfactor=mutationfactor)
+
+    results = diff_evo.solve()
+
+    print("Population: ", results[0])
+    print("Scores: ", results[1])
