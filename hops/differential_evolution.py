@@ -1,7 +1,6 @@
 import random
 from hops import hdfs
 from collections import OrderedDict
-from hops import experiment
 import six
 
 objective_function=None
@@ -46,6 +45,8 @@ def execute_all(population_dict):
     Returns a list of accuracies (or metric returned in the wrapper) in the
     same order as in the population_dict.
     '''
+
+    from hops import experiment
 
     number_params=[len(v) for v in population_dict.values()][0]
     tensorboard_hdfs_logdir = experiment.launch(spark_session, objective_function, population_dict)
