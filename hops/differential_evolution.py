@@ -48,8 +48,6 @@ def execute_all(population_dict):
     '''
 
     number_params=[len(v) for v in population_dict.values()][0]
-    print("THIS ISTHE DICT")
-    print(population_dict)
     tensorboard_hdfs_logdir = experiment.launch(spark_session, objective_function, population_dict)
     return get_all_accuracies(tensorboard_hdfs_logdir, population_dict, number_params)
 
@@ -260,15 +258,13 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def search(spark, search_dict, function, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
+def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
 
     global spark_session
     spark_session = spark
 
     global objective_function
     objective_function = function
-
-    #search_dict = {'learning_rate': [0.001,0.02], 'dropout': [0.5,0.9], 'num_steps': [50,300], 'batch_size': [100,200],'filters': [25, 45], 'filters_end': [55, 75],'kernel': [3,7], 'kernel_end': [1,4]}
 
     argcount = six.get_function_code(function).co_argcount
     arg_names = six.get_function_code(function).co_varnames
