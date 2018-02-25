@@ -1,7 +1,7 @@
 import random
 from hops import hdfs
 from collections import OrderedDict
-from hops import tflauncher
+from hops import experiment
 import six
 
 objective_function=None
@@ -28,7 +28,7 @@ def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
     population_dict = diff_evo.get_dict()
 
     for i in range(number_params):
-        path_to_log=tensorboard_hdfs_logdir+"/runId." + str(tflauncher.run_id - 1) + "/"
+        path_to_log=tensorboard_hdfs_logdir+"/runId." + str(experiment.run_id - 1) + "/"
         for k in population_dict:
             path_to_log+=k+"="+str(args_dict[k][i])+"."
         path_to_log+="log"
@@ -50,7 +50,7 @@ def execute_all(population_dict):
     number_params=[len(v) for v in population_dict.values()][0]
     print("THIS ISTHE DICT")
     print(population_dict)
-    tensorboard_hdfs_logdir = tflauncher.launch(spark_session, objective_function, population_dict)
+    tensorboard_hdfs_logdir = experiment.launch(spark_session, objective_function, population_dict)
     return get_all_accuracies(tensorboard_hdfs_logdir, population_dict, number_params)
 
 class DifferentialEvolution:
