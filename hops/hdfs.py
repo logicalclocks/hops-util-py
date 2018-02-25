@@ -64,6 +64,7 @@ def init_logger():
     fd = fs_handle.open_file(logfile, flags='w')
 
 def log(string):
+    string = string.encode()
     if fd:
         if isinstance(string, string_types):
             fd.write('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n')
