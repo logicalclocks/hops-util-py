@@ -79,7 +79,7 @@ def kill_logger():
         except:
             pass
 
-def create_directories(app_id, run_id, param_string):
+def create_directories(app_id, run_id, param_string, parent):
 
     pyhdfs_handle = get()
     #Create output directory for TensorBoard events for this executor
@@ -92,7 +92,7 @@ def create_directories(app_id, run_id, param_string):
     #if not pyhdfs_handle.exists(hdfs_appid_logdir):
     #pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
-    hdfs_run_id_logdir = hdfs_appid_logdir + "/" + "runId." + str(run_id)
+    hdfs_run_id_logdir = hdfs_appid_logdir + "/" + parent + "." + str(run_id)
     #if not pyhdfs_handle.exists(hdfs_run_id_logdir):
     #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 

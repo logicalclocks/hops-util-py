@@ -10,10 +10,7 @@ from hops import tensorboard
 from hops import devices
 from hops import differential_evolution
 import pydoop.hdfs
-import subprocess
-import sys
 import threading
-import time
 import six
 
 run_id = 0
@@ -48,7 +45,7 @@ def launch(spark_session, map_fun, args_dict=None):
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
 
     print('Finished TensorFlow job \n')
-    print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and contents of TensorBoard logdir')
+    print('Make sure to check /Logs/TensorFlow/' + app_id + '/run.' + str(run_id) + ' for logfile and contents of TensorBoard logdir')
 
     run_id += 1
 
@@ -98,7 +95,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string)
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'run')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
