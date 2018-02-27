@@ -58,14 +58,14 @@ class DifferentialEvolution:
     _ordered_population_dict = []
     _param_names = []
 
-    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
+    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', maxiter=10, popsize=10, mutation=0.5, crossover=0.7):
         self.objective_function = objective_function
         self.parbounds = parbounds
         self.direction = direction
         self.types = types
         self.maxiter = maxiter
         self.n = popsize
-        self.F = mutationfactor
+        self.F = mutation
         self.CR = crossover
         self._ordered_population_dict = ordered_dict
 
@@ -78,7 +78,7 @@ class DifferentialEvolution:
     def solve(self):
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
-        for _ in range(self.maxiter):
+        for _ in range(self.maxiter-1):
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
 
@@ -258,7 +258,7 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
+def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=10, mutation=0.5, crossover=0.7):
 
     global spark_session
     spark_session = spark
@@ -301,7 +301,7 @@ def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=
                                      maxiter=maxiter,
                                      popsize=popsize,
                                      crossover=crossover,
-                                     mutationfactor=mutationfactor)
+                                     mutation=mutation)
 
     results = diff_evo.solve()
 

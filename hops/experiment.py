@@ -51,7 +51,7 @@ def launch(spark_session, map_fun, args_dict=None):
 
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
 
-def evolutionary_search(spark, objective_function, search_dict, direction = 'max', maxiter=10, popsize=10, mutationfactor=0.5, crossover=0.7):
+def evolutionary_search(spark, objective_function, search_dict, direction = 'max', maxiter=10, popsize=10, mutation=0.5, crossover=0.7):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -60,7 +60,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
 
-    return differential_evolution.search(spark, objective_function, search_dict, direction=direction, maxiter=maxiter, popsize=popsize, mutationfactor=mutationfactor, crossover=crossover)
+    return differential_evolution.search(spark, objective_function, search_dict, direction=direction, maxiter=maxiter, popsize=popsize, mutation=mutation, crossover=crossover)
 
 #Helper to put Spark required parameter iter in function signature
 def _prepare_func(app_id, run_id, map_fun, args_dict):
