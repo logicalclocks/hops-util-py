@@ -83,6 +83,8 @@ def visualize(spark_session, hdfs_root_logdir):
     if os.path.exists(logdir):
        shutil.rmtree(logdir)
        os.makedirs(logdir)
+    else:
+       os.makedirs(logdir)
 
 
     handle = hopshdfs.get()
