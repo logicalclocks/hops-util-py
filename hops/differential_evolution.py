@@ -58,12 +58,12 @@ class DifferentialEvolution:
     _ordered_population_dict = []
     _param_names = []
 
-    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', maxiter=10, popsize=10, mutation=0.5, crossover=0.7):
+    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7):
         self.objective_function = objective_function
         self.parbounds = parbounds
         self.direction = direction
         self.types = types
-        self.maxiter = maxiter
+        self.generations = generations
         self.n = popsize
         self.F = mutation
         self.CR = crossover
@@ -83,7 +83,7 @@ class DifferentialEvolution:
         global fd
         fd = fs_handle.open_file(root_dir + "/summary", flags='w')
 
-        for _ in range(self.maxiter-1):
+        for _ in range(self.generations-1):
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
 
@@ -269,7 +269,7 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=10, mutation=0.5, crossover=0.7):
+def search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7):
 
     global spark_session
     spark_session = spark
@@ -309,7 +309,7 @@ def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=
                                      types_list,
                                      ordered_dict,
                                      direction=direction,
-                                     maxiter=maxiter,
+                                     generations=generations,
                                      popsize=popsize,
                                      crossover=crossover,
                                      mutation=mutation)
