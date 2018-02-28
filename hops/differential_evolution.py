@@ -75,9 +75,14 @@ class DifferentialEvolution:
         #self.m = -1 if maximize else 1
 
     # run differential evolution algorithms
-    def solve(self):
+    def solve(self, root_dir):
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
+
+        fs_handle = hopshdfs.get_fs()
+        global fd
+        fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+
         for _ in range(self.maxiter-1):
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
@@ -92,8 +97,14 @@ class DifferentialEvolution:
                 new_gen_best = min(self._scores)
             new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
 
-            print("Generation " + str(self._generation) + " summary || " + "Average score: " + str(new_gen_avg)+
-                  ", best score: " + str(new_gen_best) + "best param: " + str(new_gen_best_param))
+            print("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
+                  ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param))
+
+            fd.write(("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
+                      ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param)).encode())
+
+        fd.flush()
+        fd.close()
 
         parsed_back_population = []
         for indiv in population:
@@ -303,7 +314,9 @@ def search(spark, function, search_dict, direction = 'max', maxiter=10, popsize=
                                      crossover=crossover,
                                      mutation=mutation)
 
-    results = diff_evo.solve()
+    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sc.applicationId) + "/"
+
+    results = diff_evo.solve(root_dir)
 
     print("Population: ", results[0])
     print("Scores: ", results[1])
