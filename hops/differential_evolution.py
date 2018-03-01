@@ -101,7 +101,7 @@ class DifferentialEvolution:
                   ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param))
 
             fd.write(("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
-                      ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param)).encode())
+                      ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param) + "\n").encode())
 
         fd.flush()
         fd.close()
@@ -314,7 +314,7 @@ def search(spark, function, search_dict, direction = 'max', generations=10, pops
                                      crossover=crossover,
                                      mutation=mutation)
 
-    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sc.applicationId) + "/"
+    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sparkContext.applicationId) + "/"
 
     results = diff_evo.solve(root_dir)
 
@@ -403,6 +403,9 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict):
                 print(gpu_str)
 
                 metric = map_fun(*args)
+
+                if not isinstance(metric, int) or not isinstance(metric, float):
+                    raise ValueError('Your function needs to return a metric which should be maximized or minimized')
 
                 dir_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/' + 'generation.' + str(generation_id)
                 metric_file = dir_path + '/' + param_string + '/metric'
