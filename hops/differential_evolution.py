@@ -321,6 +321,8 @@ def search(spark, function, search_dict, direction = 'max', generations=10, pops
     print("Population: ", results[0])
     print("Scores: ", results[1])
 
+    return root_dir
+
 
 def _evolutionary_launch(spark_session, map_fun, args_dict=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
