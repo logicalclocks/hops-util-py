@@ -353,12 +353,9 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
     global generation_id
     nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict))
 
-    print('Finished TensorFlow job \n')
-    print('Make sure to check /Logs/TensorFlow/' + app_id + '/generation.' + str(generation_id) + ' for logfile and contents of TensorBoard logdir')
-
     generation_id += 1
 
-    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
+    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + "/"
 
 
 #Helper to put Spark required parameter iter in function signature
