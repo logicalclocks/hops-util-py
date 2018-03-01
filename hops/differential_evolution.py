@@ -404,8 +404,10 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict):
 
                 metric = map_fun(*args)
 
-                if not isinstance(metric, int) or not isinstance(metric, float):
-                    raise ValueError('Your function needs to return a metric which should be maximized or minimized')
+                try:
+                    val = int(metric)
+                except:
+                    raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
 
                 dir_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/' + 'generation.' + str(generation_id)
                 metric_file = dir_path + '/' + param_string + '/metric'
