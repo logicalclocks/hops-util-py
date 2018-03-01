@@ -11,6 +11,7 @@ import six
 objective_function=None
 spark_session=None
 diff_evo=None
+cleaup_prev_generation=None
 
 generation_id = 0
 
@@ -102,6 +103,9 @@ class DifferentialEvolution:
 
             fd.write(("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
                       ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param) + "\n").encode())
+
+            if cleaup_prev_generation:
+                pydoop.hdfs.rmr(root_dir + "/generation." + str(self._generation))
 
         fd.flush()
         fd.close()
@@ -269,13 +273,16 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7):
+def search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup=False):
 
     global spark_session
     spark_session = spark
 
     global objective_function
     objective_function = function
+
+    global cleaup_prev_generation
+    cleaup_prev_generation = cleanup
 
     argcount = six.get_function_code(function).co_argcount
     arg_names = six.get_function_code(function).co_varnames
