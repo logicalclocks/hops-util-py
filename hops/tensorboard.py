@@ -95,18 +95,18 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
                                env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
+    host = socket.gethostname()
+    tb_url = "http://{0}:{1}".format(host, port)
+    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
+    #dump tb host:port to hdfs
+    pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
+
     handle = hopshdfs.get()
     hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
     for entry in hdfs_logdir_entries:
         file_name, extension = splitext(entry['name'])
         if not extension == '.log':
             pydoop.hdfs.get(entry['name'], logdir)
-
-    host = socket.gethostname()
-    tb_url = "http://{0}:{1}".format(host, port)
-    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
-    #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 
     tb_proc.wait()
     stdout, stderr = tb_proc.communicate()
