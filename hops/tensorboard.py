@@ -86,6 +86,14 @@ def visualize(spark_session, hdfs_root_logdir):
     else:
        os.makedirs(logdir)
 
+       #find free port
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('',0))
+    addr, port = s.getsockname()
+    s.close()
+    tb_path = util.find_tensorboard()
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
+                               env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     handle = hopshdfs.get()
     hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
@@ -93,15 +101,6 @@ def visualize(spark_session, hdfs_root_logdir):
         file_name, extension = splitext(entry['name'])
         if not extension == '.log':
             pydoop.hdfs.get(entry['name'], logdir)
-
-    #find free port
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('',0))
-    addr, port = s.getsockname()
-    s.close()
-    tb_path = util.find_tensorboard()
-    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
-                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, port)
