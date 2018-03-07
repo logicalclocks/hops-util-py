@@ -79,11 +79,20 @@ class DifferentialEvolution:
     def solve(self, root_dir):
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
-
+        handle = hopshdfs.get()
         fs_handle = hopshdfs.get_fs()
         global fd
+        summary_file = root_dir + "/summary"
         fd = fs_handle.open_file(root_dir + "/summary", flags='w')
 
+        fd.write(("Differential evolution summary\n\n").encode())
+
+        fd.flush()
+        fd.close()
+        contents = ''
+        generation_summary = ''
+        new_gen_best_param = None
+        new_gen_best = None
         for _ in range(self.generations-1):
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
@@ -94,18 +103,38 @@ class DifferentialEvolution:
 
             if self.direction == 'max':
                 new_gen_best = max(self._scores)
-            else:
+            elif self.direction == 'max':
                 new_gen_best = min(self._scores)
+            else:
+                raise ValueError('invalid directon: ' + self.direction)
+            
             new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
 
-            print("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
-                  ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param))
+            index = 0
+            for name in self._param_names:
+                new_gen_best_param[index] = name + "=" + str(new_gen_best_param[index])
 
-            fd.write(("Generation " + str(self._generation) + " summary || " + "Average metric: " + str(new_gen_avg)+
-                      ", best metric: " + str(new_gen_best) + "best parameter combination: " + str(new_gen_best_param) + "\n").encode())
+            contents = ''
+            with pydoop.hdfs.open(summary_file) as f:
+                for line in f:
+                    contents += line
+
+            generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
+                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param)
+
+            print(generation_summary)
+
+            fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+            fd.write((contents + generation_summary + "\n").encode())
+
+            fd.flush()
+            fd.close()
 
             if cleaup_prev_generation:
                 pydoop.hdfs.rmr(root_dir + "/generation." + str(self._generation))
+
+        fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+        fd.write((contents + generation_summary + "\n\nBest parameter combination found " + str(new_gen_best_param) + " with metric " + str(new_gen_best)).encode())
 
         fd.flush()
         fd.close()
