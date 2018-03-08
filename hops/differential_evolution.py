@@ -113,6 +113,7 @@ class DifferentialEvolution:
             index = 0
             for name in self._param_names:
                 new_gen_best_param[index] = name + "=" + str(new_gen_best_param[index])
+                index += 1
 
             contents = ''
             with pydoop.hdfs.open(summary_file) as f:
@@ -120,7 +121,7 @@ class DifferentialEvolution:
                     contents += line
 
             generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
-                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param)
+                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
 
             print(generation_summary)
 
@@ -352,12 +353,9 @@ def search(spark, function, search_dict, direction = 'max', generations=10, pops
 
     root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sparkContext.applicationId) + "/"
 
-    results = diff_evo.solve(root_dir)
+    diff_evo.solve(root_dir)
 
-    print("Population: ", results[0])
-    print("Scores: ", results[1])
-
-    return root_dir
+    return str(root_dir)
 
 
 def _evolutionary_launch(spark_session, map_fun, args_dict=None):
