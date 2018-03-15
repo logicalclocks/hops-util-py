@@ -77,12 +77,12 @@ def prepare_func(app_id, run_id, nb_path, server_addr):
 
         clusterspec = client.await_reservations()
 
-        pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-        hopshdfs.init_logger()
-        hopshdfs.log('Starting Spark executor with arguments')
+        #pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
+        #hopshdfs.init_logger()
+        #hopshdfs.log('Starting Spark executor with arguments')
 
         gpu_str = '\n\nChecking for GPUs in the environment\n' + devices.get_gpu_info()
-        hopshdfs.log(gpu_str)
+        #hopshdfs.log(gpu_str)
         print(gpu_str)
 
         mpi_logfile_path = os.getcwd() + '/mpirun.log'
@@ -96,48 +96,49 @@ def prepare_func(app_id, run_id, nb_path, server_addr):
         # non-chief executor should not do mpirun
         if not executor_num == 0:
             client.await_mpirun_finished()
-            return _wrapper_fun
+        else:
+            hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string='Horovod')
+            tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string='Horovod')
-        tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
+            mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
+                      ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
+                      ' mpirun -np ' + str(get_num_ps(clusterspec)) + ' --hostfile ' + get_hosts_file(clusterspec) + \
+                      ' -bind-to none -map-by slot ' + \
+                      ' -x LD_LIBRARY_PATH ' + \
+                      ' -x HOROVOD_TIMELINE ' + \
+                      ' -x TENSORBOARD_LOGDIR ' + \
+                      ' -x NCCL_DEBUG=INFO ' + \
+                      ' -mca pml ob1 -mca btl ^openib ' + \
+                      os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
 
-        mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
-                  ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
-                  ' -H ' + get_hosts_string(clusterspec) + \
-                  ' -bind-to none -map-by slot ' + \
-                  ' -x HOROVOD_TIMELINE ' + \
-                  ' -x TENSORBOARD_LOGDIR ' + \
-                  ' -x NCCL_DEBUG=INFO ' + \
-                  os.environ['PYSPARK_PYTHON'] + ' ' + py_runnable
+            mpi = subprocess.Popen(mpi_cmd,
+                           shell=True,
+                           stdout=mpi_logfile,
+                           stderr=mpi_logfile,
+                           preexec_fn=util.on_executor_exit('SIGTERM'))
 
-        mpi = subprocess.Popen(mpi_cmd,
-                       shell=True,
-                       stdout=mpi_logfile,
-                       stderr=mpi_logfile,
-                       preexec_fn=util.on_executor_exit('SIGTERM'))
+            t_log = threading.Thread(target=print_log)
+            t_log.start()
 
-        t_log = threading.Thread(target=print_log)
-        t_log.start()
+            mpi.wait()
 
-        mpi.wait()
+            client.register_mpirun_finished()
 
-        client.register_mpirun_finished()
+            if devices.get_num_gpus() > 0:
+                t_gpus.do_run = False
+                t_gpus.join()
 
-        if devices.get_num_gpus() > 0:
-            t_gpus.do_run = False
-            t_gpus.join()
+            return_code = mpi.returncode
 
-        return_code = mpi.returncode
+            if return_code != 0:
+                cleanup(tb_hdfs_path)
+                t_log.do_run = False
+                t_log.join()
+                raise Exception('mpirun FAILED, look in the logs for the error')
 
-        if return_code != 0:
             cleanup(tb_hdfs_path)
             t_log.do_run = False
             t_log.join()
-            raise Exception('mpirun FAILED, look in the logs for the error')
-
-        cleanup(tb_hdfs_path)
-        t_log.do_run = False
-        t_log.join()
 
     return _wrapper_fun
 
@@ -181,6 +182,20 @@ def get_hosts_string(clusterspec):
     for host in clusterspec:
         hosts_string = hosts_string + ' ' + host['host'] + ':' + str(len(host['cuda_visible_devices_ordinals']))
 
+def get_num_ps(clusterspec):
+    num = 0
+    for host in clusterspec:
+        num += len(host['cuda_visible_devices_ordinals'])
+    return num
+
+def get_hosts_file(clusterspec):
+    hf = ''
+    host_file = os.getcwd() + '/host_file'
+    for host in clusterspec:
+        hf = hf + '\n' + host['host'] + ' ' + 'slots=' + str(len(host['cuda_visible_devices_ordinals']))
+    with open(host_file, 'w') as hostfile: hostfile.write(hf)
+    return host_file
+
 def find_host_in_clusterspec(clusterspec, host):
     for h in clusterspec:
         if h['name'] == host:
@@ -189,16 +204,17 @@ def find_host_in_clusterspec(clusterspec, host):
 # The code generated by this function will be called in an eval, which changes the working_dir and cuda_visible_devices for process running mpirun
 def generate_environment_script(clusterspec):
 
-    import_script = 'import os' \
+    import_script = 'import os \n' \
                     'from hops import util'
 
-    export_script = 'def export_workdir():'
+    export_script = ''
 
     for host in clusterspec:
-        export_script += 'if util.get_ip_address() == ' + find_host_in_clusterspec(clusterspec, host['host'])['host'] + ':\n' \
-                          '     os.chdir=' + host['executor_cwd'] + '\n' \
-                          '     os.environ["CUDA_DEVICE_ORDER"]=PCI_BUS_ID \n' \
-                          '     os.environ["CUDA_VISIBLE_DEVICES"]=' + host['cuda_visible_devices_ordinals'] + '\n'
+        export_script += 'def export_workdir():\n' \
+                         '    if util.get_ip_address() == \"' + find_host_in_clusterspec(clusterspec, host['host'])['host'] + '\":\n' \
+                         '        os.chdir=\"' + host['executor_cwd'] + '\"\n' \
+                         '        os.environ["CUDA_DEVICE_ORDER"]=\"PCI_BUS_ID\" \n' \
+                         '        os.environ["CUDA_VISIBLE_DEVICES"]=\"' + ",".join(str(x) for x in host['cuda_visible_devices_ordinals']) + '\"\n'
 
     return import_script + '\n' + export_script
 
@@ -207,40 +223,40 @@ def localize_scripts(nb_path, clusterspec):
     # 1. Download the notebook as a string
     fs_handle = hopshdfs.get_fs()
     fd = fs_handle.open_file(nb_path, flags='r')
-
-    # 2. Prepend script to export environment variables
-    notebook = 'with open("generate_env.py", "r") as myfile:\n'
-    '    data=myfile.read()\n' \
-    '    exec(data)\n'
-
-    for line in fd:
-        notebook += line
+    note = fd.read()
+    fd.close()
 
     path, filename = os.path.split(nb_path)
     f_nb = open(filename,"w+")
-    f_nb.write(notebook)
+    f_nb.write(note)
     f_nb.flush()
     f_nb.close()
 
-    # 3. Convert notebook to py file
+    # 2. Convert notebook to py file
     jupyter_runnable = os.path.abspath(os.path.join(os.environ['PYSPARK_PYTHON'], os.pardir)) + '/jupyter'
     conversion_cmd = jupyter_runnable + ' nbconvert --to python ' + filename
     conversion = subprocess.Popen(conversion_cmd,
-                              shell=True,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+                                  shell=True,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
     conversion.wait()
     stdout, stderr = conversion.communicate()
     print(stdout)
     print(stderr)
 
-    # 4. Make py file runnable
+    # 3. Prepend script to export environment variables and Make py file runnable
     py_runnable = os.getcwd() + '/' + filename.split('.')[0] + '.py'
+
+    notebook = 'with open("generate_env.py", "r") as myfile:\n' \
+               '    data=myfile.read()\n' \
+               '    exec(data)\n'
+    with open(py_runnable, 'r') as original: data = original.read()
+    with open(py_runnable, 'w') as modified: modified.write(notebook + data)
 
     st = os.stat(py_runnable)
     os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 
-    # 5. Localize generate_env.py script
+    # 4. Localize generate_env.py script
     environment_script = generate_environment_script(clusterspec)
     generate_env_path = os.getcwd() + '/generate_env.py'
     f_env = open(generate_env_path, "w+")
@@ -248,7 +264,7 @@ def localize_scripts(nb_path, clusterspec):
     f_env.flush()
     f_env.close()
 
-    # 6. Make generate_env.py runnable
+    # 5. Make generate_env.py runnable
     st = os.stat(generate_env_path)
     os.chmod(py_runnable, st.st_mode | stat.S_IEXEC)
 

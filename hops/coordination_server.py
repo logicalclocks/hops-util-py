@@ -45,28 +45,33 @@ class Reservations:
         with self.lock:
             self.reservations.append(meta)
             if self.remaining() == 0:
-                self.merge()
+                #self.merge()
+                self.check_executor_per_host()
                 self.check_done = True
 
     def merge(self):
-
-        clusterspec = []
-
+        clusterspecs = []
         # For each registered executor
         for outerIndex, executor in enumerate(self.reservations):
-                found = False
+            found = False
+            # Check all entries and see if we have a match
+            for innerIndex, clusterspec in enumerate(clusterspecs):
+                # executor exists for this hosts and we need to merge it
+                if executor['host'] == clusterspec['host']:
+                    clusterspec['cuda_visible_devices_ordinals'].extend(executor['cuda_visible_devices_ordinals'])
+                    found = True
+                    break
+            if not found:
+                clusterspecs.append(executor)
+        self.reservations = clusterspecs
 
-                # Check all entries and see if we have a match
-                for innerIndex, clusterspec in enumerate(clusterspec):
-
-                    # executor exists for this hosts and we need to merge it
-                    if executor[innerIndex]['host'] == clusterspec['host']:
-                        clusterspec['cuda_visible_devices_ordinals'].extend(executor['cuda_visible_devices_ordinals'])
-                        found = True
-                        break
-
-                if not found:
-                    clusterspec.append(executor[outerIndex])
+    def check_executor_per_host(self):
+        seen = []
+        for outerIndex, executor in enumerate(self.reservations):
+            for innerIndex, clusterspec in enumerate(seen):
+                if executor['host'] == clusterspec['host']:
+                    raise Exception('More than one executor detected in host: ' + clusterspec['host'])
+            seen.append(executor)
 
     def done(self):
         """Returns True if the ``required`` number of reservations have been fulfilled."""
