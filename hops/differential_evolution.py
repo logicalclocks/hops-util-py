@@ -83,7 +83,7 @@ class DifferentialEvolution:
         fs_handle = hopshdfs.get_fs()
         global fd
         summary_file = root_dir + "/summary"
-        fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+        fd = fs_handle.open_file(root_dir + "/summary", mode='w')
 
         fd.write(("Differential evolution summary\n\n").encode())
 
@@ -125,7 +125,7 @@ class DifferentialEvolution:
 
             print(generation_summary)
 
-            fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+            fd = fs_handle.open_file(root_dir + "/summary", mode='w')
             fd.write((contents + generation_summary + "\n").encode())
 
             fd.flush()
@@ -134,7 +134,7 @@ class DifferentialEvolution:
             if cleaup_prev_generation:
                 pydoop.hdfs.rmr(root_dir + "/generation." + str(self._generation))
 
-        fd = fs_handle.open_file(root_dir + "/summary", flags='w')
+        fd = fs_handle.open_file(root_dir + "/summary", mode='w')
         fd.write((contents + generation_summary + "\n\nBest parameter combination found " + str(new_gen_best_param) + " with metric " + str(new_gen_best)).encode())
 
         fd.flush()
@@ -445,7 +445,7 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict):
                 dir_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/' + 'generation.' + str(generation_id)
                 metric_file = dir_path + '/' + param_string + '/metric'
                 fs_handle = hopshdfs.get_fs()
-                fd = fs_handle.open_file(metric_file, flags='w')
+                fd = fs_handle.open_file(metric_file, mode='w')
 
                 fd.write(str(metric).encode())
                 fd.flush()
