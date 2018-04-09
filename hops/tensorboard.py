@@ -14,6 +14,7 @@ events_logdir = None
 tb_pid = 0
 tb_url = None
 endpoint = None
+debugger_endpoint = None
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num):
 
@@ -31,18 +32,29 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         pypath = os.getenv("PYSPARK_PYTHON")
 
         #find free port
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('',0))
-        addr, port = s.getsockname()
-        s.close()
+        tb_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tb_socket.bind(('',0))
+        tb_addr, tb_port = tb_socket.getsockname()
+
+        debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        debugger_socket.bind(('',0))
+        debugger_addr, debugger_port = debugger_socket.getsockname()
+
         tb_path = util.find_tensorboard()
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % port],
+
+        tb_socket.close()
+        debugger_socket
+
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
+        global debugger_endpoint
+        debugger_endpoint = 'localhost:' + str(debugger_port)
+
         host = socket.gethostname()
         global tb_url
-        tb_url = "http://{0}:{1}".format(host, port)
+        tb_url = "http://{0}:{1}".format(host, tb_port)
         global endpoint
         endpoint = endpoint_dir + "/tensorboard.exec" + str(exec_num)
 
@@ -64,6 +76,14 @@ def logdir():
 
     global events_logdir
     return events_logdir
+
+def debugger():
+
+    if 'TENSORBOARD_DEBUGGER' in os.environ:
+        return os.environ['TENSORBOARD_DEBUGGER']
+
+    global debugger_endpoint
+    return debugger_endpoint
 
 def visualize(spark_session, hdfs_root_logdir):
     """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
@@ -87,16 +107,24 @@ def visualize(spark_session, hdfs_root_logdir):
        os.makedirs(logdir)
 
        #find free port
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('',0))
-    addr, port = s.getsockname()
-    s.close()
+       tb_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tb_socket.bind(('',0))
+    tb_addr, tb_port = tb_socket.getsockname()
+
+    debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    debugger_socket.bind(('',0))
+    debugger_addr, debugger_port = debugger_socket.getsockname()
+
     tb_path = util.find_tensorboard()
-    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % port],
+
+    tb_socket.close()
+    debugger_socket.close()
+
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
                                env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
-    tb_url = "http://{0}:{1}".format(host, port)
+    tb_url = "http://{0}:{1}".format(host, tb_port)
     tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())

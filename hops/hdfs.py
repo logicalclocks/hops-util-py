@@ -61,7 +61,7 @@ def init_logger():
     logfile = os.environ['EXEC_LOGFILE']
     fs_handle = get_fs()
     global fd
-    fd = fs_handle.open_file(logfile, flags='w')
+    fd = fs_handle.open_file(logfile, mode='w')
 
 def log(string):
     if fd:
