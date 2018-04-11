@@ -8,6 +8,7 @@ import pydoop.hdfs as hdfs
 import os
 import datetime
 from six import string_types
+import shutil
 
 def get():
     """ Get a handle to pydoop hdfs
@@ -111,26 +112,43 @@ def create_directories(app_id, run_id, param_string, parent):
 
     return hdfs_exec_logdir, hdfs_appid_logdir
 
-def copy_to_project(local_path, relative_hdfs_path):
+def copy_to_project(local_path, relative_hdfs_path, overwrite=False, project=project_name()):
 
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
         full_local = os.getcwd() + '/' + local_path
 
-    proj_path = project_path()
+    proj_path = project_path(project)
     project_hdfs_path = proj_path + '/' + relative_hdfs_path
+
+    if overwrite:
+        hdfs_handle = get()
+        split = local_path.split('/')
+        filename = split[len(split) - 1]
+        if filename == '/':
+            filename = split[len(split) - 2]
+        full_project_path = proj_path + '/' + relative_hdfs_path + '/' + filename
+        if hdfs_handle.exists(full_project_path):
+            hdfs_handle.delete(full_project_path, recursive=True)
 
     hdfs.put(full_local, project_hdfs_path)
 
-def copy_from_project(relative_hdfs_path, local_path):
+def copy_from_project(relative_hdfs_path, local_path, overwrite=False, project=project_name()):
 
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
         full_local = os.getcwd() + '/' + local_path
 
-    proj_path = project_path()
+    proj_path = project_path(project)
     project_hdfs_path = proj_path + '/' + relative_hdfs_path
+
+    if overwrite:
+        split = relative_hdfs_path.split('/')
+        filename = split[len(split) - 1]
+        full_local_path = full_local + '/' + filename
+        if os.path.exists(full_local_path):
+            shutil.rmtree(full_local_path)
 
     hdfs.get(project_hdfs_path, full_local)
