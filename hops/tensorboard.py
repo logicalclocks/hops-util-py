@@ -107,7 +107,7 @@ def visualize(spark_session, hdfs_root_logdir):
        os.makedirs(logdir)
 
        #find free port
-       tb_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tb_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tb_socket.bind(('',0))
     tb_addr, tb_port = tb_socket.getsockname()
 
@@ -120,7 +120,7 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_socket.close()
     debugger_socket.close()
 
-    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
                                env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
