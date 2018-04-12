@@ -2,6 +2,7 @@
 
 import socket
 import subprocess
+import time
 import os
 from hops import hdfs as hopshdfs
 from hops import util
@@ -94,8 +95,9 @@ def non_interactive_debugger():
 
 def _restart_debugging(interactive=True):
 
-    #Kill existing TB
+    global tb_pid
 
+    #Kill existing TB
     proc = subprocess.Popen(["kill", str(tb_pid)])
     proc.wait()
 
@@ -108,7 +110,6 @@ def _restart_debugging(interactive=True):
     global pypath
     global tb_path
     global tb_port
-    global tb_pid
 
     if interactive:
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
@@ -119,6 +120,8 @@ def _restart_debugging(interactive=True):
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_data_server_grpc_port=%d" % debugger_port],
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
+
+    time.sleep(2)
 
     return 'localhost:' + str(debugger_port)
 
