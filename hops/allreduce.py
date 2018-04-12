@@ -102,7 +102,6 @@ def prepare_func(app_id, run_id, nb_path, server_addr):
 
             mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                       ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
-                      ' TENSORBOARD_DEBUGGER=' + tensorboard.debugger() + \
                       ' mpirun -np ' + str(get_num_ps(clusterspec)) + ' --hostfile ' + get_hosts_file(clusterspec) + \
                       ' -bind-to none -map-by slot ' + \
                       ' -x LD_LIBRARY_PATH ' + \

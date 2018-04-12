@@ -13,8 +13,11 @@ root_logdir_path = None
 events_logdir = None
 tb_pid = 0
 tb_url = None
+tb_port = None
 endpoint = None
 debugger_endpoint = None
+pypath = None
+tb_path = None
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num):
 
@@ -34,6 +37,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         #find free port
         tb_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tb_socket.bind(('',0))
+        global tb_port
         tb_addr, tb_port = tb_socket.getsockname()
 
         debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,9 +47,8 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         tb_path = util.find_tensorboard()
 
         tb_socket.close()
-        debugger_socket
 
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port],
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
@@ -77,13 +80,48 @@ def logdir():
     global events_logdir
     return events_logdir
 
-def debugger():
-
-    if 'TENSORBOARD_DEBUGGER' in os.environ:
-        return os.environ['TENSORBOARD_DEBUGGER']
+def interactive_debugger():
 
     global debugger_endpoint
+    debugger_endpoint =_restart_debugging()
     return debugger_endpoint
+
+def non_interactive_debugger():
+
+    global debugger_endpoint
+    debugger_endpoint =_restart_debugging(interactive=False)
+    return debugger_endpoint
+
+def _restart_debugging(interactive=True):
+
+    #Kill existing TB
+
+    proc = subprocess.Popen(["kill", str(tb_pid)])
+    proc.wait()
+
+    debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    debugger_socket.bind(('',0))
+    debugger_addr, debugger_port = debugger_socket.getsockname()
+
+    debugger_socket.close()
+
+    global pypath
+    global tb_path
+    global tb_port
+    global tb_pid
+
+    if interactive:
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
+                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+        tb_pid = tb_proc.pid
+
+    if not interactive:
+        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_data_server_grpc_port=%d" % debugger_port],
+                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+        tb_pid = tb_proc.pid
+
+    return 'localhost:' + str(debugger_port)
+
 
 def visualize(spark_session, hdfs_root_logdir):
     """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
@@ -111,16 +149,11 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_socket.bind(('',0))
     tb_addr, tb_port = tb_socket.getsockname()
 
-    debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    debugger_socket.bind(('',0))
-    debugger_addr, debugger_port = debugger_socket.getsockname()
-
     tb_path = util.find_tensorboard()
 
     tb_socket.close()
-    debugger_socket.close()
 
-    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
+    tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port],
                                env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
