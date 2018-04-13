@@ -162,7 +162,7 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/TensorBoard.task0"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
-    pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, tb_endpoint_old, user=hopshdfs.project_user())
 
     handle = hopshdfs.get()
     hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
