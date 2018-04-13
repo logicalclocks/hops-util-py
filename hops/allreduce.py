@@ -98,7 +98,7 @@ def prepare_func(app_id, run_id, nb_path, server_addr):
             client.await_mpirun_finished()
         else:
             hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string='Horovod')
-            tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
+            tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
 
             mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                       ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
@@ -132,11 +132,13 @@ def prepare_func(app_id, run_id, nb_path, server_addr):
 
             if return_code != 0:
                 cleanup(tb_hdfs_path)
+                cleanup(tb_hdfs_path_old)
                 t_log.do_run = False
                 t_log.join()
                 raise Exception('mpirun FAILED, look in the logs for the error')
 
             cleanup(tb_hdfs_path)
+            cleanup(tb_hdfs_path_old)
             t_log.do_run = False
             t_log.join()
 

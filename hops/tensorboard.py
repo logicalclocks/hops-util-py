@@ -16,6 +16,7 @@ tb_pid = 0
 tb_url = None
 tb_port = None
 endpoint = None
+endpoint_old = None
 debugger_endpoint = None
 pypath = None
 tb_path = None
@@ -41,10 +42,6 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         global tb_port
         tb_addr, tb_port = tb_socket.getsockname()
 
-        debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        debugger_socket.bind(('',0))
-        debugger_addr, debugger_port = debugger_socket.getsockname()
-
         tb_path = util.find_tensorboard()
 
         tb_socket.close()
@@ -53,19 +50,19 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
                                    env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
-        global debugger_endpoint
-        debugger_endpoint = 'localhost:' + str(debugger_port)
-
         host = socket.gethostname()
         global tb_url
         tb_url = "http://{0}:{1}".format(host, tb_port)
+        global endpoint_old
         global endpoint
-        endpoint = endpoint_dir + "/tensorboard.exec" + str(exec_num)
+        endpoint_old = endpoint_dir + "/tensorboard.exec" + str(exec_num)
+        endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
 
         #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
+    pydoop.hdfs.dump(tb_url, endpoint_old, user=hopshdfs.project_user())
 
-    return endpoint, tb_pid
+    return endpoint, endpoint_old, tb_pid
 
 def logdir():
     """ Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
@@ -161,8 +158,10 @@ def visualize(spark_session, hdfs_root_logdir):
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)
-    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
+    tb_endpoint_old = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
+    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/TensorBoard.task0"
     #dump tb host:port to hdfs
+    pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 
     handle = hopshdfs.get()

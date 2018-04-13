@@ -99,7 +99,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
 
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
@@ -110,7 +110,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                 hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'run')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
@@ -118,12 +118,14 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
         except:
             #Always do cleanup
             cleanup(tb_hdfs_path)
+            cleanup(tb_hdfs_path_old)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
         hopshdfs.log('Finished running')
         cleanup(tb_hdfs_path)
+        cleanup(tb_hdfs_path_old)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
