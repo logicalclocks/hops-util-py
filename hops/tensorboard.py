@@ -34,6 +34,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
     tb_pid = 0
 
     if tb_pid == 0:
+        global pypath
         pypath = os.getenv("PYSPARK_PYTHON")
 
         #find free port
@@ -42,6 +43,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         global tb_port
         tb_addr, tb_port = tb_socket.getsockname()
 
+        global tb_path
         tb_path = util.find_tensorboard()
 
         tb_socket.close()
