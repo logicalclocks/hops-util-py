@@ -130,6 +130,7 @@ def copy_to_project(local_path, relative_hdfs_path, overwrite=False, project=pro
             filename = split[len(split) - 2]
         full_project_path = proj_path + '/' + relative_hdfs_path + '/' + filename
         if hdfs_handle.exists(full_project_path):
+
             hdfs_handle.delete(full_project_path, recursive=True)
 
     hdfs.put(full_local, project_hdfs_path)
@@ -148,7 +149,9 @@ def copy_from_project(relative_hdfs_path, local_path, overwrite=False, project=p
         split = relative_hdfs_path.split('/')
         filename = split[len(split) - 1]
         full_local_path = full_local + '/' + filename
-        if os.path.exists(full_local_path):
+        if os.path.isdir(full_local_path):
             shutil.rmtree(full_local_path)
+        elif os.path.isfile(full_local_path):
+            os.remove(full_local_path)
 
     hdfs.get(project_hdfs_path, full_local)
