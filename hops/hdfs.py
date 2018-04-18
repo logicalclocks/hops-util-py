@@ -80,6 +80,7 @@ def kill_logger():
         except:
             pass
 
+
 def create_directories(app_id, run_id, param_string, parent):
 
     pyhdfs_handle = get()
@@ -99,6 +100,11 @@ def create_directories(app_id, run_id, param_string, parent):
 
     hdfs_exec_logdir = hdfs_run_id_logdir + "/" + str(param_string)
     #if not pyhdfs_handle.exists(hdfs_exec_logdir):
+
+    #Need to remove directory if it exists (might be a task retry)
+    if pyhdfs_handle.exists(hdfs_exec_logdir):
+        pyhdfs_handle.delete(hdfs_exec_logdir, recursive=True)
+
     pyhdfs_handle.create_directory(hdfs_exec_logdir)
 
     logfile = hdfs_exec_logdir + '/' + 'logfile'
@@ -130,7 +136,6 @@ def copy_to_project(local_path, relative_hdfs_path, overwrite=False, project=pro
             filename = split[len(split) - 2]
         full_project_path = proj_path + '/' + relative_hdfs_path + '/' + filename
         if hdfs_handle.exists(full_project_path):
-
             hdfs_handle.delete(full_project_path, recursive=True)
 
     hdfs.put(full_local, project_hdfs_path)
