@@ -8,10 +8,16 @@ import os
 from hops import hdfs as hopshdfs
 from hops import tensorboard
 from hops import devices
-from hops import differential_evolution
+
+from hops import differential_evolution as diff_evo
+from hops import grid_search as gs
+
+from hops import util
+
 import pydoop.hdfs
 import threading
 import six
+import datetime
 
 run_id = 0
 
@@ -40,7 +46,7 @@ def launch(spark_session, map_fun, args_dict=None):
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
-    #Force execution on executor, since GPU is located on executor
+    #Force execution on executor, since GPU is located on executor    global run_id
     global run_id
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
 
@@ -51,7 +57,19 @@ def launch(spark_session, map_fun, args_dict=None):
 
     return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
 
-def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup=False):
+def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False):
+    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+
+    Args:
+      :spark_session: SparkSession object
+      :map_fun: The TensorFlow function to run
+      :search_dict: (optional) A dictionary containing differential evolutionary boundaries
+    """
+
+
+    return diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=popsize, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations)
+
+def grid_search(spark_session, map_fun, args_dict, direction='max'):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -60,7 +78,9 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
 
-    return differential_evolution.search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=popsize, mutation=mutation, crossover=crossover, cleanup=False)
+    grid_params = util.grid_params(args_dict)
+
+    return gs._grid_launch(spark_session, map_fun, grid_params, direction=direction)
 
 #Helper to put Spark required parameter iter in function signature
 def _prepare_func(app_id, run_id, map_fun, args_dict):
@@ -72,6 +92,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
 
         tb_pid = 0
         tb_hdfs_path = ''
+        tb_hdfs_path_old = ''
 
         t = threading.Thread(target=devices.print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
@@ -95,7 +116,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'run')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'launcher')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
@@ -104,35 +125,52 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
+                print('-------------------------------------------------------')
+                print('Started running task ' + param_string + '\n')
+                hopshdfs.log('Started running task ' + param_string)
+                task_start = datetime.datetime.now()
                 map_fun(*args)
+                task_end = datetime.datetime.now()
+                time_str = '\nFinished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                print(time_str)
+                print('-------------------------------------------------------')
+                hopshdfs.log(time_str)
             else:
                 hopshdfs.log('Starting Spark executor')
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'run')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'launcher')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
+                print('-------------------------------------------------------')
+                print('Started running task\n')
+                hopshdfs.log('Started running task')
+                task_start = datetime.datetime.now()
                 map_fun()
+                task_end = datetime.datetime.now()
+                time_str = '\nFinished task - took ' + util.time_diff(task_start, task_end)
+                print(time_str)
+                print('-------------------------------------------------------')
+                hopshdfs.log(time_str)
         except:
             #Always do cleanup
-            cleanup(tb_hdfs_path)
-            cleanup(tb_hdfs_path_old)
+            _cleanup(tb_hdfs_path)
+            _cleanup(tb_hdfs_path_old)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
-        hopshdfs.log('Finished running')
-        cleanup(tb_hdfs_path)
-        cleanup(tb_hdfs_path_old)
+        _cleanup(tb_hdfs_path)
+        _cleanup(tb_hdfs_path_old)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
 
     return _wrapper_fun
 
-def cleanup(tb_hdfs_path):
+def _cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)

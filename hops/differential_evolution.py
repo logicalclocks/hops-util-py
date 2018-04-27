@@ -1,19 +1,24 @@
 import random
 from collections import OrderedDict
 import os
+
 from hops import hdfs as hopshdfs
 from hops import tensorboard
 from hops import devices
+from hops import util
+
 import pydoop.hdfs
 import threading
 import six
+import datetime
 
 objective_function=None
 spark_session=None
 diff_evo=None
-cleaup_prev_generation=None
+cleanup=None
 
 generation_id = 0
+run_id = 0
 
 def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
     '''
@@ -24,9 +29,9 @@ def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
 
     #Important, this must be ordered equally than _parse_to_dict function
     population_dict = diff_evo.get_dict()
-
+    global run_id
     for i in range(number_params):
-        path_to_log= tensorboard_hdfs_logdir + "/generation." + str(generation_id - 1) + "/"
+        path_to_log= tensorboard_hdfs_logdir + "differential_evolution/run." + str(run_id) + "/generation." + str(generation_id - 1) + "/"
         for k in population_dict:
             path_to_log+=k+"="+str(args_dict[k][i])+"."
         path_to_log = path_to_log[:(len(path_to_log) -1)]
@@ -70,6 +75,10 @@ class DifferentialEvolution:
         self.CR = crossover
         self._ordered_population_dict = ordered_dict
 
+        global generation_id
+        generation_id = 0
+
+        self._param_names = []
         for entry in ordered_dict:
             self._param_names.append(entry)
 
@@ -82,8 +91,9 @@ class DifferentialEvolution:
         handle = hopshdfs.get()
         fs_handle = hopshdfs.get_fs()
         global fd
-        summary_file = root_dir + "/summary"
-        fd = fs_handle.open_file(root_dir + "/summary", mode='w')
+        global run_id
+        summary_file = root_dir + "/run." + str(run_id) + "/summary"
+        fd = fs_handle.open_file(summary_file, mode='w')
 
         fd.write(("Differential evolution summary\n\n").encode())
 
@@ -93,7 +103,8 @@ class DifferentialEvolution:
         generation_summary = ''
         new_gen_best_param = None
         new_gen_best = None
-        for _ in range(self.generations-1):
+        for _ in range(self.generations):
+
             donor_population = self._mutation(population, bounds)
             trial_population = self._recombination(population, donor_population)
 
@@ -103,10 +114,10 @@ class DifferentialEvolution:
 
             if self.direction == 'max':
                 new_gen_best = max(self._scores)
-            elif self.direction == 'max':
+            elif self.direction == 'min':
                 new_gen_best = min(self._scores)
             else:
-                raise ValueError('invalid directon: ' + self.direction)
+                raise ValueError('invalid direction: ' + self.direction)
             
             new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
 
@@ -125,16 +136,18 @@ class DifferentialEvolution:
 
             print(generation_summary)
 
-            fd = fs_handle.open_file(root_dir + "/summary", mode='w')
+            summary_file = root_dir + "/run." + str(run_id) + "/summary"
+
+            fd = fs_handle.open_file(summary_file, mode='w')
             fd.write((contents + generation_summary + "\n").encode())
 
             fd.flush()
             fd.close()
 
-            if cleaup_prev_generation:
-                pydoop.hdfs.rmr(root_dir + "/generation." + str(self._generation))
+            if cleanup:
+                pydoop.hdfs.rmr(root_dir + '/run.' + str(run_id) + '/generation.' + str(self._generation-1))
 
-        fd = fs_handle.open_file(root_dir + "/summary", mode='w')
+        fd = fs_handle.open_file(summary_file, mode='w')
         fd.write((contents + generation_summary + "\n\nBest parameter combination found " + str(new_gen_best_param) + " with metric " + str(new_gen_best)).encode())
 
         fd.flush()
@@ -263,7 +276,7 @@ class DifferentialEvolution:
                 if trial_vec_score_i > target_vec_score_i:
                     self._scores[i] = trial_vec_score_i
                     population[i] = trial_population[i]
-            else:
+            elif self.direction == 'min':
                 if trial_vec_score_i < target_vec_score_i:
                     self._scores[i] = trial_vec_score_i
                     population[i] = trial_population[i]
@@ -303,7 +316,7 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup=False):
+def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False):
 
     global spark_session
     spark_session = spark
@@ -311,8 +324,10 @@ def search(spark, function, search_dict, direction = 'max', generations=10, pops
     global objective_function
     objective_function = function
 
-    global cleaup_prev_generation
-    cleaup_prev_generation = cleanup
+    global cleanup
+    cleanup = cleanup_generations
+
+    global run_id
 
     argcount = six.get_function_code(function).co_argcount
     arg_names = six.get_function_code(function).co_varnames
@@ -351,9 +366,11 @@ def search(spark, function, search_dict, direction = 'max', generations=10, pops
                                      crossover=crossover,
                                      mutation=mutation)
 
-    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sparkContext.applicationId) + "/"
+    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sparkContext.applicationId) + "/differential_evolution/run." + str(run_id)
 
     diff_evo.solve(root_dir)
+
+    run_id += 1
 
     return str(root_dir)
 
@@ -385,7 +402,8 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
 
     #Force execution on executor, since GPU is located on executor
     global generation_id
-    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict))
+    global run_id
+    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id))
 
     generation_id += 1
 
@@ -393,7 +411,7 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
 
 
 #Helper to put Spark required parameter iter in function signature
-def _prepare_func(app_id, generation_id, map_fun, args_dict):
+def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
 
     def _wrapper_fun(iter):
 
@@ -425,47 +443,80 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, generation_id, param_string, 'generation')
+
+                val = _get_metric(param_string, app_id, generation_id, run_id)
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'differential_evolution', sub_type='generation.' + str(generation_id))
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 hopshdfs.log('Starting Spark executor with arguments ' + param_string)
                 tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
-
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
-
-                metric = map_fun(*args)
-
+                print('-------------------------------------------------------')
+                print('Started running task ' + param_string + '\n')
+                if val:
+                    print('Reading returned metric from previous run: ' + str(val))
+                hopshdfs.log('Started running task ' + param_string)
+                task_start = datetime.datetime.now()
+                if not val:
+                    val = map_fun(*args)
+                task_end = datetime.datetime.now()
+                time_str = '\nFinished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                print(time_str)
+                hopshdfs.log(time_str)
                 try:
-                    val = int(metric)
+                    castval = int(val)
                 except:
-                    raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
+                   raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
 
-                dir_path = 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/' + 'generation.' + str(generation_id)
-                metric_file = dir_path + '/' + param_string + '/metric'
+
+                metric_file = hdfs_exec_logdir + '/metric'
                 fs_handle = hopshdfs.get_fs()
                 fd = fs_handle.open_file(metric_file, mode='w')
 
-                fd.write(str(metric).encode())
+                fd.write(str(float(val)).encode())
                 fd.flush()
                 fd.close()
+                print('Returning metric ' + str(val))
+                print('-------------------------------------------------------')
         except:
             #Always do cleanup
-            cleanup(tb_hdfs_path)
+            if tb_hdfs_path:
+                _cleanup(tb_hdfs_path)
+            if tb_hdfs_path_old:
+                _cleanup(tb_hdfs_path_old)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
         hopshdfs.log('Finished running')
-        cleanup(tb_hdfs_path)
+        if tb_hdfs_path:
+            _cleanup(tb_hdfs_path)
+        if tb_hdfs_path_old:
+            _cleanup(tb_hdfs_path_old)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
 
     return _wrapper_fun
 
-def cleanup(tb_hdfs_path):
+def _get_metric(param_string, app_id, generation_id, run_id):
+    project_path = hopshdfs.project_path()
+    handle = hopshdfs.get()
+    for i in range(generation_id):
+        possible_result_path = project_path + '/Logs/TensorFlow/' + app_id + '/differential_evolution/run.' \
+                               + str(run_id) + '/generation.' + str(i) + '/' + param_string + '/metric'
+        if handle.exists(possible_result_path):
+            with pydoop.hdfs.open(possible_result_path, "r") as fi:
+                metric = float(fi.read())
+                fi.close()
+                return metric
+
+    return None
+
+
+def _cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)

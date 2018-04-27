@@ -89,5 +89,21 @@ def get_ip_address():
     s.connect(("8.8.8.8", 80))
     return s.getsockname()[0]
 
+def time_diff(task_start, task_end):
+    time_diff = task_end - task_start
+
+    seconds = time_diff.seconds
+
+    if seconds < 60:
+        return str(seconds) + ' seconds'
+    elif seconds == 60 or seconds <= 3600:
+        minutes = seconds / 60
+        return str(minutes) + ' minutes, ' + str(seconds % 60) + ' seconds'
+    else:
+        hours = seconds / 3600
+        minutes = seconds % 3600
+        return str(hours) + ' hours, ' + str(minutes) + ' minutes'
 
 
+def to_json():
+    return ""
