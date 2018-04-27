@@ -116,7 +116,7 @@ class DifferentialEvolution:
                 index += 1
 
             contents = ''
-            with pydoop.hdfs.open(summary_file) as f:
+            with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
                 for line in f:
                     contents += line
 
