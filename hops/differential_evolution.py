@@ -11,16 +11,20 @@ import pydoop.hdfs
 import threading
 import six
 import datetime
+import copy
 
 objective_function=None
 spark_session=None
 diff_evo=None
 cleanup=None
+summary_file=None
+fs_handle=None
 
 generation_id = 0
 run_id = 0
 
 def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
+
     '''
     Retrieves all accuracies from the parallel executions (each one is in a
     different file, one per combination of wrapper function parameter)
@@ -51,11 +55,50 @@ def execute_all(population_dict):
     Returns a list of accuracies (or metric returned in the wrapper) in the
     same order as in the population_dict.
     '''
+    initial_pop = copy.deepcopy(population_dict)
 
-    number_params=[len(v) for v in population_dict.values()][0]
+    number_hp_combinations=[len(v) for v in population_dict.values()][0]
     # directory for current generation
+
+
+    # Do not run hyperparameter combinations that are duplicated
+    # Find all duplicates and delete them
+    keys = population_dict.keys()
+    i=0
+    while i < number_hp_combinations:
+        duplicate_entries = duplicate_entry(i, keys, population_dict, number_hp_combinations)
+        if len(duplicate_entries) > 0:
+            # sort entries, delete descending
+            for index in duplicate_entries:
+                for key in keys:
+                    population_dict[key].pop(index)
+            i=0
+            number_hp_combinations = [len(v) for v in population_dict.values()][0]
+        else:
+            i+=1
+
     tensorboard_hdfs_logdir = _evolutionary_launch(spark_session, objective_function, population_dict)
-    return get_all_accuracies(tensorboard_hdfs_logdir, population_dict, number_params)
+
+    return get_all_accuracies(tensorboard_hdfs_logdir, initial_pop, [len(v) for v in initial_pop.values()][0])
+
+
+def duplicate_entry(i, keys, population, len):
+    hp_combinations = []
+    duplicate_indices = []
+
+    for val in range(len):
+        entry=''
+        for key in keys:
+            entry += str(population[key][val]) + '='
+        hp_combinations.append(entry)
+
+    to_find = hp_combinations[i]
+    #get the duplicate indices
+    for y in range(len):
+        if hp_combinations[y] == to_find and y != i:
+            duplicate_indices.insert(0, y)
+
+    return duplicate_indices
 
 class DifferentialEvolution:
     _types = ['float', 'int', 'cat']
@@ -88,23 +131,24 @@ class DifferentialEvolution:
     def solve(self, root_dir):
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
-        handle = hopshdfs.get()
+        global fs_handle
         fs_handle = hopshdfs.get_fs()
-        global fd
         global run_id
+
+        contents = ''
+        generation_summary = ''
+        new_gen_best_param = None
+        new_gen_best = None
+        global summary_file
         summary_file = root_dir + "/summary"
+
+        global fd
         try:
             fd = fs_handle.open_file(summary_file, mode='w')
         except:
             fd = fs_handle.open_file(summary_file, flags='w')
         fd.write(("Differential evolution summary\n\n").encode())
 
-        fd.flush()
-        fd.close()
-        contents = ''
-        generation_summary = ''
-        new_gen_best_param = None
-        new_gen_best = None
         for _ in range(self.generations):
 
             donor_population = self._mutation(population, bounds)
@@ -120,7 +164,7 @@ class DifferentialEvolution:
                 new_gen_best = min(self._scores)
             else:
                 raise ValueError('invalid direction: ' + self.direction)
-            
+
             new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
 
             index = 0
@@ -139,8 +183,7 @@ class DifferentialEvolution:
                         contents += line.decode('utf-8')
 
             generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
-                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
-
+                             + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
             print(generation_summary)
 
             try:
@@ -155,6 +198,7 @@ class DifferentialEvolution:
 
             if cleanup:
                 pydoop.hdfs.rmr(root_dir + '/run.' + str(run_id) + '/generation.' + str(self._generation-1))
+
         try:
             fd = fs_handle.open_file(summary_file, mode='w')
         except:
@@ -272,6 +316,42 @@ class DifferentialEvolution:
 
             parsed_population = self._parse_to_dict(parsed_population)
             self._scores = self.objective_function(parsed_population)
+
+            new_gen_avg = sum(self._scores)/self.n
+
+            if self.direction == 'max':
+                new_gen_best = max(self._scores)
+            elif self.direction == 'min':
+                new_gen_best = min(self._scores)
+            else:
+                raise ValueError('invalid direction: ' + self.direction)
+
+            new_gen_best_param = self._parse_back(population[self._scores.index(new_gen_best)])
+
+            index = 0
+            for name in self._param_names:
+                new_gen_best_param[index] = name + "=" + str(new_gen_best_param[index])
+                index += 1
+
+            contents = ''
+            try:
+                with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
+                    for line in f:
+                        contents += line.decode('utf-8')
+            except:
+                with pydoop.hdfs.open(summary_file) as f:
+                    for line in f:
+                        contents += line.decode('utf-8')
+
+            generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
+                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
+
+            print(generation_summary)
+
+            fd.write((contents + generation_summary + "\n").encode())
+
+            fd.flush()
+            fd.close()
 
         parsed_trial_population = []
         for index, trial_vec in enumerate(trial_population):
