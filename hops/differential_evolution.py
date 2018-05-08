@@ -129,9 +129,14 @@ class DifferentialEvolution:
                 index += 1
 
             contents = ''
-            with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
-                for line in f:
-                    contents += line.decode('utf-8')
+            try:
+                with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
+                    for line in f:
+                        contents += line.decode('utf-8')
+            except:
+                with pydoop.hdfs.open(summary_file) as f:
+                    for line in f:
+                        contents += line.decode('utf-8')
 
             generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
                                  + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
