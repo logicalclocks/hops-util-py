@@ -224,7 +224,11 @@ def localize_scripts(nb_path, clusterspec):
 
     # 1. Download the notebook as a string
     fs_handle = hopshdfs.get_fs()
-    fd = fs_handle.open_file(nb_path, mode='r')
+    try:
+        fd = fs_handle.open_file(nb_path, mode='r')
+    except:
+        fd = fs_handle.open_file(nb_path, flags='r')
+
     note = fd.read()
     fd.close()
 

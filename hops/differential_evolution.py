@@ -93,8 +93,10 @@ class DifferentialEvolution:
         global fd
         global run_id
         summary_file = root_dir + "/run." + str(run_id) + "/summary"
-        fd = fs_handle.open_file(summary_file, mode='w')
-
+        try:
+            fd = fs_handle.open_file(summary_file, mode='w')
+        except:
+            fd = fs_handle.open_file(summary_file, flags='w')
         fd.write(("Differential evolution summary\n\n").encode())
 
         fd.flush()
@@ -138,7 +140,11 @@ class DifferentialEvolution:
 
             summary_file = root_dir + "/run." + str(run_id) + "/summary"
 
-            fd = fs_handle.open_file(summary_file, mode='w')
+            try:
+                fd = fs_handle.open_file(summary_file, mode='w')
+            except:
+                fd = fs_handle.open_file(summary_file, flags='w')
+
             fd.write((contents + generation_summary + "\n").encode())
 
             fd.flush()
@@ -146,8 +152,11 @@ class DifferentialEvolution:
 
             if cleanup:
                 pydoop.hdfs.rmr(root_dir + '/run.' + str(run_id) + '/generation.' + str(self._generation-1))
+        try:
+            fd = fs_handle.open_file(summary_file, mode='w')
+        except:
+            fd = fs_handle.open_file(summary_file, flags='w')
 
-        fd = fs_handle.open_file(summary_file, mode='w')
         fd.write((contents + generation_summary + "\n\nBest parameter combination found " + str(new_gen_best_param) + " with metric " + str(new_gen_best)).encode())
 
         fd.flush()
@@ -473,7 +482,10 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
 
                 metric_file = hdfs_exec_logdir + '/metric'
                 fs_handle = hopshdfs.get_fs()
-                fd = fs_handle.open_file(metric_file, mode='w')
+                try:
+                    fd = fs_handle.open_file(metric_file, mode='w')
+                except:
+                    fd = fs_handle.open_file(metric_file, flags='w')
 
                 fd.write(str(float(val)).encode())
                 fd.flush()

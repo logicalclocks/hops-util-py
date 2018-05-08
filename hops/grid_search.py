@@ -86,7 +86,10 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
 def write_result(runid_dir, string):
     metric_file = runid_dir + '/summary'
     fs_handle = hopshdfs.get_fs()
-    fd = fs_handle.open_file(metric_file, mode='w')
+    try:
+        fd = fs_handle.open_file(metric_file, mode='w')
+    except:
+        fd = fs_handle.open_file(metric_file, flags='w')
     fd.write(string.encode())
     fd.flush()
     fd.close()
@@ -228,7 +231,10 @@ def _handle_return(val, hdfs_exec_logdir):
 
     metric_file = hdfs_exec_logdir + '/metric'
     fs_handle = hopshdfs.get_fs()
-    fd = fs_handle.open_file(metric_file, mode='w')
+    try:
+        fd = fs_handle.open_file(metric_file, mode='w')
+    except:
+        fd = fs_handle.open_file(metric_file, flags='w')
     fd.write(str(float(val)).encode())
     fd.flush()
     fd.close()
