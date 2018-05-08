@@ -92,7 +92,7 @@ class DifferentialEvolution:
         fs_handle = hopshdfs.get_fs()
         global fd
         global run_id
-        summary_file = root_dir + "/run." + str(run_id) + "/summary"
+        summary_file = root_dir + "/summary"
         try:
             fd = fs_handle.open_file(summary_file, mode='w')
         except:
@@ -137,8 +137,6 @@ class DifferentialEvolution:
                                  + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
 
             print(generation_summary)
-
-            summary_file = root_dir + "/run." + str(run_id) + "/summary"
 
             try:
                 fd = fs_handle.open_file(summary_file, mode='w')
