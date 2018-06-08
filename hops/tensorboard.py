@@ -16,22 +16,27 @@ tb_pid = 0
 tb_url = None
 tb_port = None
 endpoint = None
-endpoint_old = None
 debugger_endpoint = None
 pypath = None
 tb_path = None
+local_logdir_path = None
+local_logdir_bool = False
 
-def register(hdfs_exec_dir, endpoint_dir, exec_num):
-
-    global events_logdir
-    events_logdir = hdfs_exec_dir
+def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
 
     global tb_pid
 
     if tb_pid != 0:
         subprocess.Popen(["kill", str(tb_pid)])
 
-    tb_pid = 0
+    _reset_global()
+
+    global events_logdir
+    events_logdir = hdfs_exec_dir
+
+    global local_logdir_bool
+    local_logdir_bool = local_logdir
+
 
     if tb_pid == 0:
         global pypath
@@ -51,23 +56,34 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
         tb_env = os.environ.copy()
         tb_env['CUDA_VISIBLE_DEVICES'] = ''
 
-        tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port],
+        tb_proc = None
+        global local_logdir_path
+        if local_logdir:
+            local_logdir_path = os.getcwd() + '/local_logdir'
+            if os.path.exists(local_logdir_path):
+                shutil.rmtree(local_logdir_path)
+                os.makedirs(local_logdir_path)
+            else:
+                os.makedirs(local_logdir_path)
+
+            tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % local_logdir_path, "--port=%d" % tb_port],
+                                       env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+        else:
+            tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port],
                                    env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+
         tb_pid = tb_proc.pid
 
         host = socket.gethostname()
         global tb_url
         tb_url = "http://{0}:{1}".format(host, tb_port)
-        global endpoint_old
         global endpoint
-        endpoint_old = endpoint_dir + "/tensorboard.exec" + str(exec_num)
         endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
 
         #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
-    pydoop.hdfs.dump(tb_url, endpoint_old, user=hopshdfs.project_user())
 
-    return endpoint, endpoint_old, tb_pid
+    return endpoint, tb_pid
 
 def logdir():
     """ Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
@@ -79,6 +95,10 @@ def logdir():
     """
     if 'TENSORBOARD_LOGDIR' in os.environ:
         return os.environ['TENSORBOARD_LOGDIR']
+
+    global local_logdir_bool
+    if local_logdir_bool:
+        return local_logdir_path
 
     global events_logdir
     return events_logdir
@@ -169,11 +189,9 @@ def visualize(spark_session, hdfs_root_logdir):
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)
-    tb_endpoint_old = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/tensorboard.exec0"
     tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/TensorBoard.task0"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
-    pydoop.hdfs.dump(tb_url, tb_endpoint_old, user=hopshdfs.project_user())
 
     handle = hopshdfs.get()
     hdfs_logdir_entries = handle.list_directory(hdfs_root_logdir)
@@ -186,3 +204,28 @@ def visualize(spark_session, hdfs_root_logdir):
     stdout, stderr = tb_proc.communicate()
     print(stdout)
     print(stderr)
+
+def _reset_global():
+    global root_logdir_path
+    global events_logdir
+    global tb_pid
+    global tb_url
+    global tb_port
+    global endpoint
+    global debugger_endpoint
+    global pypath
+    global tb_path
+    global local_logdir_path
+    global local_logdir_bool
+    
+    root_logdir_path = None
+    events_logdir = None
+    tb_pid = 0
+    tb_url = None
+    tb_port = None
+    endpoint = None
+    debugger_endpoint = None
+    pypath = None
+    tb_path = None
+    local_logdir_path = None
+    local_logdir_bool = False

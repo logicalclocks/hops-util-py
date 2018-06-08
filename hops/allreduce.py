@@ -18,18 +18,16 @@ from hops import util
 
 run_id = 0
 
-def launch(spark_session, notebook):
+def launch(sc, notebook, local_logdir=False):
     """ Run notebook pointed to in HopsFS as a python file in mpirun
     Args:
       :spark_session: SparkSession object
       :notebook: The path in HopsFS to the notebook
     """
     global run_id
-    run_id += 1
     print('\nStarting TensorFlow job, follow your progress on TensorBoard in Jupyter UI! \n')
     sys.stdout.flush()
 
-    sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
     conf_num = int(sc._conf.get("spark.executor.instances"))
@@ -38,19 +36,24 @@ def launch(spark_session, notebook):
     nodeRDD = sc.parallelize(range(conf_num), conf_num)
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook))
+    nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook, local_logdir))
 
-    print('Finished TensorFlow job \n')
-    print('Make sure to check /Logs/TensorFlow/' + app_id + '/runId.' + str(run_id) + ' for logfile and TensorBoard logdir')
+    print('Finished Experiment \n')
+    print('\nSee /Logs/TensorFlow/' + app_id + '/horovod/run.' + str(run_id) + ' for summary of results, logfiles and TensorBoard log directory')
 
-def prepare_func(app_id, run_id, nb_path):
+def get_logdir(app_id):
+    global run_id
+    return hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id + '/horovod/run.' + str(run_id)
+
+def prepare_func(app_id, run_id, nb_path, local_logdir):
 
     def _wrapper_fun(iter):
 
         for i in iter:
             executor_num = i
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'horovod')
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'horovod')
+
 
         tb_pid = 0
         tb_hdfs_path = ''
@@ -59,7 +62,8 @@ def prepare_func(app_id, run_id, nb_path):
         hopshdfs.init_logger()
         hopshdfs.log('Starting Spark executor with arguments')
         if executor_num == 0:
-            tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0)
+            tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir)
+
 
         gpu_str = '\n\nChecking for GPUs in the environment\n' + devices.get_gpu_info()
         hopshdfs.log(gpu_str)
@@ -138,15 +142,18 @@ def prepare_func(app_id, run_id, nb_path):
 
         return_code = mpi.returncode
 
+
+        if local_logdir:
+            local_tb = tensorboard.local_logdir_path
+            pydoop.hdfs.put(local_tb, hdfs_exec_logdir)
+
         if return_code != 0:
             cleanup(tb_hdfs_path)
-            cleanup(tb_hdfs_path_old)
             t_log.do_run = False
             t_log.join()
             raise Exception('mpirun FAILED, look in the logs for the error')
 
         cleanup(tb_hdfs_path)
-        cleanup(tb_hdfs_path_old)
         t_log.do_run = False
         t_log.join()
 
@@ -182,3 +189,4 @@ def cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
+

@@ -4,60 +4,80 @@ Utility functions to retrieve information about available services and setting u
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
 
-import os
 from hops import hdfs as hopshdfs
-from hops import tensorboard
-from hops import devices
 
 from hops import differential_evolution as diff_evo
 from hops import grid_search as gs
+from hops import launcher as launcher
+from hops import allreduce as allreduce
+from hops.tensorflowonspark import TFCluster
 
 from hops import util
 
-import pydoop.hdfs
-import threading
-import six
-import datetime
+from datetime import datetime
+import atexit
+import json
 
-run_id = 0
+elastic_id = 1
+app_id = None
+experiment_json = None
+running = False
 
-def launch(spark_session, map_fun, args_dict=None):
+def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
       :spark_session: SparkSession object
       :map_fun: The TensorFlow function to run
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+      :name: (optional) name of the job
     """
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        global running
+        running = True
 
-    sc = spark_session.sparkContext
-    app_id = str(sc.applicationId)
+        sc = spark.sparkContext
+        app_id = str(sc.applicationId)
 
-    if args_dict == None:
-        num_executions = 1
-    else:
-        arg_lists = list(args_dict.values())
-        currentLen = len(arg_lists[0])
-        for i in range(len(arg_lists)):
-            if currentLen != len(arg_lists[i]):
-                raise ValueError('Length of each function argument list must be equal')
-            num_executions = len(arg_lists[i])
+        launcher.run_id = launcher.run_id + 1
 
-    #Each TF task should be run on 1 executor
-    nodeRDD = sc.parallelize(range(num_executions), num_executions)
+        versioned_path = util.version_resources(versioned_resources, launcher.get_logdir(app_id))
 
-    #Force execution on executor, since GPU is located on executor    global run_id
-    global run_id
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
+        experiment_json = None
+        if args_dict:
+            experiment_json = util.populate_experiment(sc, name, 'experiment', 'launcher', launcher.get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
+        else:
+            experiment_json = util.populate_experiment(sc, name, 'experiment', 'launcher', launcher.get_logdir(app_id), None, versioned_path, description)
 
-    print('Finished TensorFlow job \n')
-    print('Make sure to check /Logs/TensorFlow/' + app_id + '/run.' + str(run_id) + ' for logfile and contents of TensorBoard logdir')
+        util.version_resources(versioned_resources, launcher.get_logdir(app_id))
 
-    run_id += 1
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id
+        retval, tensorboard_logdir = launcher.launch(sc, map_fun, args_dict, local_logdir)
 
-def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False):
+        if retval:
+            experiment_json = util.finalize_experiment(experiment_json, None, retval)
+            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+            return tensorboard_logdir
+
+        experiment_json = util.finalize_experiment(experiment_json, None, None)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+        running = False
+
+    return tensorboard_logdir
+
+
+def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -65,113 +85,146 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :map_fun: The TensorFlow function to run
       :search_dict: (optional) A dictionary containing differential evolutionary boundaries
     """
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        global running
+        running = True
 
+        sc = spark.sparkContext
+        app_id = str(sc.applicationId)
 
-    return diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=popsize, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations)
+        diff_evo.run_id = diff_evo.run_id + 1
 
-def grid_search(spark_session, map_fun, args_dict, direction='max'):
+        versioned_path = util.version_resources(versioned_resources, diff_evo.get_logdir(app_id))
+
+        experiment_json = None
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'evolutionary_search', diff_evo.get_logdir(app_id), json.dumps(search_dict), versioned_path, description)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=popsize, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir)
+
+        experiment_json = util.finalize_experiment(experiment_json, best_param, best_metric)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+        running = False
+
+    return tensorboard_logdir
+
+def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
       :spark_session: SparkSession object
       :map_fun: The TensorFlow function to run
-      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+      :args_dict: A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+      :direction: 'max' to maximize, 'min' to minimize
+      :name: (optional) name of the job
     """
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        global running
+        running = True
 
-    grid_params = util.grid_params(args_dict)
+        sc = spark.sparkContext
+        app_id = str(sc.applicationId)
 
-    return gs._grid_launch(spark_session, map_fun, grid_params, direction=direction)
+        gs.run_id = gs.run_id + 1
 
-#Helper to put Spark required parameter iter in function signature
-def _prepare_func(app_id, run_id, map_fun, args_dict):
+        versioned_path = util.version_resources(versioned_resources, gs.get_logdir(app_id))
 
-    def _wrapper_fun(iter):
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'grid_search', gs.get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
 
-        for i in iter:
-            executor_num = i
+        util.version_resources(versioned_resources, gs.get_logdir(app_id))
 
-        tb_pid = 0
-        tb_hdfs_path = ''
-        tb_hdfs_path_old = ''
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
-        if devices.get_num_gpus() > 0:
-            t.start()
+        grid_params = util.grid_params(args_dict)
 
-        try:
-            #Arguments
-            if args_dict:
-                argcount = six.get_function_code(map_fun).co_argcount
-                names = six.get_function_code(map_fun).co_varnames
+        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir)
 
-                args = []
-                argIndex = 0
-                param_string = ''
-                while argcount > 0:
-                    #Get args for executor and run function
-                    param_name = names[argIndex]
-                    param_val = args_dict[param_name][executor_num]
-                    param_string += str(param_name) + '=' + str(param_val) + '.'
-                    args.append(param_val)
-                    argcount -= 1
-                    argIndex += 1
-                param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'launcher')
-                pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                hopshdfs.log('Starting Spark executor with arguments ' + param_string)
-                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+        experiment_json = util.finalize_experiment(experiment_json, param, metric)
 
-                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
-                hopshdfs.log(gpu_str)
-                print(gpu_str)
-                print('-------------------------------------------------------')
-                print('Started running task ' + param_string + '\n')
-                hopshdfs.log('Started running task ' + param_string)
-                task_start = datetime.datetime.now()
-                map_fun(*args)
-                task_end = datetime.datetime.now()
-                time_str = '\nFinished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
-                print(time_str)
-                print('-------------------------------------------------------')
-                hopshdfs.log(time_str)
-            else:
-                hopshdfs.log('Starting Spark executor')
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'launcher')
-                pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
-                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
-                hopshdfs.log(gpu_str)
-                print(gpu_str)
-                print('-------------------------------------------------------')
-                print('Started running task\n')
-                hopshdfs.log('Started running task')
-                task_start = datetime.datetime.now()
-                map_fun()
-                task_end = datetime.datetime.now()
-                time_str = '\nFinished task - took ' + util.time_diff(task_start, task_end)
-                print(time_str)
-                print('-------------------------------------------------------')
-                hopshdfs.log(time_str)
-        except:
-            #Always do cleanup
-            _cleanup(tb_hdfs_path)
-            _cleanup(tb_hdfs_path_old)
-            if devices.get_num_gpus() > 0:
-                t.do_run = False
-                t.join()
-            raise
-        _cleanup(tb_hdfs_path)
-        _cleanup(tb_hdfs_path_old)
-        if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join()
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+        running = False
 
-    return _wrapper_fun
+    return tensorboard_logdir
 
-def _cleanup(tb_hdfs_path):
-    handle = hopshdfs.get()
-    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
-        handle.delete(tb_hdfs_path)
-    hopshdfs.kill_logger()
+def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+    """ Run the notebooks specified in the path as input to horovod
+
+    Args:
+      :spark_session: SparkSession object
+      :notebook: Notebook path
+      :name: (optional) name of the job
+    """
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        global running
+        running = True
+
+        sc = spark.sparkContext
+        app_id = str(sc.applicationId)
+
+        allreduce.run_id = allreduce.run_id + 1
+
+        versioned_path = util.version_resources(versioned_resources, allreduce.get_logdir(app_id))
+
+        experiment_json = None
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'horovod', allreduce.get_logdir(app_id), None, versioned_path, description)
+
+        util.version_resources(versioned_resources, allreduce.get_logdir(app_id))
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir)
+
+        experiment_json = util.finalize_experiment(experiment_json, None, None)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+        running = False
+
+    return tensorboard_logdir
+
+def exception_handler():
+    global experiment_json
+    if running and experiment_json != None:
+        experiment_json = json.loads(experiment_json)
+        experiment_json['status'] = "FAILED"
+        experiment_json['finished'] = datetime.now().isoformat()
+        experiment_json = json.dumps(experiment_json)
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+def exit_handler():
+    global experiment_json
+    if running and experiment_json != None:
+        experiment_json = json.loads(experiment_json)
+        experiment_json['status'] = "KILLED"
+        experiment_json['finished'] = datetime.now().isoformat()
+        experiment_json = json.dumps(experiment_json)
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+atexit.register(exit_handler)

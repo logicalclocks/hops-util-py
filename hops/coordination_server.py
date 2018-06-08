@@ -24,7 +24,6 @@ BUFSIZE = 1024*2
 
 class Reservations:
     """Thread-safe store for node reservations.
-
     Args:
       :required: expected number of nodes in the cluster.
     """
@@ -38,7 +37,6 @@ class Reservations:
 
     def add(self, meta):
         """Add a reservation.
-
         Args:
           :meta: a dictonary of metadata about a node
         """
@@ -174,7 +172,6 @@ class Server(MessageSocket):
 
     def start(self):
         """Start listener in a background thread
-
         Returns:
           address of the Server as a tuple of (host, port)
         """
@@ -223,7 +220,6 @@ class Server(MessageSocket):
 
 class Client(MessageSocket):
     """Client to register and await node reservations.
-
     Args:
       :server_addr: a tuple of (host, port) pointing to the Server.
     """
@@ -302,4 +298,4 @@ class Client(MessageSocket):
     def request_stop(self):
         """Request server stop."""
         resp = self._request('STOP')
-        return resp
+return resp

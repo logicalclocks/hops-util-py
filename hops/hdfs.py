@@ -9,6 +9,7 @@ import os
 import datetime
 from six import string_types
 import shutil
+import stat
 
 def get():
     """ Get a handle to pydoop hdfs
@@ -68,6 +69,7 @@ def init_logger():
         fd = fs_handle.open_file(logfile, flags='w')
 
 def log(string):
+    global fd
     if fd:
         if isinstance(string, string_types):
             fd.write(('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n').encode())
@@ -76,6 +78,7 @@ def log(string):
             'ERROR! Attempting to write a non-string object to logfile') + '\n').encode())
 
 def kill_logger():
+    global fd
     if fd:
         try:
             fd.flush()
@@ -103,6 +106,8 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
 
     if sub_type:
         hdfs_exec_logdir = hdfs_run_id_logdir + "/" + str(sub_type) + '/' + str(param_string)
+    elif not param_string and not sub_type:
+        hdfs_exec_logdir = hdfs_run_id_logdir + '/'
     else:
         hdfs_exec_logdir = hdfs_run_id_logdir + '/' + str(param_string)
 
@@ -116,7 +121,9 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
     os.environ['EXEC_LOGFILE'] = logfile
 
     try:
-        hdfs.chmod(hdfs_events_parent_dir, "g+w")
+        st = hdfs.stat(hdfs_events_parent_dir)
+        if not bool(st.st_mode & stat.S_IWGRP):
+            hdfs.chmod(hdfs_events_parent_dir, "g+w")
     except IOError:
         # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable
         pass

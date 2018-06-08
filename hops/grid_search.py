@@ -17,7 +17,7 @@ import datetime
 
 run_id = 0
 
-def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
+def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -25,10 +25,9 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
       :map_fun: The TensorFlow function to run
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
-    sc = spark_session.sparkContext
+    global run_id
     app_id = str(sc.applicationId)
     num_executions = 1
-    global run_id
 
     if direction != 'max' and direction != 'min':
         raise ValueError('Invalid direction ' + direction +  ', must be max or min')
@@ -44,9 +43,8 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Force execution on executor, since GPU is located on executor
-
     job_start = datetime.datetime.now()
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir))
     job_end = datetime.datetime.now()
 
     job_time_str = util.time_diff(job_start, job_end)
@@ -58,7 +56,12 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
 
     max_val, max_hp, min_val, min_hp, avg = _get_best(args_dict, num_executions, arg_names, arg_count, hdfs_appid_dir, run_id)
 
+    param_combination = ""
+    best_val = ""
+
     if direction == 'max':
+        param_combination = max_hp
+        best_val = str(max_val)
         results = '\n------ Grid search results ------ direction(' + direction + ') \n' \
           'BEST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
           'WORST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
@@ -67,6 +70,8 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
         write_result(hdfs_runid_dir, results)
         print(results)
     elif direction == 'min':
+        param_combination = min_hp
+        best_val = str(min_val)
         results = '\n------ Grid search results ------ direction(' + direction + ') \n' \
         'BEST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
         'WORST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
@@ -76,11 +81,15 @@ def _grid_launch(spark_session, map_fun, args_dict, direction='max'):
         print(results)
 
 
-    print('\nSee /Logs/TensorFlow/' + app_id + '/run.' + str(run_id) + ' for summary of results, logfile and TensorBoard log directory')
+    print('Finished Experiment \n')
+    print('\nSee /Logs/TensorFlow/' + app_id+ '/grid_search/run.' + str(run_id) + ' for summary of results, logfiles and TensorBoard log directory')
 
-    run_id += 1
+    return hdfs_runid_dir, param_combination, best_val
 
-    return hdfs_runid_dir
+def get_logdir(app_id):
+    global run_id
+    return hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id + '/grid_search/run.' + str(run_id)
+
 
 
 def write_result(runid_dir, string):
@@ -94,15 +103,15 @@ def write_result(runid_dir, string):
     fd.flush()
     fd.close()
 
-def _prepare_func(app_id, run_id, map_fun, args_dict):
+def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
 
     def _wrapper_fun(iter):
 
         for i in iter:
             executor_num = i
 
-        tb_hdfs_path = None
-        tb_hdfs_path_old = None
+        tb_hdfs_path = ''
+        hdfs_exec_logdir = ''
 
         t = threading.Thread(target=devices.print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
@@ -129,8 +138,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                 hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'grid_search')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
-                hopshdfs.log('Starting Spark executor with arguments ' + param_string)
-                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
 
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
@@ -142,21 +150,24 @@ def _prepare_func(app_id, run_id, map_fun, args_dict):
                 retval = map_fun(*args)
                 task_end = datetime.datetime.now()
                 _handle_return(retval, hdfs_exec_logdir)
-                time_str = '\nFinished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
-                print(time_str)
+                time_str = 'Finished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                print('\n' + time_str)
                 print('-------------------------------------------------------')
                 hopshdfs.log(time_str)
         except:
             #Always do cleanup
             _cleanup(tb_hdfs_path)
-            _cleanup(tb_hdfs_path_old)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
+        finally:
+            if local_logdir:
+                local_tb = tensorboard.local_logdir_path
+                util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
+
 
         _cleanup(tb_hdfs_path)
-        _cleanup(tb_hdfs_path_old)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
