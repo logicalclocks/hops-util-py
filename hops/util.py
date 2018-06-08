@@ -9,6 +9,41 @@ import signal
 from ctypes import cdll
 import itertools
 import socket
+import json
+import base64
+from datetime import datetime
+from hops import hdfs
+from hops import version
+
+#! Needed for hops library backwards compatability
+try:
+    import requests
+except:
+    pass
+import pydoop.hdfs
+
+try:
+    import tensorflow
+except:
+    pass
+
+try:
+    import http.client as http
+except ImportError:
+    import httplib as http
+
+def _get_elastic_endpoint():
+    elastic_endpoint = os.environ['ELASTIC_ENDPOINT']
+    host, port = elastic_endpoint.split(':')
+    return host + ':' + port
+
+elastic_endpoint = None
+try:
+    elastic_endpoint = _get_elastic_endpoint()
+except:
+    pass
+
+hopsworks_endpoint = os.environ['REST_ENDPOINT']
 
 def _find_in_path(path, file):
     """Find a file in a given path string."""
@@ -58,9 +93,6 @@ def num_param_servers(spark):
     sc = spark.sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
 
-def csv_to_args(path):
-    print("TODO")
-
 def grid_params(dict):
     """ Generate all possible combinations (cartesian product) of the hyperparameter values
     Returns:
@@ -98,7 +130,7 @@ def time_diff(task_start, task_end):
         return str(int(seconds)) + ' seconds'
     elif seconds == 60 or seconds <= 3600:
         minutes = float(seconds) / 60.0
-        return str(int(minutes)) + ' minutes, ' + str(int((minutes % 1) * 60)) + ' seconds'
+        return str(int(minutes)) + ' minutes, ' + str((int(seconds) % 60)) + ' seconds'
     elif seconds > 3600:
         hours = float(seconds) / 3600.0
         minutes = (hours % 1) * 60
@@ -106,6 +138,113 @@ def time_diff(task_start, task_end):
     else:
         return 'unknown time'
 
+def put_elastic(project, appid, elastic_id, json_data):
+    if not elastic_endpoint:
+        return
+    headers = {'Content-type': 'application/json'}
+    session = requests.Session()
+    resp = session.put("http://" + elastic_endpoint + "/" +  project + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
+    # Check return code
 
-def to_json():
-    return ""
+def populate_experiment(sc, model_name, module, function, logdir, hyperparameter_space, versioned_resources, description):
+    user = None
+    if 'HOPSWORKS_USER' in os.environ:
+        user = os.environ['HOPSWORKS_USER']
+    return json.dumps({'project': hdfs.project_name(),
+                       'user': user,
+                       'name': model_name,
+                       'module': module,
+                       'function': function,
+                       'status':'RUNNING',
+                       'start': datetime.now().isoformat(),
+                       'memory_per_executor': str(sc._conf.get("spark.executor.memory")),
+                       'gpus_per_executor': str(sc._conf.get("spark.executor.gpus")),
+                       'executors': str(sc._conf.get("spark.executor.instances")),
+                       'logdir': logdir,
+                       'hyperparameter_space': hyperparameter_space,
+                       'versioned_resources': versioned_resources,
+                       'description': description})
+
+def finalize_experiment(experiment_json, hyperparameter, metric):
+    experiment_json = json.loads(experiment_json)
+    experiment_json['metric'] = metric
+    experiment_json['hyperparameter'] = hyperparameter
+    experiment_json['finished'] = datetime.now().isoformat()
+    experiment_json['status'] = "SUCEEDED"
+    experiment_json = _add_version(experiment_json)
+
+    return json.dumps(experiment_json)
+
+def _add_version(experiment_json):
+    experiment_json['spark'] = os.environ['SPARK_VERSION']
+
+    try:
+        experiment_json['tensorflow'] = tensorflow.__version__
+    except:
+        experiment_json['tensorflow'] = os.environ['TENSORFLOW_VERSION']
+
+    experiment_json['hops_py'] = version.__version__
+    experiment_json['hops'] = os.environ['HADOOP_VERSION']
+    experiment_json['hopsworks'] = os.environ['HOPSWORKS_VERSION']
+    experiment_json['cuda'] = os.environ['CUDA_VERSION']
+    experiment_json['kafka'] = os.environ['KAFKA_VERSION']
+    return experiment_json
+
+def store_local_tensorboard(local_tb, hdfs_exec_logdir):
+    tb_contents = os.listdir(local_tb)
+    for entry in tb_contents:
+        pydoop.hdfs.put(local_tb + '/' + entry, hdfs_exec_logdir)
+
+def get_notebook_path():
+
+    material_passwd = os.getcwd() + '/material_passwd'
+
+    if not os.path.exists(material_passwd):
+        raise AssertionError('material_passwd is not present in current working directory')
+
+    with open(material_passwd) as f:
+        keyStorePwd = f.read()
+
+    k_certificate = os.getcwd() + '/k_certificate'
+
+    if not os.path.exists(k_certificate):
+        raise AssertionError('k_certificate is not present in current working directory')
+
+    with open(k_certificate, 'rb') as f:
+        keyStore = f.read()
+        keyStore = base64.b64encode(keyStore)
+
+    json_contents = {'keyStorePwd': keyStorePwd,
+                     'keyStore': keyStore}
+
+    json_data = json.dumps(json_contents)
+
+    headers = {'Content-type': 'application/json'}
+    session = requests.Session()
+    resp = session.post(hopsworks_endpoint + '/hopsworks-api/api/appservice/notebook', data=json_data, headers=headers, verify=False)
+
+    return os.environ['HDFS_BASE_DIR'] + resp['notebook_path']
+
+def version_resources(versioned_resources, rundir):
+    if not versioned_resources:
+        return None
+    pyhdfs_handle = hdfs.get()
+    pyhdfs_handle.create_directory(rundir)
+    endpoint_prefix = hdfs.project_path()
+    versioned_paths = []
+    for hdfs_resource in versioned_resources:
+        if pydoop.hdfs.path.exists(hdfs_resource):
+            pyhdfs_handle.copy(hdfs_resource, pyhdfs_handle, rundir)
+            path, filename = os.path.split(hdfs_resource)
+            versioned_paths.append(rundir.replace(endpoint_prefix, '') + '/' + filename)
+        else:
+            raise NotFoundException('Could not find resource in specified path: ' + hdfs_resource)
+
+    return ', '.join(versioned_paths)
+
+
+
+
+
+
+

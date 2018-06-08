@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 exec(open('hops/version.py').read())
 
@@ -16,7 +16,7 @@ setup(
     keywords='Hops, Hadoop, TensorFlow, Spark',
     url='https://github.com/hopshadoop/hops-util-py',
     download_url = 'http://snurran.sics.se/hops/hops-util-py/hops-' + __version__ + '.tar.gz',
-    packages=['hops'],
+    packages=find_packages(),
     long_description=read('README.rst'),
     classifiers=[
         'Development Status :: 3 - Alpha',

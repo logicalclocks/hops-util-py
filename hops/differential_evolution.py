@@ -19,6 +19,7 @@ diff_evo=None
 cleanup=None
 summary_file=None
 fs_handle=None
+local_logdir_bool=False
 
 generation_id = 0
 run_id = 0
@@ -213,7 +214,7 @@ class DifferentialEvolution:
         for indiv in population:
             parsed_back_population.append(self._parse_back(indiv))
 
-        return parsed_back_population, self._scores
+        return new_gen_best_param, new_gen_best
 
     # define bounds of each individual depending on type
     def _individual_representation(self):
@@ -408,7 +409,11 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False):
+def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False):
+
+    global run_id
+    global local_logdir_bool
+    local_logdir_bool = local_logdir
 
     global spark_session
     spark_session = spark
@@ -419,12 +424,12 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
     global cleanup
     cleanup = cleanup_generations
 
-    global run_id
-
     argcount = six.get_function_code(function).co_argcount
     arg_names = six.get_function_code(function).co_varnames
 
     ordered_arr = []
+
+    app_id = spark.sparkContext.applicationId
 
     argIndex = 0
     while argcount != 0:
@@ -458,13 +463,18 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
                                      crossover=crossover,
                                      mutation=mutation)
 
-    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(spark.sparkContext.applicationId) + "/differential_evolution/run." + str(run_id)
+    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(app_id) + "/differential_evolution/run." + str(run_id)
 
-    diff_evo.solve(root_dir)
+    best_param, best_metric = diff_evo.solve(root_dir)
 
-    run_id += 1
+    print('Finished Experiment \n')
+    print('\nSee /Logs/TensorFlow/' + app_id + '/differential_evolution/run.' + str(run_id) + ' for summary of results, logfiles and TensorBoard log directory')
 
-    return str(root_dir)
+    return str(root_dir), best_param, best_metric
+
+def get_logdir(app_id):
+    global run_id
+    return hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/differential_evolution/run." + str(run_id)
 
 
 def _evolutionary_launch(spark_session, map_fun, args_dict=None):
@@ -512,10 +522,13 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
 
         tb_pid = 0
         tb_hdfs_path = ''
+        hdfs_exec_logdir = ''
 
         t = threading.Thread(target=devices.print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
             t.start()
+
+        global local_logdir_bool
 
         try:
             #Arguments
@@ -540,8 +553,7 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
                 hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'differential_evolution', sub_type='generation.' + str(generation_id))
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
-                hopshdfs.log('Starting Spark executor with arguments ' + param_string)
-                tb_hdfs_path, tb_hdfs_path_old, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num)
+                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir_bool)
                 gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
@@ -554,8 +566,8 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
                 if not val:
                     val = map_fun(*args)
                 task_end = datetime.datetime.now()
-                time_str = '\nFinished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
-                print(time_str)
+                time_str = 'Finished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                print('\n' + time_str)
                 hopshdfs.log(time_str)
                 try:
                     castval = int(val)
@@ -579,17 +591,18 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
             #Always do cleanup
             if tb_hdfs_path:
                 _cleanup(tb_hdfs_path)
-            if tb_hdfs_path_old:
-                _cleanup(tb_hdfs_path_old)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
             raise
+        finally:
+            if local_logdir_bool:
+                local_tb = tensorboard.local_logdir_path
+                util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
+
         hopshdfs.log('Finished running')
         if tb_hdfs_path:
             _cleanup(tb_hdfs_path)
-        if tb_hdfs_path_old:
-            _cleanup(tb_hdfs_path_old)
         if devices.get_num_gpus() > 0:
             t.do_run = False
             t.join()
