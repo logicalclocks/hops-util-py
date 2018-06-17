@@ -48,8 +48,11 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num):
 
         tb_socket.close()
 
+        tb_env = os.environ.copy()
+        tb_env['CUDA_VISIBLE_DEVICES'] = ''
+
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port],
-                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
         host = socket.gethostname()
@@ -106,18 +109,21 @@ def _restart_debugging(interactive=True):
 
     debugger_socket.close()
 
+    tb_env = os.environ.copy()
+    tb_env['CUDA_VISIBLE_DEVICES'] = ''
+
     global pypath
     global tb_path
     global tb_port
 
     if interactive:
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
-                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
     if not interactive:
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_data_server_grpc_port=%d" % debugger_port],
-                                   env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
     time.sleep(2)
@@ -155,8 +161,11 @@ def visualize(spark_session, hdfs_root_logdir):
 
     tb_socket.close()
 
+    tb_env = os.environ.copy()
+    tb_env['CUDA_VISIBLE_DEVICES'] = ''
+
     tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port],
-                               env=os.environ, preexec_fn=util.on_executor_exit('SIGTERM'))
+                               env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)

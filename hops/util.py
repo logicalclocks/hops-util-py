@@ -95,14 +95,16 @@ def time_diff(task_start, task_end):
     seconds = time_diff.seconds
 
     if seconds < 60:
-        return str(seconds) + ' seconds'
+        return str(int(seconds)) + ' seconds'
     elif seconds == 60 or seconds <= 3600:
-        minutes = seconds / 60
-        return str(minutes) + ' minutes, ' + str(seconds % 60) + ' seconds'
+        minutes = float(seconds) / 60.0
+        return str(int(minutes)) + ' minutes, ' + str(int((minutes % 1) * 60)) + ' seconds'
+    elif seconds > 3600:
+        hours = float(seconds) / 3600.0
+        minutes = (hours % 1) * 60
+        return str(int(hours)) + ' hours, ' + str(int(minutes)) + ' minutes'
     else:
-        hours = seconds / 3600
-        minutes = seconds % 3600
-        return str(hours) + ' hours, ' + str(minutes) + ' minutes'
+        return 'unknown time'
 
 
 def to_json():
