@@ -50,7 +50,7 @@ def prepare_func(app_id, run_id, nb_path):
         for i in iter:
             executor_num = i
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'Horovod', 'run.' + str(run_id))
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'horovod', None)
 
         tb_pid = 0
         tb_hdfs_path = ''
