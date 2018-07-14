@@ -163,13 +163,13 @@ def print_log():
             time.sleep(1)
             mpi_logfile.seek(where)
         else:
-            print line
+            print(line)
 
     # Get the last outputs
     line = mpi_logfile.readline()
     while line:
         where = mpi_logfile.tell()
-        print line
+        print(line)
         line = mpi_logfile.readline()
         mpi_logfile.seek(where)
 
