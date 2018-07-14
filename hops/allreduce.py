@@ -50,7 +50,7 @@ def prepare_func(app_id, run_id, nb_path):
         for i in iter:
             executor_num = i
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'horovod', None)
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'horovod')
 
         tb_pid = 0
         tb_hdfs_path = ''
@@ -150,6 +150,8 @@ def prepare_func(app_id, run_id, nb_path):
         t_log.do_run = False
         t_log.join()
 
+        hopshdfs.kill_logger()
+
     return _wrapper_fun
 
 def print_log():
@@ -180,4 +182,3 @@ def cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
-hopshdfs.kill_logger()
