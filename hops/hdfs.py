@@ -11,6 +11,8 @@ from six import string_types
 import shutil
 import stat
 import fnmatch
+import os
+import errno
 
 def get():
     """ Get a handle to pydoop hdfs
@@ -178,6 +180,22 @@ def get_experiments_dir():
     elif pyhdfs_handle.exists(project_path() + "Logs"):
         return project_path() + "Logs/TensorFlow"
 
+
+def _expand_path(hdfs_path, project, exists=True):
+    # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
+    if hdfs_path.startsWith("/Projects/"):
+        hdfs_path = "hdfs://" + hdfs_path
+    elif not hdfs_path.startsWith("hdfs://"):
+        # if the file URL type is not HDFS, throw an error
+        if "://" in hdfs_path:
+            raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)    
+        proj_path = project_path(project_name())
+        hdfs_path = proj_path + '/' + hdfs_path
+    if exists == True and not hdfs.path.exists(hdfs_path):
+        raise IOError("path %s not found" % hdfs_path)
+    return hdfs_path
+    
+
 #    
 # Globbing gives you the list of files in a dir that matches a supplied pattern    
 #    >>> import glob
@@ -192,9 +210,8 @@ def glob(hdfs_path, recursive=False, project=project_name()):
  
 
     Args:
-     :hdfs_path: If this value is not specified, it will get the path to your project. You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS.
-     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-     you can specify the name of the project as a string.
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS.
+     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Raises: IOError
 
@@ -221,10 +238,10 @@ def ls(hdfs_path, recursive=False, project=project_name()):
  
 
     Args:
-     :hdfs_path: If this value is not specified, it will get the path to your project. You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
      :recursive: if it is a directory and recursive is True, the list contains one item for every file or directory in the tree rooted at hdfs_path.
-     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-     you can specify the name of the project as a string.
+     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+
 
 
     Raises: IOError
@@ -242,10 +259,10 @@ def lsl(hdfs_path, recursive=False, project=project_name()):
  
 
     Args:
-     :hdfs_path: If this value is not specified, it will get the path to your project. You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
      :recursive: if it is a directory and recursive is True, the list contains one item for every file or directory in the tree rooted at hdfs_path.
-     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-     you can specify the name of the project as a string.
+     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+
 
 
     Raises: IOError
@@ -256,16 +273,6 @@ def lsl(hdfs_path, recursive=False, project=project_name()):
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.lsl(hdfs_path, recursive=recursive)
 
-    
-def _expand_path(hdfs_path, project, exists=True):
-    # Check if a full path is supplied. If not, assume it is a relative path for this project.
-    if ("hdfs://" not in hdfs_path):
-        proj_path = project_path(project_name())
-        hdfs_path = proj_path + '/' + hdfs_path
-    if exists == True and not hdfs.path.exists(hdfs_path):
-        raise IOError("ls path %s not found" % hdfs_path)
-    return hdfs_path
-
 
 def rmr(hdfs_path, project=project_name()):
     """ 
@@ -273,9 +280,8 @@ def rmr(hdfs_path, project=project_name()):
  
 
     Args:
-     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-     you can specify the name of the project as a string.
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
+     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Raises: IOError
     """
@@ -289,9 +295,8 @@ def mkdir(hdfs_path, project=project_name()):
  
 
     Args:
-     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-     you can specify the name of the project as a string.
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
+     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Raises: IOError
     """
@@ -331,7 +336,7 @@ def chown(hdfs_path, user, group, project=project_name()):
     Change file owner and group.
 
     Args:
-     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to the given project path in HDFS).
      :user: New hdfs username
      :group: New hdfs group
      :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
@@ -394,4 +399,78 @@ def access(hdfs_path, mode, project=project_name()):
     """
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.access(hdfs_path, mode)
+
+def _mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: 
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def copy_to_local(hdfs_path, project=project_name(), overwrite=False):
+    """ 
+    Copies a file or a directory (recurisvely) to a local directory indicated by the $PDIR env variable.
+    The command recreates the directory structure under hdfs:///Projects/<project_name>/ in the local $PDIR directory.
+    For example, if you execute:
+        copy_to_local("hdfs:///Projects/demo/Resources/myFile.csv")
+    it will create a 'Resources' directory under the $PDIR directory, and copy the myFile.csv file to $PDIR/Resources/myFile.csv
+ 
+
+    Args:
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+
+
+    Raises: IOError
+
+    Returns:
+        StatResult object
+    """
+
+    hdfs_path = _expand_path(hdfs_path, project)
+    
+    sub_path = hdfs_path.find("hdfs:///Projects/" + project)
+    rel_path = hdfs_path[sub_path+1:]
+
+    local_path = os.environ['PDIR'] + rel_path
+
+    pos = local_path.rfind("/")
+    local_dir = local_path[:pos]
+    _mkdir_p(local_dir)
+
+    if overwrite == True:
+        if pydoop.hdfs.path.isdir(hdfs_path) == True :
+            shutil.rmtree(local_path)
+        else:
+            os.remove(local_path)
+
+    pydoop.hdfs.get(hdfs_path, local_dir)
+
+    
+def copy_from_local(local_path, hdfs_path, project=project_name()):
+    """ 
+    Copies a file or a directory (recurisvely) using local path (relative to (under) the path identfied by $PDIR) to a path in hdfs (hdfs_path).
+    For example, if you execute:
+        copy_from_local("data.tfrecords", "/Resources/", project="demo")
+    This will copy the file in $PDIR/data.tfrecords to hdfs://Projects/demo/Resources/data.tfrecords
+
+    Args:
+     :local_path: a local directory, relative to (under) the path given by the $PDIR environment variable.
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+
+
+    Raises: IOError
+
+    """
+    
+    if not local_path.startsWith(os.environ['PDIR']):
+        local_path = os.environ['PDIR'] + "/" + local_path
+    hdfs_path = _expand_path(hdfs_path, project)    
+    pydoop.hdfs.put(local_dir, hdfs_path)
 
