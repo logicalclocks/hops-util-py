@@ -428,7 +428,7 @@ def copy_to_local(hdfs_path, project=project_name(), overwrite=False):
     Raises: IOError
 
     Returns:
-        StatResult object
+        Path to the file/directory on the local disk.
     """
 
     hdfs_path = _expand_path(hdfs_path, project)
@@ -451,7 +451,7 @@ def copy_to_local(hdfs_path, project=project_name(), overwrite=False):
     pydoop.hdfs.get(hdfs_path, local_dir)
 
     
-def copy_from_local(local_path, hdfs_path, project=project_name()):
+def copy_to_hdfs(local_path, hdfs_path, project=project_name()):
     """ 
     Copies a file or a directory (recurisvely) using local path (relative to (under) the path identfied by $PDIR) to a path in hdfs (hdfs_path).
     For example, if you execute:
@@ -473,4 +473,84 @@ def copy_from_local(local_path, hdfs_path, project=project_name()):
         local_path = os.environ['PDIR'] + "/" + local_path
     hdfs_path = _expand_path(hdfs_path, project)    
     pydoop.hdfs.put(local_dir, hdfs_path)
+
+def open_file(hdfs_file, project=project_name(), flags='rw', buff_size=0):
+    """ 
+    Opens a file for read/write/append and returns a file descriptor object (fd) that should be closed when no longer needed.
+
+    Args:
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :flags: Supported opening modes are “r”, “w”, “a”. In addition, a trailing “t” can be added to specify text mode (e.g., “rt” = open for reading text).K
+     :buff_size: Pass 0 as buff_size if you want to use the “configured” values, i.e., the ones set in the Hadoop configuration files.
+
+
+    Returns:
+        A file descriptor (fd) that needs to be closed (fd.close()) when it is no longer needed.
+
+    Raises: IOError
+            If the file does not exist.
+    """
+    hdfs_path = _expand_path(hdfs_path, project)
+    fs_handle = hdfs.get_fs()
+    fd = fs_handle.open_file(hdfs_filek, flags)
+    return fd
+
+
+def exists(hdfs_file, project=project_name()):
+    """ 
+    Return True if hdfs_path exists in the default HDFS.
+
+    Args:
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+
+
+    Returns:
+        True if hdfs_path exists.
+
+    Raises: IOError
+    """
+    hdfs_path = _expand_path(hdfs_path, project)
+    return hdfs.exists(hdfs_path)
+
+
+
+def isdir(hdfs_file, project=project_name()):
+    """ 
+    Return True if path refers to a directory.
+
+    Args:
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+
+
+    Returns:
+        True if path refers to a directory.
+
+    Raises: IOError
+    """
+    hdfs_path = _expand_path(hdfs_path, project)
+    return hdfs.isdir(hdfs_path)
+
+
+def isfile(hdfs_file, project=project_name()):
+    """ 
+    Return True if path refers to a file.
+
+    Args:
+     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+     :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
+     you can specify the name of the project as a string.
+
+
+    Returns:
+        True if path refers to a file.
+
+    Raises: IOError
+    """
+    hdfs_path = _expand_path(hdfs_path, project)
+    return hdfs.isfile(hdfs_path)
+
 
