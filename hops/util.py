@@ -156,6 +156,7 @@ def populate_experiment(sc, model_name, module, function, logdir, hyperparameter
                        'module': module,
                        'function': function,
                        'status':'RUNNING',
+                       'app_id': sc.applicationId,
                        'start': datetime.now().isoformat(),
                        'memory_per_executor': str(sc._conf.get("spark.executor.memory")),
                        'gpus_per_executor': str(sc._conf.get("spark.executor.gpus")),
