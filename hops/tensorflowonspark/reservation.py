@@ -168,8 +168,8 @@ class Server(MessageSocket):
       # check status flags for any errors
       if 'error' in status:
         sc.cancelAllJobs()
-        sc.stop()
-        sys.exit(1)
+        #sc.stop()
+        #sys.exit(1)
       time.sleep(1)
       timespent += 1
       if (timespent > timeout):
