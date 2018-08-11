@@ -185,8 +185,8 @@ class TFCluster(object):
       logging.error("Exiting Spark application with error status.")
       exception_handler()
       self.sc.cancelAllJobs()
-      self.sc.stop()
-      sys.exit(1)
+      #self.sc.stop()
+      #sys.exit(1)
     global experiment_json
     global app_id
     experiment_json = util.finalize_experiment(experiment_json, None, None)
