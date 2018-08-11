@@ -313,7 +313,7 @@ def run(sc, map_fun, tf_args, num_executors, num_ps, tensorboard=False, input_mo
   versioned_path = util.version_resources(versioned_resources, get_logdir(app_id))
 
   experiment_json = None
-  experiment_json = util.populate_experiment(sc, name, 'experiment.TFCluster', 'run', get_logdir(app_id), None, versioned_path, description)
+  experiment_json = util.populate_experiment(sc, name, 'TFCluster', 'run', get_logdir(app_id), None, versioned_path, description)
 
   util.put_elastic(hopshdfs.project_name(), app_id, str('dist' + str(elastic_id)), experiment_json)
 
