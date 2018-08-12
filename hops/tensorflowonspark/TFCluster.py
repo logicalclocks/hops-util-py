@@ -170,6 +170,8 @@ class TFCluster(object):
                 time.sleep(5)
           else:
             done = True
+            global running
+            running = False
 
 
 
