@@ -14,7 +14,7 @@ setup(
     description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
     license='Apache License 2.0',
     keywords='Hops, Hadoop, TensorFlow, Spark',
-    url='https://github.com/hopshadoop/hops-util-py',
+    url='https://github.com/logicalclocks/hops-util-py',
     download_url = 'http://snurran.sics.se/hops/hops-util-py/hops-' + __version__ + '.tar.gz',
     packages=find_packages(),
     long_description=read('README.rst'),
