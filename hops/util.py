@@ -43,7 +43,16 @@ try:
 except:
     pass
 
-hopsworks_endpoint = os.environ['REST_ENDPOINT']
+
+def _get_hopsworks_rest_endpoint():
+    elastic_endpoint = os.environ['REST_ENDPOINT']
+    return elastic_endpoint
+
+hopsworks_endpoint = None
+try:
+    hopsworks_endpoint = _get_hopsworks_rest_endpoint()
+except:
+    pass
 
 def _find_in_path(path, file):
     """Find a file in a given path string."""
