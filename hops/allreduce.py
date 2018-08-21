@@ -43,7 +43,7 @@ def launch(sc, notebook, local_logdir=False):
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id + '/horovod/run.' + str(run_id)
+    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/horovod/run.' + str(run_id)
 
 def prepare_func(app_id, run_id, nb_path, local_logdir):
 

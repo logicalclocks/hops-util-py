@@ -51,7 +51,7 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
 
 
 #Helper to put Spark required parameter iter in function signature

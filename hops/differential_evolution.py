@@ -474,7 +474,7 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/differential_evolution/run." + str(run_id)
+    return hopshdfs.project_path() + "Logs/TensorFlow/" + app_id + "/differential_evolution/run." + str(run_id)
 
 
 def _evolutionary_launch(spark_session, map_fun, args_dict=None):
