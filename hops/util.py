@@ -12,8 +12,11 @@ import socket
 import json
 import base64
 from datetime import datetime
+import time
 from hops import hdfs
 from hops import version
+
+HTTP_OK = 200
 
 #! Needed for hops library backwards compatability
 try:
@@ -152,8 +155,20 @@ def put_elastic(project, appid, elastic_id, json_data):
         return
     headers = {'Content-type': 'application/json'}
     session = requests.Session()
-    resp = session.put("http://" + elastic_endpoint + "/" +  project + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
-    # Check return code
+
+    retries = 3
+    while retries > 0:
+        resp = session.put("http://" + elastic_endpoint + "/" +  project + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
+        if resp.status_code == HTTP_OK:
+            return
+        else:
+            time.sleep(20)
+            retries = retries - 1
+
+    raise RuntimeError("Failed to publish experiment json file to Elastic, it is possible Elastic is experiencing problems. "
+                       "Please contact an administrator.")
+
+
 
 def populate_experiment(sc, model_name, module, function, logdir, hyperparameter_space, versioned_resources, description):
     user = None
@@ -180,7 +195,7 @@ def finalize_experiment(experiment_json, hyperparameter, metric):
     experiment_json['metric'] = metric
     experiment_json['hyperparameter'] = hyperparameter
     experiment_json['finished'] = datetime.now().isoformat()
-    experiment_json['status'] = "SUCEEDED"
+    experiment_json['status'] = "SUCCEEDED"
     experiment_json = _add_version(experiment_json)
 
     return json.dumps(experiment_json)
