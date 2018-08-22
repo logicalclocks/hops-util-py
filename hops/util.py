@@ -16,8 +16,6 @@ import time
 from hops import hdfs
 from hops import version
 
-HTTP_OK = 200
-
 #! Needed for hops library backwards compatability
 try:
     import requests
@@ -159,7 +157,7 @@ def put_elastic(project, appid, elastic_id, json_data):
     retries = 3
     while retries > 0:
         resp = session.put("http://" + elastic_endpoint + "/" +  project + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
-        if resp.status_code == HTTP_OK:
+        if resp.status_code == 200:
             return
         else:
             time.sleep(20)
