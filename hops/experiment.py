@@ -11,17 +11,98 @@ from hops import grid_search as gs
 from hops import launcher as launcher
 from hops import allreduce as allreduce
 from hops.tensorflowonspark import TFCluster
+from hops import tensorboard
 
 from hops import util
 
 from datetime import datetime
 import atexit
 import json
+import pydoop.hdfs
+import os
 
 elastic_id = 1
 app_id = None
 experiment_json = None
 running = False
+driver_tensorboard_hdfs_path=None
+
+def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+
+    Args:
+      :spark_session: SparkSession object
+      :map_fun: The TensorFlow function to run
+      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+      :name: (optional) name of the job
+    """
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.stop() to stop it.")
+
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        global running
+        running = True
+
+        sc = spark.sparkContext
+        app_id = str(sc.applicationId)
+
+        launcher.run_id = launcher.run_id + 1
+
+        versioned_path = util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+
+        experiment_json = None
+
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'begin', launcher.get_logdir(app_id), None, versioned_path, description)
+
+        util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, launcher.run_id, 'experiment', 'launcher')
+
+        pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
+
+        hopshdfs.init_logger()
+
+        global driver_tensorboard_hdfs_path
+        driver_tensorboard_hdfs_path,_ = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir, tensorboard_driver=True)
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+
+    return
+
+def end(metric=None):
+    global running
+    global experiment_json
+    global elastic_id
+    global driver_tensorboard_hdfs_path
+    global app_id
+    if not running:
+        raise RuntimeError("An experiment is not running. Did you forget to call experiment.end()?")
+    try:
+        if metric:
+            experiment_json = util.finalize_experiment(experiment_json, None, str(metric))
+            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        else:
+            experiment_json = util.finalize_experiment(experiment_json, None, None)
+            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    except:
+        exception_handler()
+        raise
+    finally:
+        elastic_id +=1
+        running = False
+        handle = hopshdfs.get()
+        if not driver_tensorboard_hdfs_path == None and not driver_tensorboard_hdfs_path == '' \
+                and handle.exists(driver_tensorboard_hdfs_path):
+            handle.delete(driver_tensorboard_hdfs_path)
+        hopshdfs.kill_logger()
 
 def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
@@ -32,6 +113,9 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
       :name: (optional) name of the job
     """
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
     try:
         global app_id
         global experiment_json
@@ -85,6 +169,9 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :map_fun: The TensorFlow function to run
       :search_dict: (optional) A dictionary containing differential evolutionary boundaries
     """
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
     try:
         global app_id
         global experiment_json
@@ -129,6 +216,9 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
       :direction: 'max' to maximize, 'min' to minimize
       :name: (optional) name of the job
     """
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
     try:
         global app_id
         global experiment_json
@@ -173,6 +263,9 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
       :notebook: Notebook path
       :name: (optional) name of the job
     """
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
     try:
         global app_id
         global experiment_json

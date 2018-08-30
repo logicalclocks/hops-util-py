@@ -509,7 +509,7 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
 
     generation_id += 1
 
-    return 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + "/"
+    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + "/"
 
 
 #Helper to put Spark required parameter iter in function signature

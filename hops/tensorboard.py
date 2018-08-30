@@ -22,7 +22,7 @@ tb_path = None
 local_logdir_path = None
 local_logdir_bool = False
 
-def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
+def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False, tensorboard_driver=False):
 
     global tb_pid
 
@@ -78,7 +78,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
         global tb_url
         tb_url = "http://{0}:{1}".format(host, tb_port)
         global endpoint
-        endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
+        if tensorboard_driver:
+            endpoint = endpoint_dir + "/TensorBoard.driver"
+        else:
+            endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
 
         #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
@@ -189,7 +192,7 @@ def visualize(spark_session, hdfs_root_logdir):
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)
-    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/TensorBoard.task0"
+    tb_endpoint = hopshdfs.project_path() + "/Logs/TensorFlow/" + app_id + "/TensorBoard.driver"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 

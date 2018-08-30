@@ -45,9 +45,9 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
             with pydoop.hdfs.open(path_to_metric, "r") as fi:
                 metric = float(fi.read())
                 fi.close()
-                return metric, 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+                return metric, hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
 
-    return None, 'hdfs:///Projects/' + hopshdfs.project_name() + '/Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+    return None, hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
 
 def get_logdir(app_id):
     global run_id
