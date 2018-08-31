@@ -73,8 +73,6 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
     except:
         exception_handler()
         raise
-    finally:
-        elastic_id +=1
 
     return
 
