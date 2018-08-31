@@ -26,15 +26,18 @@ elastic_id = 1
 app_id = None
 experiment_json = None
 running = False
-driver_tensorboard_hdfs_path=None
+driver_tensorboard_hdfs_path = None
+run_id = 0
+
+def get_logdir(app_id):
+    global run_id
+    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/begin/run.' +  str(run_id)
 
 def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    """ Start an experiment
 
     Args:
       :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
       :name: (optional) name of the job
     """
     if running:
@@ -45,30 +48,32 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
         global experiment_json
         global elastic_id
         global running
+        global run_id
+        global driver_tensorboard_hdfs_path
+
         running = True
 
         sc = spark.sparkContext
         app_id = str(sc.applicationId)
 
-        launcher.run_id = launcher.run_id + 1
+        run_id = run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+        versioned_path = util.version_resources(versioned_resources, get_logdir(app_id))
 
         experiment_json = None
 
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'begin', launcher.get_logdir(app_id), None, versioned_path, description)
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'begin', get_logdir(app_id), None, versioned_path, description)
 
-        util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+        util.version_resources(versioned_resources, get_logdir(app_id))
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, launcher.run_id, 'experiment', 'begin')
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'begin')
 
         pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
 
         hopshdfs.init_logger()
 
-        global driver_tensorboard_hdfs_path
         driver_tensorboard_hdfs_path,_ = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir, tensorboard_driver=True)
     except:
         exception_handler()
@@ -102,14 +107,15 @@ def end(metric=None):
         if tensorboard.tb_pid != 0:
             subprocess.Popen(["kill", str(tensorboard.tb_pid)])
 
-        if tensorboard.local_logdir:
+        if tensorboard.local_logdir_bool:
             local_tb = tensorboard.local_logdir_path
-            util.store_local_tensorboard(local_tb, tensorboard.endpoint)
+            util.store_local_tensorboard(local_tb, tensorboard.events_logdir)
 
-        if not driver_tensorboard_hdfs_path == None and not driver_tensorboard_hdfs_path == '' \
-                and handle.exists(driver_tensorboard_hdfs_path):
-            handle.delete(driver_tensorboard_hdfs_path)
+        if not tensorboard.endpoint == None and not tensorboard.endpoint == '' \
+                and handle.exists(tensorboard.endpoint):
+            handle.delete(tensorboard.endpoint)
         hopshdfs.kill_logger()
+
 
 def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary

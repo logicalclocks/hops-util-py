@@ -40,7 +40,7 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
     print('See /Logs/TensorFlow/' + app_id + '/launcher/run.' + str(run_id) + ' for logfile and contents of TensorBoard logdir')
 
     if args_dict == None:
-        path_to_metric = get_logdir(app_id) + '/no_args/metric'
+        path_to_metric = get_logdir(app_id) + '/metric'
         if pydoop.hdfs.path.exists(path_to_metric):
             with pydoop.hdfs.open(path_to_metric, "r") as fi:
                 metric = float(fi.read())
@@ -107,7 +107,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 print('-------------------------------------------------------')
                 hopshdfs.log(time_str)
             else:
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, 'no_args', 'launcher')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'launcher')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
