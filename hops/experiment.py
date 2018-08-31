@@ -62,7 +62,7 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, launcher.run_id, 'experiment', 'launcher')
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, launcher.run_id, 'experiment', 'begin')
 
         pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
 
@@ -101,6 +101,10 @@ def end(metric=None):
 
         if tensorboard.tb_pid != 0:
             subprocess.Popen(["kill", str(tensorboard.tb_pid)])
+
+        if tensorboard.local_logdir:
+            local_tb = tensorboard.local_logdir_path
+            util.store_local_tensorboard(local_tb, tensorboard.endpoint)
 
         if not driver_tensorboard_hdfs_path == None and not driver_tensorboard_hdfs_path == '' \
                 and handle.exists(driver_tensorboard_hdfs_path):
