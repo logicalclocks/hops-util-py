@@ -20,6 +20,7 @@ import atexit
 import json
 import pydoop.hdfs
 import os
+import subprocess
 
 elastic_id = 1
 app_id = None
@@ -99,6 +100,10 @@ def end(metric=None):
         elastic_id +=1
         running = False
         handle = hopshdfs.get()
+
+        if tensorboard.tb_pid != 0:
+            subprocess.Popen(["kill", str(tensorboard.tb_pid)])
+
         if not driver_tensorboard_hdfs_path == None and not driver_tensorboard_hdfs_path == '' \
                 and handle.exists(driver_tensorboard_hdfs_path):
             handle.delete(driver_tensorboard_hdfs_path)
