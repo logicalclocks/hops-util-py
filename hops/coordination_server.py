@@ -298,4 +298,4 @@ class Client(MessageSocket):
     def request_stop(self):
         """Request server stop."""
         resp = self._request('STOP')
-return resp
+        return resp
