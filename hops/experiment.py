@@ -40,6 +40,7 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
       :spark_session: SparkSession object
       :name: (optional) name of the job
     """
+    global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.stop() to stop it.")
 
@@ -47,7 +48,6 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
         global app_id
         global experiment_json
         global elastic_id
-        global running
         global run_id
         global driver_tensorboard_hdfs_path
 
@@ -126,6 +126,7 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
       :name: (optional) name of the job
     """
+    global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
 
@@ -133,7 +134,6 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
         global app_id
         global experiment_json
         global elastic_id
-        global running
         running = True
 
         sc = spark.sparkContext
@@ -182,6 +182,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :map_fun: The TensorFlow function to run
       :search_dict: (optional) A dictionary containing differential evolutionary boundaries
     """
+    global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
 
@@ -189,7 +190,6 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         global app_id
         global experiment_json
         global elastic_id
-        global running
         running = True
 
         sc = spark.sparkContext
@@ -229,6 +229,7 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
       :direction: 'max' to maximize, 'min' to minimize
       :name: (optional) name of the job
     """
+    global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
 
@@ -236,7 +237,6 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
         global app_id
         global experiment_json
         global elastic_id
-        global running
         running = True
 
         sc = spark.sparkContext
@@ -276,6 +276,7 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
       :notebook: Notebook path
       :name: (optional) name of the job
     """
+    global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
 
@@ -283,7 +284,6 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
         global app_id
         global experiment_json
         global elastic_id
-        global running
         running = True
 
         sc = spark.sparkContext
@@ -316,6 +316,7 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
     return tensorboard_logdir
 
 def exception_handler():
+    global running
     global experiment_json
     if running and experiment_json != None:
         experiment_json = json.loads(experiment_json)
@@ -325,6 +326,7 @@ def exception_handler():
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
 def exit_handler():
+    global running
     global experiment_json
     if running and experiment_json != None:
         experiment_json = json.loads(experiment_json)
