@@ -92,7 +92,7 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
     pyhdfs_handle = get()
     #Create output directory for TensorBoard events for this executor
     #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
-    hdfs_events_parent_dir = project_path() + "/Logs/TensorFlow"
+    hdfs_events_parent_dir = project_path() + "Logs/TensorFlow"
     #if not pyhdfs_handle.exists(hdfs_events_parent_dir):
     #pyhdfs_handle.create_directory(hdfs_events_parent_dir)
 
