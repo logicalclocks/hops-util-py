@@ -103,7 +103,7 @@ class TFCluster(object):
       unionRDD.foreachPartition(TFSparkNode.train(self.cluster_info, self.cluster_meta, qname))
 
   def get_logdir(app_id, run_id):
-    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/tensorflowonspark/run.' + str(run_id)
+    return hopshdfs.get_experiments_dir() + '/' + app_id + '/tensorflowonspark/run.' + str(run_id)
 
   def inference(self, dataRDD, qname='input'):
     """*For InputMode.SPARK only*: Feeds Spark RDD partitions into the TensorFlow worker nodes and returns an RDD of results
@@ -228,7 +228,7 @@ class TFCluster(object):
 
 def get_logdir(app_id):
   global run_id
-  return hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id + '/tensorflowonspark/run.' + str(run_id)
+  return hopshdfs.get_experiments_dir() + '/' + app_id + '/tensorflowonspark/run.' + str(run_id)
 
 def run(sc, map_fun, tf_args, num_executors, num_ps, tensorboard=False, input_mode=InputMode.TENSORFLOW,
         log_dir=None, driver_ps_nodes=False, master_node=None, reservation_timeout=600, name='no-name', local_logdir=False, versioned_resources=None, description=None,

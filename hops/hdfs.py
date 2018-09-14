@@ -90,19 +90,24 @@ def kill_logger():
 def create_directories(app_id, run_id, param_string, type, sub_type=None):
 
     pyhdfs_handle = get()
-    #Create output directory for TensorBoard events for this executor
-    #REMOVE THIS LATER!!!!!!!!!! Folder should be created automatically
-    hdfs_events_parent_dir = project_path() + "Logs/TensorFlow"
-    #if not pyhdfs_handle.exists(hdfs_events_parent_dir):
-    #pyhdfs_handle.create_directory(hdfs_events_parent_dir)
+
+    if pyhdfs_handle.exists(project_path() + "Experiments"):
+        hdfs_events_parent_dir = project_path() + "Experiments"
+    elif pyhdfs_handle.exists(project_path() + "Logs"):
+        hdfs_events_parent_dir = project_path() + "Logs/TensorFlow"
+        try:
+            st = hdfs.stat(hdfs_events_parent_dir)
+            if not bool(st.st_mode & stat.S_IWGRP):
+                hdfs.chmod(hdfs_events_parent_dir, "g+w")
+        except IOError:
+            # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable
+            pass
 
     hdfs_appid_logdir = hdfs_events_parent_dir + "/" + app_id
     #if not pyhdfs_handle.exists(hdfs_appid_logdir):
     #pyhdfs_handle.create_directory(hdfs_appid_logdir)
 
     hdfs_run_id_logdir = hdfs_appid_logdir + "/" + type + "/run." + str(run_id)
-    #if not pyhdfs_handle.exists(hdfs_run_id_logdir):
-    #pyhdfs_handle.create_directory(hdfs_run_id_logdir)
 
     if sub_type:
         hdfs_exec_logdir = hdfs_run_id_logdir + "/" + str(sub_type) + '/' + str(param_string)
@@ -119,14 +124,6 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
 
     logfile = hdfs_exec_logdir + '/' + 'logfile'
     os.environ['EXEC_LOGFILE'] = logfile
-
-    try:
-        st = hdfs.stat(hdfs_events_parent_dir)
-        if not bool(st.st_mode & stat.S_IWGRP):
-            hdfs.chmod(hdfs_events_parent_dir, "g+w")
-    except IOError:
-        # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable
-        pass
 
     return hdfs_exec_logdir, hdfs_appid_logdir
 
@@ -172,3 +169,10 @@ def copy_from_project(relative_hdfs_path, local_path, overwrite=False, project=p
             os.remove(full_local_path)
 
     hdfs.get(project_hdfs_path, full_local)
+
+def get_experiments_dir():
+    pyhdfs_handle = get()
+    if pyhdfs_handle.exists(project_path() + "Experiments"):
+        return project_path() + "Experiments"
+    elif pyhdfs_handle.exists(project_path() + "Logs"):
+        return project_path() + "Logs/TensorFlow"

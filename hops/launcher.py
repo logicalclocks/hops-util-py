@@ -37,7 +37,6 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir))
 
     print('Finished Experiment \n')
-    print('See /Logs/TensorFlow/' + app_id + '/launcher/run.' + str(run_id) + ' for logfile and contents of TensorBoard logdir')
 
     if args_dict == None:
         path_to_metric = get_logdir(app_id) + '/metric'
@@ -45,13 +44,13 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
             with pydoop.hdfs.open(path_to_metric, "r") as fi:
                 metric = float(fi.read())
                 fi.close()
-                return metric, hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+                return metric, hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
-    return None, hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+    return None, hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/launcher/run.' +  str(run_id)
+    return hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
 
 #Helper to put Spark required parameter iter in function signature

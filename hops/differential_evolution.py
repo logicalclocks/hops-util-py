@@ -463,18 +463,17 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
                                      crossover=crossover,
                                      mutation=mutation)
 
-    root_dir = hopshdfs.project_path() + "/Logs/TensorFlow/" + str(app_id) + "/differential_evolution/run." + str(run_id)
+    root_dir = hopshdfs.get_experiments_dir() + "/" + str(app_id) + "/differential_evolution/run." + str(run_id)
 
     best_param, best_metric = diff_evo.solve(root_dir)
 
     print('Finished Experiment \n')
-    print('\nSee /Logs/TensorFlow/' + app_id + '/differential_evolution/run.' + str(run_id) + ' for summary of results, logfiles and TensorBoard log directory')
 
     return str(root_dir), best_param, best_metric
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + "Logs/TensorFlow/" + app_id + "/differential_evolution/run." + str(run_id)
+    return hopshdfs.get_experiments_dir() + "/" + app_id + "/differential_evolution/run." + str(run_id)
 
 
 def _evolutionary_launch(spark_session, map_fun, args_dict=None):
@@ -509,7 +508,7 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
 
     generation_id += 1
 
-    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + "/"
+    return hopshdfs.get_experiments_dir() + '/' + app_id + "/"
 
 
 #Helper to put Spark required parameter iter in function signature
@@ -613,7 +612,7 @@ def _get_metric(param_string, app_id, generation_id, run_id):
     project_path = hopshdfs.project_path()
     handle = hopshdfs.get()
     for i in range(generation_id):
-        possible_result_path = project_path + '/Logs/TensorFlow/' + app_id + '/differential_evolution/run.' \
+        possible_result_path = hopshdfs.get_experiments_dir() + '/' + app_id + '/differential_evolution/run.' \
                                + str(run_id) + '/generation.' + str(i) + '/' + param_string + '/metric'
         if handle.exists(possible_result_path):
             with pydoop.hdfs.open(possible_result_path, "r") as fi:

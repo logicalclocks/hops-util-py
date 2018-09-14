@@ -31,7 +31,7 @@ run_id = 0
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/begin/run.' +  str(run_id)
+    return hopshdfs.get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
 
 def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Start an experiment

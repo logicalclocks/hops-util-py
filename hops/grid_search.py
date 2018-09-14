@@ -51,7 +51,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
 
     arg_count = six.get_function_code(map_fun).co_argcount
     arg_names = six.get_function_code(map_fun).co_varnames
-    hdfs_appid_dir = hopshdfs.project_path() + '/Logs/TensorFlow/' + app_id
+    hdfs_appid_dir = hopshdfs.get_experiments_dir() + '/' + app_id
     hdfs_runid_dir = hdfs_appid_dir + '/grid_search/run.' + str(run_id)
 
     max_val, max_hp, min_val, min_hp, avg = _get_best(args_dict, num_executions, arg_names, arg_count, hdfs_appid_dir, run_id)
@@ -82,13 +82,12 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
 
 
     print('Finished Experiment \n')
-    print('\nSee /Logs/TensorFlow/' + app_id+ '/grid_search/run.' + str(run_id) + ' for summary of results, logfiles and TensorBoard log directory')
 
     return hdfs_runid_dir, param_combination, best_val
 
 def get_logdir(app_id):
     global run_id
-    return hopshdfs.project_path() + 'Logs/TensorFlow/' + app_id + '/grid_search/run.' + str(run_id)
+    return hopshdfs.get_experiments_dir() + '/' + app_id + '/grid_search/run.' + str(run_id)
 
 
 
