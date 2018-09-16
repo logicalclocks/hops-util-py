@@ -265,6 +265,14 @@ def version_resources(versioned_resources, rundir):
 
     return ', '.join(versioned_paths)
 
+def convert_to_dict(best_param):
+  best_param_dict={}
+  for hp in best_param:
+      hp = hp.split('=')
+      best_param_dict[hp[0]] = hp[1]
+  return best_param_dict
+
+
 
 
 

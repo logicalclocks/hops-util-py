@@ -174,7 +174,7 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
     return tensorboard_logdir
 
 
-def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -204,11 +204,13 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=popsize, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir)
+        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir)
 
         experiment_json = util.finalize_experiment(experiment_json, best_param, best_metric)
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        best_param_dict = util.convert_to_dict(best_param)
 
     except:
         exception_handler()
@@ -217,7 +219,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         elastic_id +=1
         running = False
 
-    return tensorboard_logdir
+    return tensorboard_logdir, best_param_dict
 
 def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary

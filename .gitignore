@@ -104,3 +104,4 @@ ENV/
 
 #intelliJ
 .idea
+*/workspace.xml
