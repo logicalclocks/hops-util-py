@@ -198,7 +198,7 @@ class DifferentialEvolution:
             fd.close()
 
             if cleanup:
-                pydoop.hdfs.rmr(root_dir + '/run.' + str(run_id) + '/generation.' + str(self._generation-1))
+                pydoop.hdfs.rmr(root_dir + '/generation.' + str(self._generation-1))
 
         try:
             fd = fs_handle.open_file(summary_file, mode='w')
