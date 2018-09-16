@@ -261,7 +261,7 @@ def version_resources(versioned_resources, rundir):
             path, filename = os.path.split(hdfs_resource)
             versioned_paths.append(rundir.replace(endpoint_prefix, '') + '/' + filename)
         else:
-            raise NotFoundException('Could not find resource in specified path: ' + hdfs_resource)
+            raise Exception('Could not find resource in specified path: ' + hdfs_resource)
 
     return ', '.join(versioned_paths)
 
