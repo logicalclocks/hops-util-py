@@ -79,7 +79,10 @@ def prepare_func(app_id, run_id, nb_path, local_logdir):
 
         notebook = ''
         for line in fd:
-            notebook += line
+            if isinstance(line, bytes):
+                notebook += line.decode("ascii")
+            else:
+                notebook += line
 
         path, filename = os.path.split(nb_path)
         f_nb = open(filename,"w+")
