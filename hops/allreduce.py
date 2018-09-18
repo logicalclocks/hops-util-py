@@ -116,6 +116,11 @@ def prepare_func(app_id, run_id, nb_path, local_logdir):
         mpi_logfile = open(mpi_logfile_path, 'w')
 
         # 4. Run allreduce
+        if py_runnable == None:
+            raise Exception('fail1')
+        elif os.environ['PYSPARK_PYTHON'] == None:
+            raise Exception('fail2')
+
         mpi_np = os.environ['MPI_NP']
         mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                   ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
