@@ -33,7 +33,7 @@ def launch(sc, notebook, local_logdir=False):
     conf_num = int(sc._conf.get("spark.executor.instances"))
 
     #Each TF task should be run on 1 executor
-    nodeRDD = sc.parallelize(range(conf_num), conf_num)
+    nodeRDD = sc.parallelize(range(1), 1)
 
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook, local_logdir))
@@ -119,11 +119,6 @@ def prepare_func(app_id, run_id, nb_path, local_logdir):
         mpi_logfile = open(mpi_logfile_path, 'w')
 
         # 4. Run allreduce
-        if py_runnable == None:
-            raise Exception('fail1')
-        elif os.environ['PYSPARK_PYTHON'] == None:
-            raise Exception('fail2')
-
         mpi_np = os.environ['MPI_NP']
         mpi_cmd = 'HOROVOD_TIMELINE=' + tensorboard.logdir() + '/timeline.json' + \
                   ' TENSORBOARD_LOGDIR=' + tensorboard.logdir() + \
