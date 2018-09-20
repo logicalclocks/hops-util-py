@@ -42,7 +42,7 @@ def project_name():
     project = hops_user_split[0]
     return project
 
-def project_path(project_name=None):
+def project_path(project=None):
     """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
     appended with the name of your dataset.
 
@@ -54,9 +54,9 @@ def project_path(project_name=None):
         returns the project absolute path
     """
 
-    if project_name:
+    if project:
         # abspath means "hdfs://namenode:port/ is preprended
-        return hdfs.path.abspath("/Projects/" + project_name + "/")
+        return hdfs.path.abspath("/Projects/" + project + "/")
     project = project_name()
     return hdfs.path.abspath("/Projects/" + project + "/")
 
