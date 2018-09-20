@@ -33,7 +33,7 @@ def get_logdir(app_id):
     global run_id
     return hopshdfs.get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
 
-def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def begin(name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Start an experiment
 
     Args:
@@ -53,7 +53,7 @@ def begin(spark, name='no-name', local_logdir=False, versioned_resources=None, d
 
         running = True
 
-        sc = spark.sparkContext
+        sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
         run_id = run_id + 1
@@ -117,7 +117,7 @@ def end(metric=None):
         hopshdfs.kill_logger()
 
 
-def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -136,7 +136,7 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
         global elastic_id
         running = True
 
-        sc = spark.sparkContext
+        sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
         launcher.run_id = launcher.run_id + 1
@@ -169,14 +169,13 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
         raise
     finally:
         #cleanup spark jobs
-        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
-
+        sc.setJobGroup("", "")
     return tensorboard_logdir
 
 
-def evolutionary_search(spark, objective_function, search_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def evolutionary_search(objective_function, search_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -194,7 +193,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         global elastic_id
         running = True
 
-        sc = spark.sparkContext
+        sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
         diff_evo.run_id = diff_evo.run_id + 1
@@ -219,13 +218,13 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         raise
     finally:
         #cleanup spark jobs
-        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
+        sc.setJobGroup("", "")
 
     return tensorboard_logdir, best_param_dict
 
-def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -245,7 +244,7 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
         global elastic_id
         running = True
 
-        sc = spark.sparkContext
+        sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
         gs.run_id = gs.run_id + 1
@@ -270,13 +269,13 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
         raise
     finally:
         #cleanup spark jobs
-        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
+        sc.setJobGroup("", "")
 
     return tensorboard_logdir
 
-def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def horovod(notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the notebooks specified in the path as input to horovod
 
     Args:
@@ -294,7 +293,7 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
         global elastic_id
         running = True
 
-        sc = spark.sparkContext
+        sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
         allreduce.run_id = allreduce.run_id + 1
@@ -319,9 +318,9 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
         raise
     finally:
         #cleanup spark jobs
-        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
+        sc.setJobGroup("", "")
 
     return tensorboard_logdir
 

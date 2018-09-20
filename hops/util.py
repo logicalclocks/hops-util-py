@@ -15,6 +15,7 @@ from datetime import datetime
 import time
 from hops import hdfs
 from hops import version
+from pyspark.sql import SparkSession
 
 #! Needed for hops library backwards compatability
 try:
@@ -271,6 +272,10 @@ def convert_to_dict(best_param):
       hp = hp.split('=')
       best_param_dict[hp[0]] = hp[1]
   return best_param_dict
+
+def _find_spark():
+    return SparkSession.builder.getOrCreate()
+
 
 
 
