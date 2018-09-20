@@ -620,6 +620,7 @@ def capacity():
 
 def dump(data, hdfs_path):
     """
+    Dumps data to a file (not a directory)
 
     Args:
     :data: data to write to hdfs_path
@@ -630,7 +631,7 @@ def dump(data, hdfs_path):
     filename = split[len(split) - 1]
     directory = "/".join(split[0:len(split)-1])
     hdfs_path = _expand_path(directory)
-    return hdfs.dump(data, hdfs_path + filename)
+    return hdfs.dump(data, hdfs_path + "/" + filename)
 
 
 def load(hdfs_path):
