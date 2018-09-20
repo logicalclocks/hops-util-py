@@ -306,7 +306,7 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir)
+        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, None, None)
 
@@ -318,6 +318,9 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
     finally:
         elastic_id +=1
         running = False
+
+    #cleanup spark jobs
+    sc.setJobGroup("", "")
 
     return tensorboard_logdir
 
