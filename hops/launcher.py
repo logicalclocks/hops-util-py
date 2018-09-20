@@ -13,7 +13,7 @@ import os
 run_id = 0
 
 
-def launch(sc, map_fun, args_dict=None, local_logdir=False):
+def launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
 
     global run_id
 
@@ -30,6 +30,7 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False):
                 raise ValueError('Length of each function argument list must be equal')
             num_executions = len(arg_lists[i])
 
+    sc.setJobGroup("Launcher", "{} | Running experiment".format(name))
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
