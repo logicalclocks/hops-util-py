@@ -18,7 +18,7 @@ from hops import util
 
 run_id = 0
 
-def launch(sc, notebook, local_logdir=False):
+def launch(sc, notebook, local_logdir=False, name="no-name"):
     """ Run notebook pointed to in HopsFS as a python file in mpirun
     Args:
       :spark_session: SparkSession object
@@ -34,6 +34,9 @@ def launch(sc, notebook, local_logdir=False):
 
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(1), 1)
+
+    #Make SparkUI intuitive by grouping jobs
+    sc.setJobGroup("Horovod training", "{} | Horovod training".format(name))
 
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook, local_logdir))

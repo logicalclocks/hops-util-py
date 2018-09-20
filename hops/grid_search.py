@@ -17,7 +17,7 @@ import datetime
 
 run_id = 0
 
-def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
+def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, name="no-name"):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -41,6 +41,9 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
 
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
+
+    #Make SparkUI intuitive by grouping jobs
+    sc.setJobGroup("Grid search", "{} | Grid search through supplied hyperparameters".format(name))
 
     #Force execution on executor, since GPU is located on executor
     job_start = datetime.datetime.now()

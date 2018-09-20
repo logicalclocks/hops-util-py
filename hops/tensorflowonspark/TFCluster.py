@@ -207,6 +207,7 @@ class TFCluster(object):
       q.put(None)
       q.join()
 
+
     # wait for all jobs to finish
     done = False
     while not done:
@@ -215,6 +216,9 @@ class TFCluster(object):
       jobs = st.getActiveJobsIds()
       if len(jobs) == 0:
         break
+
+        #cleanup spark jobs
+    self.sc.setJobGroup("", "")
 
     def tensorboard_url(self):
       """
@@ -321,8 +325,10 @@ def run(sc, map_fun, tf_args, num_executors, num_ps, tensorboard=False, input_mo
 
   # start TF on a background thread (on Spark driver) to allow for feeding job
 
-  def _start(status):
+  def _start(status, name=name):
     try:
+      #Make SparkUI intuitive by grouping jobs
+      sc.setJobGroup("TFOnSpark training", "{} | TFOnSpark distributed training".format(name))
       nodeRDD.foreachPartition(TFSparkNode.run(map_fun,
                                              tf_args,
                                              cluster_meta,

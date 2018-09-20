@@ -168,6 +168,8 @@ def launch(spark, map_fun, args_dict=None, name='no-name', local_logdir=False, v
         exception_handler()
         raise
     finally:
+        #cleanup spark jobs
+        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
 
@@ -204,7 +206,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir)
+        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, best_param, best_metric)
 
@@ -216,6 +218,8 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         exception_handler()
         raise
     finally:
+        #cleanup spark jobs
+        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
 
@@ -256,7 +260,7 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
 
         grid_params = util.grid_params(args_dict)
 
-        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir)
+        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, param, metric)
 
@@ -265,6 +269,8 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
         exception_handler()
         raise
     finally:
+        #cleanup spark jobs
+        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
 
@@ -302,7 +308,7 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir)
+        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, None, None)
 
@@ -312,6 +318,8 @@ def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resou
         exception_handler()
         raise
     finally:
+        #cleanup spark jobs
+        sc.setJobGroup("", "")
         elastic_id +=1
         running = False
 
