@@ -50,7 +50,7 @@ def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
 
     return [float(res) for res in results]
 
-def execute_all(population_dict):
+def execute_all(population_dict, name="no-name"):
     '''
     Executes wrapper function with all values of population_dict parallely.
     Returns a list of accuracies (or metric returned in the wrapper) in the
@@ -78,7 +78,7 @@ def execute_all(population_dict):
         else:
             i+=1
 
-    tensorboard_hdfs_logdir = _evolutionary_launch(spark_session, objective_function, population_dict)
+    tensorboard_hdfs_logdir = _evolutionary_launch(spark_session, objective_function, population_dict, name=name)
 
     return get_all_accuracies(tensorboard_hdfs_logdir, initial_pop, [len(v) for v in initial_pop.values()][0])
 
@@ -108,7 +108,7 @@ class DifferentialEvolution:
     _ordered_population_dict = []
     _param_names = []
 
-    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7):
+    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, name="no-name"):
         self.objective_function = objective_function
         self.parbounds = parbounds
         self.direction = direction
@@ -118,6 +118,7 @@ class DifferentialEvolution:
         self.F = mutation
         self.CR = crossover
         self._ordered_population_dict = ordered_dict
+        self.name = name
 
         global generation_id
         generation_id = 0
@@ -316,7 +317,7 @@ class DifferentialEvolution:
                 parsed_population.append(parsed_target_vec)
 
             parsed_population = self._parse_to_dict(parsed_population)
-            self._scores = self.objective_function(parsed_population)
+            self._scores = self.objective_function(parsed_population, name=self.name)
 
             new_gen_avg = sum(self._scores)/self.n
 
@@ -360,7 +361,7 @@ class DifferentialEvolution:
             parsed_trial_population.append(parsed_trial_vec)
 
         parsed_trial_population =  self._parse_to_dict(parsed_trial_population)
-        trial_population_scores = self.objective_function(parsed_trial_population)
+        trial_population_scores = self.objective_function(parsed_trial_population, name=self.name)
 
         for i in range(self.n):
             trial_vec_score_i = trial_population_scores[i]
@@ -409,7 +410,7 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False):
+def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name"):
 
     global run_id
     global local_logdir_bool
@@ -461,7 +462,8 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
                                      generations=generations,
                                      popsize=popsize,
                                      crossover=crossover,
-                                     mutation=mutation)
+                                     mutation=mutation,
+                                     name=name)
 
     root_dir = hopshdfs.get_experiments_dir() + "/" + str(app_id) + "/differential_evolution/run." + str(run_id)
 
@@ -476,7 +478,7 @@ def get_logdir(app_id):
     return hopshdfs.get_experiments_dir() + "/" + app_id + "/differential_evolution/run." + str(run_id)
 
 
-def _evolutionary_launch(spark_session, map_fun, args_dict=None):
+def _evolutionary_launch(spark_session, map_fun, args_dict=None, name="no-name"):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -506,7 +508,7 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
     global run_id
 
     #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("Evo Search Generation: {}".format(generation_id), "Tests different hyperparameters in evolutionary search, generation: {}".format(generation_id))
+    sc.setJobGroup("Evo Search Generation: {}".format(generation_id), "{} | Test different hyperparameters in evolutionary search, generation: {}".format(name, generation_id))
     nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id))
 
     generation_id += 1

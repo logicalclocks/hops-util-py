@@ -204,7 +204,7 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir)
+        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, best_param, best_metric)
 
@@ -258,7 +258,7 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
 
         grid_params = util.grid_params(args_dict)
 
-        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir)
+        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, param, metric)
 
