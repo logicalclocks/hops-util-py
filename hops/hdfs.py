@@ -16,6 +16,31 @@ import errno
 
 fd = None
 
+def project_user():
+    """
+    Gets the project username ("project__user") from environment variables
+
+    Returns:
+        the project username
+    """
+
+    try:
+        hops_user = os.environ["HADOOP_USER_NAME"]
+    except:
+        hops_user = os.environ["HDFS_USER"]
+    return hops_user
+
+def project_name():
+    """
+    Extracts the project name from the project username ("project__user")
+
+    Returns:
+        project name
+    """
+    hops_user = project_user()
+    hops_user_split = hops_user.split("__")  # project users have username project__user
+    project = hops_user_split[0]
+    return project
 
 def project_path(project_name=None):
     """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
@@ -34,35 +59,6 @@ def project_path(project_name=None):
         return hdfs.path.abspath("/Projects/" + project_name + "/")
     project = project_name()
     return hdfs.path.abspath("/Projects/" + project + "/")
-
-
-def project_user():
-    """
-    Gets the project username ("project__user") from environment variables
-
-    Returns:
-        the project username
-    """
-
-    try:
-        hops_user = os.environ["HADOOP_USER_NAME"]
-    except:
-        hops_user = os.environ["HDFS_USER"]
-    return hops_user
-
-
-def project_name():
-    """
-    Extracts the project name from the project username ("project__user")
-
-    Returns:
-        project name
-    """
-    hops_user = project_user()
-    hops_user_split = hops_user.split("__")  # project users have username project__user
-    project = hops_user_split[0]
-    return project
-
 
 def get():
     """ Get a handle to pydoop hdfs using the default namenode (specified in hadoop config)
