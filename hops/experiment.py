@@ -219,6 +219,8 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
         elastic_id +=1
         running = False
 
+    #cleanup spark jobs
+    sc.setJobGroup("", "")
     return tensorboard_logdir, best_param_dict
 
 def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
@@ -268,6 +270,8 @@ def grid_search(spark, map_fun, args_dict, direction='max', name='no-name', loca
         elastic_id +=1
         running = False
 
+    #cleanup spark jobs
+    sc.setJobGroup("", "")
     return tensorboard_logdir
 
 def horovod(spark, notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):

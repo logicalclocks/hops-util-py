@@ -42,6 +42,9 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False):
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
+    #Make SparkUI intuitive by grouping jobs
+    sc.setJobGroup("Grid search", "Grid search through supplied hyperparameters")
+
     #Force execution on executor, since GPU is located on executor
     job_start = datetime.datetime.now()
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir))
