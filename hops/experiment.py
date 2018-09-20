@@ -182,7 +182,6 @@ def evolutionary_search(spark, objective_function, search_dict, direction = 'max
       :map_fun: The TensorFlow function to run
       :search_dict: (optional) A dictionary containing differential evolutionary boundaries
     """
-    spark.sparkContext.setJobGroup("{}".format(name), "evolutionary search {}".format(name))
     global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
