@@ -628,7 +628,8 @@ def dump(data, hdfs_path):
     """
     split = hdfs_path.split('/')
     filename = split[len(split) - 1]
-    hdfs_path = _expand_path(hdfs_path)
+    directory = "/".join(split[0:len(split)-1])
+    hdfs_path = _expand_path(directory)
     return hdfs.dump(data, hdfs_path + filename)
 
 
