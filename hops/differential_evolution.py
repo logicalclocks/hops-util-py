@@ -504,6 +504,8 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None):
     #Force execution on executor, since GPU is located on executor
     global generation_id
     global run_id
+    #Make SparkUI intuitive by grouping jobs
+    sc.setJobGroup("Evo Search Generation: {}".format(generation_id), "Tests different hyperparameters in evolutionary search, generation:".format(generation_id))
     nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id))
 
     generation_id += 1
