@@ -17,54 +17,6 @@ import errno
 fd = None
 
 
-def get():
-    """ Get a handle to pydoop hdfs using the default namenode (specified in hadoop config)
-
-    Returns:
-      Pydoop hdfs handle
-    """
-    return hdfs.hdfs('default', 0, user=project_user())
-
-
-def get_fs():
-    """ Get a handle to pydoop fs using the default namenode (specified in hadoop config)
-
-    Returns:
-      Pydoop fs handle
-    """
-    return hdfs.fs.hdfs('default', 0, user=project_user())
-
-
-def _expand_path(hdfs_path, project = project_name(), exists=True):
-    """
-    Expands a given path. If the path is /Projects.. hdfs:// is prepended.
-    If the path is ../ the full project path is prepended.
-
-    Args:
-
-    :hdfs_path the path to be expanded
-    :exists boolean flag, if this is true an exception is thrown if the expanded path does not exist.
-
-    Raises:
-        IOError if exists flag is true and the path does not exist
-
-    Returns:
-         path expanded with HDFS and project
-    """
-    # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
-    if hdfs_path.startsWith("/Projects/"):
-        hdfs_path = "hdfs://" + hdfs_path
-    elif not hdfs_path.startsWith("hdfs://"):
-        # if the file URL type is not HDFS, throw an error
-        if "://" in hdfs_path:
-            raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)
-        proj_path = project_path(project)
-        hdfs_path = proj_path + '/' + hdfs_path
-    if exists == True and not hdfs.path.exists(hdfs_path):
-        raise IOError("path %s not found" % hdfs_path)
-    return hdfs_path
-
-
 def project_path(project_name=None):
     """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
     appended with the name of your dataset.
@@ -110,6 +62,54 @@ def project_name():
     hops_user_split = hops_user.split("__")  # project users have username project__user
     project = hops_user_split[0]
     return project
+
+
+def get():
+    """ Get a handle to pydoop hdfs using the default namenode (specified in hadoop config)
+
+    Returns:
+      Pydoop hdfs handle
+    """
+    return hdfs.hdfs('default', 0, user=project_user())
+
+
+def get_fs():
+    """ Get a handle to pydoop fs using the default namenode (specified in hadoop config)
+
+    Returns:
+      Pydoop fs handle
+    """
+    return hdfs.fs.hdfs('default', 0, user=project_user())
+
+
+def _expand_path(hdfs_path, project=project_name(), exists=True):
+    """
+    Expands a given path. If the path is /Projects.. hdfs:// is prepended.
+    If the path is ../ the full project path is prepended.
+
+    Args:
+
+    :hdfs_path the path to be expanded
+    :exists boolean flag, if this is true an exception is thrown if the expanded path does not exist.
+
+    Raises:
+        IOError if exists flag is true and the path does not exist
+
+    Returns:
+         path expanded with HDFS and project
+    """
+    # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
+    if hdfs_path.startsWith("/Projects/"):
+        hdfs_path = "hdfs://" + hdfs_path
+    elif not hdfs_path.startsWith("hdfs://"):
+        # if the file URL type is not HDFS, throw an error
+        if "://" in hdfs_path:
+            raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)
+        proj_path = project_path(project)
+        hdfs_path = proj_path + '/' + hdfs_path
+    if exists == True and not hdfs.path.exists(hdfs_path):
+        raise IOError("path %s not found" % hdfs_path)
+    return hdfs_path
 
 
 def init_logger():
@@ -214,6 +214,7 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
 
     return hdfs_exec_logdir, hdfs_appid_logdir
 
+
 def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=project_name()):
     """
     Copies a path from local filesystem to HDFS project (recursively) using local path (relative to (under)
@@ -252,6 +253,7 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=projec
     # copy directories from local path to HDFS project path
     hdfs.put(full_local, hdfs_path)
 
+
 def copy_to_local(hdfs_path, local_path, overwrite=False, project=project_name()):
     """
     Copies a path from HDFS project to local filesystem
@@ -273,7 +275,6 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=project_name()
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
-
     if overwrite:
         split = rel_path.split('/')
         filename = split[len(split) - 1]
@@ -284,6 +285,22 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=project_name()
             os.remove(full_local_path)
 
     hdfs.get(project_hdfs_path, full_local)
+
+
+def cp(src_hdfs_path, dest_hdfs_path):
+    """
+    Copy the contents of src_hdfs_path to dest_hdfs_path.
+
+    If src_hdfs_path is a directory, its contents will be copied recursively. Source file(s) are opened for reading and copies are opened for writing.
+
+    Args:
+    :src_hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+    :dest_hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    """
+    src_hdfs_path = _expand_path(src_hdfs_path)
+    dest_hdfs_path = _expand_path(dest_hdfs_path)
+    hdfs.cp(src_hdfs_path, dest_hdfs_path)
 
 
 def get_experiments_dir():
@@ -299,7 +316,8 @@ def get_experiments_dir():
     elif pyhdfs_handle.exists(project_path() + "Logs"):
         return project_path() + "Logs/TensorFlow"
 
-#    
+
+#
 # Globbing gives you the list of files in a dir that matches a supplied pattern    
 #    >>> import glob
 #    >>> glob.glob('./[0-9].*')
@@ -530,6 +548,13 @@ def open_file(hdfs_path, project=project_name(), flags='rw', buff_size=0):
     return fd
 
 
+def close():
+    """
+    Closes an the HDFS connection (disconnects to the namenode)
+    """
+    hdfs.close()
+
+
 def exists(hdfs_path, project=project_name()):
     """ 
     Return True if hdfs_path exists in the default HDFS.
@@ -585,3 +610,98 @@ def isfile(hdfs_path, project=project_name()):
     """
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.isfile(hdfs_path)
+
+
+def capacity():
+    """
+    Returns the raw capacity of the filesystem
+
+    Returns:
+         filesystem capacity (int)
+    """
+    return hdfs.capacity()
+
+
+def dump(data, hdfs_path):
+    """
+
+    Args:
+    :data: data to write to hdfs_path
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    return hdfs.dump(data, hdfs_path)
+
+
+def load(hdfs_path):
+    """
+    Read the content of hdfs_path and return it.
+
+    Args:
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    Returns:
+        returns the read contents of hdfs_path
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    return hdfs.load(hdfs_path)
+
+def ls(hdfs_path, recursive=False):
+    """
+    lists a directory in HDFS
+
+    Args:
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    Returns:
+         returns a list of hdfs paths
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    return hdfs.ls(hdfs_path, recursive=recursive)
+
+def stat(hdfs_path):
+    """
+    Performs the equivalent of os.stat() on hdfs_path, returning a StatResult object.
+
+    Args:
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    Returns:
+     returns a list of hdfs paths
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    return hdfs.stat(hdfs_path)
+
+def access(hdfs_path):
+    """
+    Performs the equivalent of os.access() on hdfs_path.
+
+    Use the real uid/gid to test for access to path.
+    Note that most operations will use the effective uid/gid,
+    therefore this routine can be used in a suid/sgid environment to test if
+    the invoking user has the specified access to path.
+    mode should be F_OK to test the existence of path, or it can be the inclusive OR
+    of one or more of R_OK, W_OK, and X_OK to test permissions.
+    Return True if access is allowed, False if not. See the Unix man page access(2) for more information.
+
+    Args:
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    Returns:
+     returns a list of hdfs paths
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    return hdfs.access(hdfs_path)
+
+def abs_path(hdfs_path):
+    """
+     Return an absolute path for hdfs_path.
+
+     Args:
+    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+    Returns:
+     Return an absolute path for hdfs_path.
+    """
+    return _expand_path(hdfs_path)
+
