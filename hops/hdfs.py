@@ -620,18 +620,17 @@ def capacity():
 
 def dump(data, hdfs_path):
     """
-    Dumps data to a file (not a directory)
+    Dumps data to a file
 
     Args:
     :data: data to write to hdfs_path
     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-    should point to a file, not a path
     """
-    split = hdfs_path.split('/')
-    filename = split[len(split) - 1]
-    directory = "/".join(split[0:len(split)-1])
-    hdfs_path = _expand_path(directory)
-    return hdfs.dump(data, hdfs_path + "/" + filename)
+    #split = hdfs_path.split('/')
+    #filename = split[len(split) - 1]
+    #directory = "/".join(split[0:len(split)-1])
+    hdfs_path = _expand_path(hdfs_path, exists=False)
+    return hdfs.dump(data, hdfs_path)
 
 
 def load(hdfs_path):
@@ -672,27 +671,6 @@ def stat(hdfs_path):
     """
     hdfs_path = _expand_path(hdfs_path)
     return hdfs.stat(hdfs_path)
-
-def access(hdfs_path):
-    """
-    Performs the equivalent of os.access() on hdfs_path.
-
-    Use the real uid/gid to test for access to path.
-    Note that most operations will use the effective uid/gid,
-    therefore this routine can be used in a suid/sgid environment to test if
-    the invoking user has the specified access to path.
-    mode should be F_OK to test the existence of path, or it can be the inclusive OR
-    of one or more of R_OK, W_OK, and X_OK to test permissions.
-    Return True if access is allowed, False if not. See the Unix man page access(2) for more information.
-
-    Args:
-    :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-
-    Returns:
-     returns a list of hdfs paths
-    """
-    hdfs_path = _expand_path(hdfs_path)
-    return hdfs.access(hdfs_path)
 
 def abs_path(hdfs_path):
     """
