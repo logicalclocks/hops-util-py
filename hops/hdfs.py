@@ -95,9 +95,9 @@ def _expand_path(hdfs_path, project=project_name(), exists=True):
          path expanded with HDFS and project
     """
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
-    if hdfs_path.startsWith("/Projects/"):
+    if hdfs_path.startswith("/Projects/"):
         hdfs_path = "hdfs://" + hdfs_path
-    elif not hdfs_path.startsWith("hdfs://"):
+    elif not hdfs_path.startswith("hdfs://"):
         # if the file URL type is not HDFS, throw an error
         if "://" in hdfs_path:
             raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)
