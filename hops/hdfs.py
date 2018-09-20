@@ -624,9 +624,12 @@ def dump(data, hdfs_path):
     Args:
     :data: data to write to hdfs_path
     :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+    should point to a file, not a path
     """
+    split = hdfs_path.split('/')
+    filename = split[len(split) - 1]
     hdfs_path = _expand_path(hdfs_path)
-    return hdfs.dump(data, hdfs_path)
+    return hdfs.dump(data, hdfs_path + filename)
 
 
 def load(hdfs_path):
