@@ -102,7 +102,7 @@ def _expand_path(hdfs_path, project=project_name(), exists=True):
         if "://" in hdfs_path:
             raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)
         proj_path = project_path(project)
-        hdfs_path = proj_path + '/' + hdfs_path
+        hdfs_path = proj_path + hdfs_path
     if exists == True and not hdfs.path.exists(hdfs_path):
         raise IOError("path %s not found" % hdfs_path)
     return hdfs_path
