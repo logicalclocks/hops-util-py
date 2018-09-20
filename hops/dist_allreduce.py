@@ -21,7 +21,7 @@ import coordination_server
 
 run_id = 0
 
-def launch(spark_session, notebook, name="no-name"):
+def launch(spark_session, notebook):
     """ Run notebook pointed to in HopsFS as a python file in mpirun
     Args:
       :spark_session: SparkSession object
@@ -42,9 +42,6 @@ def launch(spark_session, notebook, name="no-name"):
 
     server = coordination_server.Server(conf_num)
     server_addr = server.start()
-
-    #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("Horovod training", "{} | Horovod training".format(name))
 
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(prepare_func(app_id, run_id, notebook, server_addr))
