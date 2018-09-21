@@ -9,7 +9,8 @@ from hops import hdfs as hopshdfs
 from hops import differential_evolution as diff_evo
 from hops import grid_search as gs
 from hops import launcher as launcher
-from hops import allreduce as allreduce
+from hops import horovod as horovod
+from hops import allreduce as tf_allreduce
 from hops.tensorflowonspark import TFCluster
 from hops import tensorboard
 
@@ -275,6 +276,52 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
 
     return tensorboard_logdir
 
+def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+    """ Run the TensorFlow allreduce
+
+    Args:
+      :map_fun: The TensorFlow function to run
+      :name: (optional) name of the job
+    """
+    global running
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        running = True
+
+        sc = util._find_spark().sparkContext
+        app_id = str(sc.applicationId)
+
+        tf_allreduce.run_id = tf_allreduce.run_id + 1
+
+        versioned_path = util.version_resources(versioned_resources, tf_allreduce.get_logdir(app_id))
+
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'allreduce', tf_allreduce.get_logdir(app_id), None, versioned_path, description)
+
+        util.version_resources(versioned_resources, tf_allreduce.get_logdir(app_id))
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+
+        experiment_json = util.finalize_experiment(experiment_json, None, None)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    except:
+        exception_handler()
+        raise
+    finally:
+        #cleanup spark jobs
+        elastic_id +=1
+        running = False
+        sc.setJobGroup("", "")
+
+    return None
+
 def horovod(notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the notebooks specified in the path as input to horovod
 
@@ -296,18 +343,18 @@ def horovod(notebook, name='no-name', local_logdir=False, versioned_resources=No
         sc = util._find_spark().sparkContext
         app_id = str(sc.applicationId)
 
-        allreduce.run_id = allreduce.run_id + 1
+        horovod.run_id = horovod.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, allreduce.get_logdir(app_id))
+        versioned_path = util.version_resources(versioned_resources, horovod.get_logdir(app_id))
 
         experiment_json = None
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'horovod', allreduce.get_logdir(app_id), None, versioned_path, description)
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'horovod', horovod.get_logdir(app_id), None, versioned_path, description)
 
-        util.version_resources(versioned_resources, allreduce.get_logdir(app_id))
+        util.version_resources(versioned_resources, horovod.get_logdir(app_id))
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir = allreduce.launch(sc, notebook, local_logdir=local_logdir, name=name)
+        tensorboard_logdir = horovod.launch(sc, notebook, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, None, None)
 
