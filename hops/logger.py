@@ -5,8 +5,12 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 
 from pyspark.sql import SparkSession
-_internal_logger = SparkSession.builder.getOrCreate().sparkContext._jvm.org.apache.log4j.LogManager.getLogger('UserApp')
+try:
+    _internal_logger = SparkSession.builder.getOrCreate().sparkContext._jvm.org.apache.log4j.LogManager.getLogger('UserApp')
+except:
+    pass
 
 def log(s):
     print(s)
-    _internal_logger.info(s)
+    if _internal_logger != None:
+        _internal_logger.info(s)
