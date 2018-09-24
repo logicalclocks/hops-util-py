@@ -9,7 +9,7 @@ import os
 import datetime
 from six import string_types
 import shutil
-import stat
+import stat as local_stat
 import fnmatch
 import os
 import errno
@@ -177,7 +177,7 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
         hdfs_events_parent_dir = project_path() + "Logs/TensorFlow"
         try:
             st = hdfs.stat(hdfs_events_parent_dir)
-            if not bool(st.st_mode & stat.S_IWGRP):  # if not group writable make it so
+            if not bool(st.st_mode & local_stat.S_IWGRP):  # if not group writable make it so
                 hdfs.chmod(hdfs_events_parent_dir, "g+w")
         except IOError:
             # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable

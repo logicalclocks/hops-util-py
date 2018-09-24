@@ -1,4 +1,4 @@
-import allreduce_reservation
+from . import allreduce_reservation
 import sys
 
 if __name__ == "__main__":
