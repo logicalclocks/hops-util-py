@@ -22,7 +22,7 @@ tb_path = None
 local_logdir_path = None
 local_logdir_bool = False
 
-def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False, tensorboard_driver=False):
+def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
 
     global tb_pid
 
@@ -78,10 +78,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False, tensorbo
         global tb_url
         tb_url = "http://{0}:{1}".format(host, tb_port)
         global endpoint
-        if tensorboard_driver:
-            endpoint = endpoint_dir + "/TensorBoard.driver"
-        else:
-            endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
+        endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
 
         #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
@@ -96,8 +93,6 @@ def logdir():
     Returns:
       The local directory to write TensorBoard events and summaries to
     """
-    if 'TENSORBOARD_LOGDIR' in os.environ:
-        return os.environ['TENSORBOARD_LOGDIR']
 
     global local_logdir_bool
     if local_logdir_bool:

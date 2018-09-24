@@ -528,7 +528,7 @@ def open_file(hdfs_path, project=project_name(), flags='rw', buff_size=0):
 
     Args:
      :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-     :flags: Supported opening modes are “r”, “w”, “a”. In addition, a trailing “t” can be added to specify text mode (e.g., “rt” = open for reading text).K
+     :flags: Supported opening modes are “r”, “w”, “a”. In addition, a trailing “t” can be added to specify text mode (e.g., “rt” = open for reading text).
      :buff_size: Pass 0 as buff_size if you want to use the “configured” values, i.e., the ones set in the Hadoop configuration files.
 
 

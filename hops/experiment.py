@@ -9,9 +9,8 @@ from hops import hdfs as hopshdfs
 from hops import differential_evolution as diff_evo
 from hops import grid_search as gs
 from hops import launcher as launcher
-from hops import horovod as horovod
-from hops import allreduce as tf_allreduce
-from hops.tensorflowonspark import TFCluster
+from hops.allreduce import allreduce as tf_allreduce
+
 from hops import tensorboard
 
 from hops import util
@@ -75,7 +74,7 @@ def begin(name='no-name', local_logdir=False, versioned_resources=None, descript
 
         hopshdfs.init_logger()
 
-        driver_tensorboard_hdfs_path,_ = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir, tensorboard_driver=True)
+        driver_tensorboard_hdfs_path,_ = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir)
     except:
         exception_handler()
         raise
@@ -321,55 +320,6 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
         sc.setJobGroup("", "")
 
     return None
-
-def horovod(notebook, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the notebooks specified in the path as input to horovod
-
-    Args:
-      :spark_session: SparkSession object
-      :notebook: Notebook path
-      :name: (optional) name of the job
-    """
-    global running
-    if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
-
-    try:
-        global app_id
-        global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
-        app_id = str(sc.applicationId)
-
-        horovod.run_id = horovod.run_id + 1
-
-        versioned_path = util.version_resources(versioned_resources, horovod.get_logdir(app_id))
-
-        experiment_json = None
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'horovod', horovod.get_logdir(app_id), None, versioned_path, description)
-
-        util.version_resources(versioned_resources, horovod.get_logdir(app_id))
-
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-
-        tensorboard_logdir = horovod.launch(sc, notebook, local_logdir=local_logdir, name=name)
-
-        experiment_json = util.finalize_experiment(experiment_json, None, None)
-
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-
-    except:
-        exception_handler()
-        raise
-    finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
-
-    return tensorboard_logdir
 
 def exception_handler():
     global running
