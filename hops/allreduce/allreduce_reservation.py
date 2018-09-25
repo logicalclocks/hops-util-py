@@ -11,7 +11,7 @@ import struct
 import threading
 import time
 
-from . import util
+from hops import util
 
 MAX_RETRIES = 3
 BUFSIZE = 1024*2
