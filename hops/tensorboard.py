@@ -187,7 +187,7 @@ def visualize(spark_session, hdfs_root_logdir):
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)
-    tb_endpoint = hopshdfs.get_experiments_dir() + "/" + app_id + "/TensorBoard.driver"
+    tb_endpoint = hopshdfs.get_experiments_dir() + "/" + app_id + "/TensorBoard.visualize"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 
