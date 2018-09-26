@@ -192,8 +192,8 @@ def evolutionary_search(objective_function, search_dict, direction = 'max', gene
         global experiment_json
         global elastic_id
         running = True
-
-        sc = util._find_spark().sparkContext
+        spark = util._find_spark()
+        sc = spark.sparkContext
         app_id = str(sc.applicationId)
 
         diff_evo.run_id = diff_evo.run_id + 1
