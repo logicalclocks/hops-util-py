@@ -54,12 +54,15 @@ class KAFKA_CONSUMER_CONFIG:
 
 # JSON properties sent to Hopsworks REST API
 
-JSON_JOBSTATE = "running"
-JSON_JOBIDS = "jobIds"
-JSON_KEYSTOREPWD = "keyStorePwd"
-JSON_SCHEMA_CONTENTS = "contents"
-JSON_SCHEMA_TOPICNAME = "topicName"
-JSON_SCHEMA_VERSION = "version"
-JSON_KEYSTORE = "keyStore"
-PROJECT_STAGING_DIR = "Resources"
-PROJECT_ROOT_DIR = "Projects"
+class REST_CONFIG:
+    JSON_JOBSTATE = "running"
+    JSON_JOBIDS = "jobIds"
+    JSON_KEYSTOREPWD = "keyStorePwd"
+    JSON_SCHEMA_CONTENTS = "contents"
+    JSON_SCHEMA_TOPICNAME = "topicName"
+    JSON_SCHEMA_VERSION = "version"
+    JSON_KEYSTORE = "keyStore"
+    PROJECT_STAGING_DIR = "Resources"
+    PROJECT_ROOT_DIR = "Projects"
+    HOPSWORKS_REST_RESOURCE = "hopsworks-api/api"
+    HOPSWORKS_REST_APPSERVICE = "appservice"

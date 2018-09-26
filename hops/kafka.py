@@ -6,21 +6,81 @@ These utils facilitates development by hiding complexity for programs interactin
 
 import os
 from hops import constants
+from hops import util
+from hops import hdfs
 import string
+import base64
 
-def get_schema(topic, versionId):
+try:
+    import http.client as http
+except ImportError:
+    import httplib as http
+
+def prepare_rest_json_request():
+    key_store_pwd = get_key_store_pwd()
+    key_store_cert = get_key_store_cert()
+    json_contents = {}
+    json_contents[constants.REST_CONFIG.JSON_KEYSTOREPWD] = key_store_pwd
+    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert
+    return json_contents
+
+def get_host_port_pair():
+    """
+    Removes "http or https" from the rest endpoint and returns a list
+    [endpoint, port], where endpoint is on the format /path.. without http://
+
+    Returns:
+        a list [endpoint, port]
+    """
+    endpoint = util.get_hopsworks_rest_endpoint()
+    if 'http' in endpoint:
+        last_index = endpoint.rfind('/')
+        endpoint = endpoint[last_index+1:]
+    host_port_pair = endpoint.split(':')
+    return host_port_pair
+
+def get_http_connection(https=False):
+    """
+    Opens a HTTP(S) connection to Hopsworks
+
+    Returns:
+        HTTPSConnection
+    """
+    host_port_pair = get_host_port_pair()
+    if(https):
+        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+    else:
+        http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+    return connection
+
+
+def get_schema(topic, version_id):
     """
     Gets the Avro schema for a particular Kafka topic and its version.
 
     Args:
         :topic: Kafka topic name
-        :versionId: Schema version ID
+        :version_id: Schema version ID
 
     Returns:
         Avro schema as a string object in JSON format
     """
-    print("Getting schema for topic: {} from uri: {}".format(topic, versionId))
-    return None
+    print("Getting schema for topic: {} schema version: {}".format(topic, version_id))
+    json = prepare_rest_json_request()
+    json[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
+    json[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
+    json_embeddable = json.dumps(json)
+    headers = {'Content-type': 'application/json'}
+    method = "GET"
+    connection = get_http_connection()
+    resource = "schema"
+    resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
+    print("Sending REST request to Hopsworks: {}".format(resource_url))
+    connection.request(method, resource_url, json_embeddable, headers)
+    response = connection.getresponse()
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    return response_object
 
 
 def get_schema(topic):
@@ -94,6 +154,24 @@ def _get_cert_pw():
     # remove special characters (due to bug in password materialized, should not be necessary when the bug is fixed)
     key_store_pwd = "".join(list(filter(lambda x: x in string.printable and not x == "@", key_store_pwd)))
     return key_store_pwd
+
+def get_key_store_cert():
+    """
+    Get keystore certificate from local container
+
+    Returns:
+        Certificate password
+    """
+    cert_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
+
+    if not os.path.exists(cert_path):
+        raise AssertionError('k_certificate is not present in directory: {}'.format(cert_path))
+
+    with open(cert_path) as f:
+        key_store_cert = f.read()
+        key_store_cert = base64.b64encode(key_store_cert)
+
+    return key_store_cert
 
 
 def get_key_store_pwd():

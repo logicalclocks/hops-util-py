@@ -16,6 +16,7 @@ import time
 from hops import hdfs
 from hops import version
 from pyspark.sql import SparkSession
+from hops import constants
 
 #! Needed for hops library backwards compatability
 try:
