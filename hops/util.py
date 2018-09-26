@@ -360,5 +360,3 @@ def _find_spark():
 
     """
     return SparkSession.builder.getOrCreate()
-
-
