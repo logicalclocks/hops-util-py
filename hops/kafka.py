@@ -54,7 +54,7 @@ def get_http_connection(https=False):
     return connection
 
 
-def get_schema(topic, version_id):
+def get_schema(topic, version_id=1):
     """
     Gets the Avro schema for a particular Kafka topic and its version.
 
@@ -81,21 +81,6 @@ def get_schema(topic, version_id):
     resp_body = response.read()
     response_object = json.loads(resp_body)
     return response_object
-
-
-def get_schema(topic):
-    """
-    Gets the Avro schema for a particular Kafka topic with version 1
-
-    Args:
-    :topic: Kafka topic name
-    :versionId: Schema version ID
-
-    Returns:
-        Avro schema as a string object in JSON format
-    """
-    return get_schema(topic, 1)
-
 
 def get_broker_endpoints():
     """
