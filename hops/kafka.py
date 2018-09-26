@@ -6,6 +6,7 @@ These utils facilitates development by hiding complexity for programs interactin
 
 import os
 from hops import constants
+import string
 
 def get_schema(topic, versionId):
     """
@@ -90,6 +91,8 @@ def _get_cert_pw():
     with open(pwd_path) as f:
         key_store_pwd = f.read()
 
+    # remove special characters (due to bug in password materialized, should not be necessary when the bug is fixed)
+    key_store_pwd = "".join(list(filter(lambda x: x in string.printable and not x == "@", key_store_pwd)))
     return key_store_pwd
 
 
