@@ -23,6 +23,14 @@ class KAFKA_SSL_CONFIG:
     SSL_KEY_PASSWORD_CONFIG = "ssl.key.password"
     SECURITY_PROTOCOL_CONFIG = "security.protocol"
 
+# General SSL config properties
+
+class SSL_CONFIG:
+    K_CERTIFICATE_CONFIG = "k_certificate"
+    T_CERTIFICATE_CONFIG = "t_certificate"
+    DOMAIN_CA_TRUSTSTORE = "domain_ca_truststore"
+    CRYPTO_MATERIAL_PASSWORD = "material_passwd"
+
 # Kafka Producer Properties
 
 class KAFKA_PRODUCER_CONFIG:
