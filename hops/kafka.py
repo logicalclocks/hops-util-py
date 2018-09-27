@@ -18,19 +18,6 @@ try:
 except ImportError:
     import httplib as http
 
-def init():
-    """
-    Converts JKS files into PEM to be compatible with Python libraries
-    """
-    k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
-    k_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG
-    t_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG
-    write_pem(k_jks_path, get_key_store_pwd(), k_pem_path)
-    write_pem(t_jks_path, get_trust_store_pwd(), t_pem_path)
-
-init()
-
 def prepare_rest_appservice_json_request():
     """
     Prepares a REST JSON Request to Hopsworks APP-service
@@ -75,36 +62,6 @@ def get_http_connection(https=False):
     else:
         http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     return connection
-
-
-def get_schema(topic, version_id=1):
-    """
-    Gets the Avro schema for a particular Kafka topic and its version.
-
-    Args:
-        :topic: Kafka topic name
-        :version_id: Schema version ID
-
-    Returns:
-        Avro schema as a string object in JSON format
-    """
-    print("Getting schema for topic: {} schema version: {}".format(topic, version_id))
-    json = prepare_rest_appservice_json_request()
-    json[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
-    json[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
-    json_embeddable = json.dumps(json)
-    headers = {'Content-type': 'application/json'}
-    method = "GET"
-    connection = get_http_connection()
-    resource = "schema"
-    resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
-    print("Sending REST request to Hopsworks: {}".format(resource_url))
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    return response_object
-
 
 def get_broker_endpoints():
     """
@@ -290,3 +247,47 @@ def get_kafka_default_config():
     default_config[constants.KAFKA_SSL_CONFIG.SSL_KEY_PASSWORD_CONFIG] = get_key_store_pwd()
 
     return default_config
+
+def write_pems():
+    """
+    Converts JKS files into PEM to be compatible with Python libraries
+    """
+    k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
+    t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
+    k_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG
+    t_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG
+    write_pem(k_jks_path, get_key_store_pwd(), k_pem_path)
+    write_pem(t_jks_path, get_trust_store_pwd(), t_pem_path)
+
+def get_schema(topic, version_id=1):
+    """
+    Gets the Avro schema for a particular Kafka topic and its version.
+
+    Args:
+        :topic: Kafka topic name
+        :version_id: Schema version ID
+
+    Returns:
+        Avro schema as a string object in JSON format
+    """
+    print("Getting schema for topic: {} schema version: {}".format(topic, version_id))
+
+    # Convert JKS to PEMs if they don't exists already
+    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG) or not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG):
+        write_pems()
+
+    json = prepare_rest_appservice_json_request()
+    json[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
+    json[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
+    json_embeddable = json.dumps(json)
+    headers = {'Content-type': 'application/json'}
+    method = "GET"
+    connection = get_http_connection()
+    resource = "schema"
+    resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
+    print("Sending REST request to Hopsworks: {}".format(resource_url))
+    connection.request(method, resource_url, json_embeddable, headers)
+    response = connection.getresponse()
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    return response_object
