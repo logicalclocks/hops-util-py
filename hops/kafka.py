@@ -30,7 +30,7 @@ def prepare_rest_appservice_json_request():
     key_store_cert = get_key_store_cert()
     json_contents = {}
     json_contents[constants.REST_CONFIG.JSON_KEYSTOREPWD] = key_store_pwd
-    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert
+    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert.decode("latin-1") # raw bytes is not serializable by JSON -_-
     return json_contents
 
 
@@ -61,7 +61,7 @@ def get_http_connection(https=False):
     if (https):
         connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     else:
-        http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+        connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     return connection
 
 def get_broker_endpoints():
