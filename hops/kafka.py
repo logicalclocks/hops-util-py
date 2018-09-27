@@ -13,6 +13,7 @@ import base64
 import jks
 import textwrap
 import json
+import ssl
 
 try:
     import http.client as http
@@ -59,7 +60,8 @@ def get_http_connection(https=False):
     """
     host_port_pair = get_host_port_pair()
     if (https):
-        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+        ssl_context = ssl.SSLContext()
+        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
     else:
         connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     return connection
@@ -283,7 +285,7 @@ def get_schema(topic, version_id=1):
     json_embeddable = json.dumps(json_contents)
     headers = {'Content-type': 'application/json'}
     method = "POST"
-    connection = get_http_connection()
+    connection = get_http_connection(https=True)
     resource = "schema"
     resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
     print("Sending REST request to Hopsworks: {}".format(resource_url))
