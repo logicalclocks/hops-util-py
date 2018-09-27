@@ -12,6 +12,7 @@ import string
 import base64
 import jks
 import textwrap
+import json
 
 try:
     import http.client as http
@@ -276,12 +277,12 @@ def get_schema(topic, version_id=1):
     if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG) or not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG):
         write_pems()
 
-    json = prepare_rest_appservice_json_request()
-    json[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
-    json[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
-    json_embeddable = json.dumps(json)
+    json_contents = prepare_rest_appservice_json_request()
+    json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
+    json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
+    json_embeddable = json.dumps(json_contents)
     headers = {'Content-type': 'application/json'}
-    method = "GET"
+    method = "POST"
     connection = get_http_connection()
     resource = "schema"
     resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
@@ -289,5 +290,5 @@ def get_schema(topic, version_id=1):
     connection.request(method, resource_url, json_embeddable, headers)
     response = connection.getresponse()
     resp_body = response.read()
-    response_object = json.loads(resp_body)
+    response_object = json_contents.loads(resp_body)
     return response_object
