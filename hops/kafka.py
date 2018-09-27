@@ -292,5 +292,5 @@ def get_schema(topic, version_id=1):
     connection.request(method, resource_url, json_embeddable, headers)
     response = connection.getresponse()
     resp_body = response.read()
-    response_object = json_contents.loads(resp_body)
+    response_object = json.loads(resp_body)
     return response_object
