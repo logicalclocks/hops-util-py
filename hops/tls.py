@@ -109,59 +109,57 @@ def bytes_to_pem_str(der_bytes, pem_type):
     return pem_str
 
 
-def convert_jks_to_pem(jks_path, pw):
+def convert_keystore_jks_to_pem(jks_path, pw):
     """
-    Converts a JKS to a PEM string
+    Converts a keystore JKS that contains client private key,
+     client certificate and CA certificate that was used to
+     sign the certificate, to three PEM-format strings.
 
     Args:
     :jks_path: path to the JKS file
     :pw: password for decrypting the JKS file
 
     Returns:
-         PEM string
+         strings: (client_cert, client_key, ca_cert)
     """
     # load the keystore and decrypt it with password
     ks = jks.KeyStore.load(jks_path, pw, try_decrypt_keys=True)
-    pem_str = ""
-    # Convert private keys and their certificate into PEM format and append to string
+    client_cert = ""
+    client_key = ""
+    ca_cert = ""
+
     for alias, pk in ks.private_keys.items():
         if pk.algorithm_oid == jks.util.RSA_ENCRYPTION_OID:
-            pem_str = pem_str + bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
+            client_key = bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
         else:
-            pem_str = pem_str + bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
+            client_key = bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
         for c in pk.cert_chain:
             # c[0] contains type of cert, i.e X.509
-            pem_str = pem_str + bytes_to_pem_str(c[1], "CERTIFICATE")
+            client_cert = bytes_to_pem_str(c[1], "CERTIFICATE")
 
     # Convert CA Certificates into PEM format and append to string
     for alias, c in ks.certs.items():
-        pem_str = pem_str + bytes_to_pem_str(c.cert, "CERTIFICATE")
-    return pem_str
+        ca_cert = ca_cert + bytes_to_pem_str(c.cert, "CERTIFICATE")
+    return client_cert, client_key, ca_cert
 
-def write_pem(jks_path, pw, output_path):
+def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path):
     """
-    Converts a JKS file into a PEM string and writes it to a file
+    Converts a JKS keystore to three PEM files containing
+    client certificate, client key, and ca certificate
 
     Args:
-    :jks_path: path to the JKS file
+    :jks_path: path to the keystore JKS file
     :pw: password for decrypting the JKS file
     :output_path: path to write the PEM file
 
     """
-    pem_str = convert_jks_to_pem(jks_path, pw)
-    with open(output_path, "w") as f:
-        f.write(pem_str)
-
-def write_pems():
-    """
-    Converts JKS files into PEM to be compatible with Python libraries
-    """
-    k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
-    k_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG
-    t_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG
-    write_pem(k_jks_path, get_key_store_pwd(), k_pem_path)
-    write_pem(t_jks_path, get_trust_store_pwd(), t_pem_path)
+    client_cert, client_key, ca_cert = convert_keystore_jks_to_pem(jks_path, pw)
+    with open(client_cert_path, "w") as f:
+        f.write(client_cert)
+    with open(client_key_path, "w") as f:
+        f.write(client_key)
+    with open(ca_cert_path, "w") as f:
+        f.write(ca_cert)
 
 def get_ca_certificate_location():
     """
@@ -170,7 +168,7 @@ def get_ca_certificate_location():
     Returns:
         string path to ca certificate (server.pem)
     """
-    raise NotImplementedError
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
 
 def get_client_key_location():
     """
@@ -179,7 +177,7 @@ def get_client_key_location():
     Returns:
         string path to client private key (client.key)
     """
-    raise NotImplementedError
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
 
 def get_client_certificate_location():
     """
@@ -188,4 +186,14 @@ def get_client_certificate_location():
     Returns:
          string path to client certificate (client.pem)
     """
-    raise NotImplementedError
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
+
+def write_pems():
+    """
+    Converts JKS keystore file into PEM to be compatible with Python libraries
+    """
+    k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
+    client_cert_pem_path = get_client_certificate_location()
+    client_key_pem_path = get_client_key_location()
+    ca_cert_pem_path = get_ca_certificate_location()
+    write_pem(k_jks_path, get_key_store_pwd(), client_cert_pem_path, client_key_pem_path, ca_cert_pem_path)
