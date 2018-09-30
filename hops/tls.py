@@ -162,3 +162,30 @@ def write_pems():
     t_pem_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG
     write_pem(k_jks_path, get_key_store_pwd(), k_pem_path)
     write_pem(t_jks_path, get_trust_store_pwd(), t_pem_path)
+
+def get_ca_certificate_location():
+    """
+    Get location of trusted CA certificate (server.pem) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+        string path to ca certificate (server.pem)
+    """
+    raise NotImplementedError
+
+def get_client_key_location():
+    """
+    Get location of client private key (client.key) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+        string path to client private key (client.key)
+    """
+    raise NotImplementedError
+
+def get_client_certificate_location():
+    """
+    Get location of client certificate (client.pem) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+         string path to client certificate (client.pem)
+    """
+    raise NotImplementedError

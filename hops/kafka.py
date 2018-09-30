@@ -85,3 +85,45 @@ def get_schema(topic, version_id=1):
     resp_body = response.read()
     response_object = json.loads(resp_body)
     return response_object
+
+def avro_serialize(bytes, schema):
+    """
+    Args:
+
+         :bytes: input Tuple4 to serialize.
+         :schema: the schema to serialize with
+
+    Returns:
+        Kafka record as byte array.
+    """
+    raise NotImplementedError
+
+def avro_deserialize(bytes, schema):
+    """
+    Args:
+
+        :bytes: the message as a byte array.
+        :schema: to deserialize with
+
+    Returns:
+        the deserialized message as a String object.
+    """
+    raise NotImplementedError
+
+def get_topics():
+    """
+    Get a list of Topics set for this job.
+
+    Returns:
+        List of String object with Kafka topic names.
+    """
+    raise NotImplementedError
+
+def get_topics_as_csv():
+    """
+    Get a list of Topics set for this job in a comma-separated value text format.
+
+    Returns:
+         a string of topics in CSV format
+    """
+    raise NotImplementedError
