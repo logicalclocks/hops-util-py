@@ -163,16 +163,16 @@ def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path, kst
     with open(kstore_pem_path, "w") as f:
         f.write(client_key + "\n" + client_cert + "\n" + ca_cert)
 
-def get_ca_certificate_location():
+def get_client_ca_certificate_location():
     """
     Get location of trusted CA certificate (server.pem) for 2-way TLS authentication with Kafka cluster
 
     Returns:
         string path to ca certificate (server.pem)
     """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG:
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CA_CERTIFICATE_CONFIG:
         write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CA_CERTIFICATE_CONFIG
 
 def get_client_key_location():
     """
@@ -197,13 +197,47 @@ def get_client_certificate_location():
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
 
+def get_server_ca_certificate_location():
+    """
+    Get location of trusted CA certificate (server.pem) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+        string path to ca certificate (server.pem)
+    """
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CA_CERTIFICATE_CONFIG:
+        write_pems()
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CA_CERTIFICATE_CONFIG
+
+def get_server_key_location():
+    """
+    Get location of client private key (client.key) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+        string path to client private key (client.key)
+    """
+    # Convert JKS to PEMs if they don't exists already
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_KEY_CONFIG:
+        write_pems()
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_KEY_CONFIG
+
+def get_server_certificate_location():
+    """
+    Get location of client certificate (client.pem) for 2-way TLS authentication with Kafka cluster
+
+    Returns:
+         string path to client certificate (client.pem)
+    """
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CERTIFICATE_CONFIG:
+        write_pems()
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CERTIFICATE_CONFIG
+
 def write_pems():
     """
     Converts JKS keystore file into PEM to be compatible with Python libraries
     """
+    t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
     k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    client_cert_pem_path = get_client_certificate_location()
-    client_key_pem_path = get_client_key_location()
-    ca_cert_pem_path = get_ca_certificate_location()
     kstore_pem_path = os.getcwd() + "/k_certificate.pem"
-    write_pem(k_jks_path, get_key_store_pwd(), client_cert_pem_path, client_key_pem_path, ca_cert_pem_path, kstore_pem_path)
+    tstore_pem_path = os.getcwd() + "/t_certificate.pem"
+    write_pem(k_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), kstore_pem_path)
+    write_pem(t_jks_path, get_key_store_pwd(), get_server_certificate_location(), get_server_key_location(), get_server_ca_certificate_location(), tstore_pem_path)
