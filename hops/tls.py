@@ -170,7 +170,7 @@ def get_ca_certificate_location():
     Returns:
         string path to ca certificate (server.pem)
     """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG:
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
 
