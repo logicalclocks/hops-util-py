@@ -65,11 +65,6 @@ def get_schema(topic, version_id=1):
         Avro schema as a string object in JSON format
     """
     print("Getting schema for topic: {} schema version: {}".format(topic, version_id))
-
-    # Convert JKS to PEMs if they don't exists already
-    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_K_CERTIFICATE_CONFIG) or not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_T_CERTIFICATE_CONFIG):
-        tls.write_pems()
-
     json_contents = rest_api.rest_prepare_rest_appservice_json_request()
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id

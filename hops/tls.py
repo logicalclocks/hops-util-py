@@ -142,7 +142,7 @@ def convert_keystore_jks_to_pem(jks_path, pw):
         ca_cert = ca_cert + bytes_to_pem_str(c.cert, "CERTIFICATE")
     return client_cert, client_key, ca_cert
 
-def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path):
+def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path, kstore_pem_path):
     """
     Converts a JKS keystore to three PEM files containing
     client certificate, client key, and ca certificate
@@ -160,6 +160,8 @@ def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path):
         f.write(client_key)
     with open(ca_cert_path, "w") as f:
         f.write(ca_cert)
+    with open(kstore_pem_path, "w") as f:
+        f.write(client_key + "\n" + client_cert + "\n" + ca_cert)
 
 def get_ca_certificate_location():
     """
@@ -168,6 +170,8 @@ def get_ca_certificate_location():
     Returns:
         string path to ca certificate (server.pem)
     """
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
+        write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CERTIFICATE_CONFIG
 
 def get_client_key_location():
@@ -177,6 +181,9 @@ def get_client_key_location():
     Returns:
         string path to client private key (client.key)
     """
+    # Convert JKS to PEMs if they don't exists already
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG:
+        write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
 
 def get_client_certificate_location():
@@ -186,6 +193,8 @@ def get_client_certificate_location():
     Returns:
          string path to client certificate (client.pem)
     """
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG:
+        write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
 
 def write_pems():
@@ -196,4 +205,5 @@ def write_pems():
     client_cert_pem_path = get_client_certificate_location()
     client_key_pem_path = get_client_key_location()
     ca_cert_pem_path = get_ca_certificate_location()
-    write_pem(k_jks_path, get_key_store_pwd(), client_cert_pem_path, client_key_pem_path, ca_cert_pem_path)
+    kstore_pem_path = os.getcwd() + "/k_certificate.pem"
+    write_pem(k_jks_path, get_key_store_pwd(), client_cert_pem_path, client_key_pem_path, ca_cert_pem_path, kstore_pem_path)
