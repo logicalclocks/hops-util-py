@@ -19,6 +19,14 @@ def get_broker_endpoints():
     """
     return os.environ[constants.ENV_VARIABLES.KAFKA_BROKERS_ENV_VAR].replace("INTERNAL://","")
 
+def get_security_protocol():
+    """
+    Gets the security protocol used for communicating with Kafka brokers in a Hopsworks cluster
+    Returns:
+        the security protocol for communicating with Kafka brokers in a Hopsworks cluster
+    """
+    return "SSL"
+
 
 def get_broker_endpoints_list():
     """
