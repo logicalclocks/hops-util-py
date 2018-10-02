@@ -88,20 +88,20 @@ def on_executor_exit(signame):
             raise Exception('prctl failed with error code %s' % result)
     return set_parent_exit_signal
 
-def num_executors(spark):
+def num_executors():
     """ Get the number of executors configured for Jupyter
     Returns:
       Number of configured executors for Jupyter
     """
-    sc = spark.sparkContext
+    sc = _find_spark().sparkContext
     return int(sc._conf.get("spark.executor.instances"))
 
-def num_param_servers(spark):
+def num_param_servers():
     """ Get the number of parameter servers configured for Jupyter
     Returns:
       Number of configured parameter servers for Jupyter
     """
-    sc = spark.sparkContext
+    sc = _find_spark().sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
 
 def grid_params(dict):

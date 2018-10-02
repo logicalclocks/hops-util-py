@@ -9,7 +9,8 @@ from hops import hdfs as hopshdfs
 from hops import differential_evolution as diff_evo
 from hops import grid_search as gs
 from hops import launcher as launcher
-from hops.allreduce import allreduce as tf_allreduce
+from hops.distribute import allreduce as tf_allreduce
+from hops.distribute import parameter_server as ps
 
 from hops import tensorboard
 
@@ -306,6 +307,52 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+
+        experiment_json = util.finalize_experiment(experiment_json, None, None)
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    except:
+        exception_handler()
+        raise
+    finally:
+        #cleanup spark jobs
+        elastic_id +=1
+        running = False
+        sc.setJobGroup("", "")
+
+    return None
+
+def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+    """ Run the TensorFlow allreduce
+
+    Args:
+      :map_fun: The TensorFlow function to run
+      :name: (optional) name of the job
+    """
+    global running
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        running = True
+
+        sc = util._find_spark().sparkContext
+        app_id = str(sc.applicationId)
+
+        ps.run_id = ps.run_id + 1
+
+        versioned_path = util.version_resources(versioned_resources, ps.get_logdir(app_id))
+
+        experiment_json = util.populate_experiment(sc, name, 'experiment', 'parameter_server', ps.get_logdir(app_id), None, versioned_path, description)
+
+        util.version_resources(versioned_resources, ps.get_logdir(app_id))
+
+        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
         experiment_json = util.finalize_experiment(experiment_json, None, None)
 
