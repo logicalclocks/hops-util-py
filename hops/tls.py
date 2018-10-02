@@ -214,4 +214,7 @@ def write_pems():
     """
     t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
     k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_ca_chain_location(), constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
+    client_certificate_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
+    client_key_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
+    ca_chain_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
+    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path, constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
