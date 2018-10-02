@@ -109,7 +109,7 @@ def bytes_to_pem_str(der_bytes, pem_type):
     return pem_str
 
 
-def convert_keystore_jks_to_pem(jks_path, pw):
+def convert_jks_to_pem(jks_path, pw):
     """
     Converts a keystore JKS that contains client private key,
      client certificate and CA certificate that was used to
@@ -142,9 +142,9 @@ def convert_keystore_jks_to_pem(jks_path, pw):
         ca_cert = ca_cert + bytes_to_pem_str(c.cert, "CERTIFICATE")
     return client_cert, client_key, ca_cert
 
-def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path, kstore_pem_path):
+def write_pem(jks_key_store_path, jks_trust_store_path, pw, client_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):
     """
-    Converts a JKS keystore to three PEM files containing
+    Converts the JKS keystore, JKS truststore, and the root ca.pem
     client certificate, client key, and ca certificate
 
     Args:
@@ -153,15 +153,16 @@ def write_pem(jks_path, pw, client_cert_path, client_key_path, ca_cert_path, kst
     :output_path: path to write the PEM file
 
     """
-    client_cert, client_key, ca_cert = convert_keystore_jks_to_pem(jks_path, pw)
+    keystore_cert, keystore_key, keystore_cert = convert_jks_to_pem(jks_key_store_path, pw)
+    truststore_cert, truststore_key, truststore_cert = convert_jks_to_pem(jks_trust_store_path, pw)
+    with open(ca_root_pub_pem_path, "r") as f:
+        ca_root_cert = f.read()
     with open(client_cert_path, "w") as f:
-        f.write(client_cert)
+        f.write(keystore_cert)
     with open(client_key_path, "w") as f:
-        f.write(client_key)
+        f.write(keystore_key)
     with open(ca_cert_path, "w") as f:
-        f.write(ca_cert)
-    with open(kstore_pem_path, "w") as f:
-        f.write(client_key + "\n" + client_cert + "\n" + ca_cert)
+        f.write(truststore_cert + "\n" + ca_root_cert)
 
 def get_client_ca_certificate_location():
     """
@@ -237,7 +238,6 @@ def write_pems():
     """
     t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
     k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    kstore_pem_path = os.getcwd() + "/k_certificate.pem"
-    tstore_pem_path = os.getcwd() + "/t_certificate.pem"
-    write_pem(k_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), kstore_pem_path)
-    write_pem(t_jks_path, get_key_store_pwd(), get_server_certificate_location(), get_server_key_location(), get_server_ca_certificate_location(), tstore_pem_path)
+    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
+    #write_pem(k_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), kstore_pem_path)
+    #write_pem(t_jks_path, get_key_store_pwd(), get_server_certificate_location(), get_server_key_location(), get_server_ca_certificate_location(), tstore_pem_path)
