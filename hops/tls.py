@@ -167,7 +167,8 @@ def write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_
     with open(client_key_path, "w") as f:
         f.write(keystore_key)
     with open(ca_cert_path, "w") as f:
-        f.write(truststore_ca_cert + "\n" + ca_root_cert)
+        f.write(ca_root_cert)
+        #f.write(truststore_ca_cert + ca_root_cert) #When TLS solution on hops gets updated we probably want the truststore certs as well, but right not CA file contains all we need.
 
 def get_client_certificate_location():
     """
