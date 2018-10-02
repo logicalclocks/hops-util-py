@@ -178,7 +178,7 @@ def get_client_certificate_location():
     Returns:
         string path to client certificate in PEM format
     """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG:
+    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG):
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
 
@@ -191,7 +191,7 @@ def get_client_key_location():
         string path to client private key in PEM format
     """
     # Convert JKS to PEMs if they don't exists already
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG:
+    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG):
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
 
@@ -204,7 +204,7 @@ def get_ca_chain_location():
     Returns:
          string path to ca chain of certificate
     """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG:
+    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG):
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
 
