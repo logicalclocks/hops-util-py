@@ -109,7 +109,7 @@ def bytes_to_pem_str(der_bytes, pem_type):
     return pem_str
 
 
-def convert_jks_to_pem(jks_path, pw):
+def convert_jks_to_pem(jks_path, keystore_pw):
     """
     Converts a keystore JKS that contains client private key,
      client certificate and CA certificate that was used to
@@ -123,38 +123,43 @@ def convert_jks_to_pem(jks_path, pw):
          strings: (client_cert, client_key, ca_cert)
     """
     # load the keystore and decrypt it with password
-    ks = jks.KeyStore.load(jks_path, pw, try_decrypt_keys=True)
-    client_cert = ""
-    client_key = ""
-    ca_cert = ""
+    ks = jks.KeyStore.load(jks_path, keystore_pw, try_decrypt_keys=True)
+    private_keys_certs = ""
+    private_keys = ""
+    ca_certs = ""
 
+    # Convert private keys and their certificates into PEM format and append to string
     for alias, pk in ks.private_keys.items():
         if pk.algorithm_oid == jks.util.RSA_ENCRYPTION_OID:
-            client_key = bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
+            private_keys = bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
         else:
-            client_key = bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
+            private_keys = bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
         for c in pk.cert_chain:
             # c[0] contains type of cert, i.e X.509
-            client_cert = bytes_to_pem_str(c[1], "CERTIFICATE")
+            private_keys_certs = bytes_to_pem_str(c[1], "CERTIFICATE")
 
     # Convert CA Certificates into PEM format and append to string
     for alias, c in ks.certs.items():
-        ca_cert = ca_cert + bytes_to_pem_str(c.cert, "CERTIFICATE")
-    return client_cert, client_key, ca_cert
+        ca_certs = ca_certs + bytes_to_pem_str(c.cert, "CERTIFICATE")
+    return private_keys_certs, private_keys, ca_certs
 
-def write_pem(jks_key_store_path, jks_trust_store_path, pw, client_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):
+def write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):
     """
     Converts the JKS keystore, JKS truststore, and the root ca.pem
     client certificate, client key, and ca certificate
 
     Args:
-    :jks_path: path to the keystore JKS file
-    :pw: password for decrypting the JKS file
-    :output_path: path to write the PEM file
+    :jks_key_store_path: path to the JKS keystore
+    :jks_trust_store_path: path to the JKS truststore
+    :keystore_pw: path to file with passphrase for the keystores
+    :client_cert_path: path to write the client's certificate for its private key in PEM format
+    :client_key_path: path to write the client's private key in PEM format
+    :ca_cert_path: path to write the chain of CA certificates required to validate certificates
+    :ca_root_pub_pem_path: path to root CA on the host (root CA certificate is not present in the keystores, only the intermediate CA certificate is)
 
     """
-    keystore_cert, keystore_key, keystore_cert = convert_jks_to_pem(jks_key_store_path, pw)
-    truststore_cert, truststore_key, truststore_cert = convert_jks_to_pem(jks_trust_store_path, pw)
+    keystore_cert, keystore_key, keystore_cert = convert_jks_to_pem(jks_key_store_path, keystore_pw)
+    truststore_cert, truststore_key, truststore_cert = convert_jks_to_pem(jks_trust_store_path, keystore_pw)
     with open(ca_root_pub_pem_path, "r") as f:
         ca_root_cert = f.read()
     with open(client_cert_path, "w") as f:
@@ -164,73 +169,43 @@ def write_pem(jks_key_store_path, jks_trust_store_path, pw, client_cert_path, cl
     with open(ca_cert_path, "w") as f:
         f.write(truststore_cert + "\n" + ca_root_cert)
 
-def get_client_ca_certificate_location():
+def get_client_certificate_location():
     """
-    Get location of trusted CA certificate (server.pem) for 2-way TLS authentication with Kafka cluster
+    Get location of client certificate (PEM format) for the private key signed by trusted CA
+    used for 2-way TLS authentication, for example with Kafka cluster
 
     Returns:
-        string path to ca certificate (server.pem)
+        string path to client certificate in PEM format
     """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CA_CERTIFICATE_CONFIG:
+    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG:
         write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CA_CERTIFICATE_CONFIG
+    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
 
 def get_client_key_location():
     """
-    Get location of client private key (client.key) for 2-way TLS authentication with Kafka cluster
+    Get location of client private key (PEM format)
+    used for for 2-way TLS authentication, for example with Kafka cluster
 
     Returns:
-        string path to client private key (client.key)
+        string path to client private key in PEM format
     """
     # Convert JKS to PEMs if they don't exists already
     if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG:
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
 
-def get_client_certificate_location():
+def get_ca_chain_location():
     """
-    Get location of client certificate (client.pem) for 2-way TLS authentication with Kafka cluster
+    Get location of chain of CA certificates (PEM format) that are required to validate the
+    private key certificate of the client
+    used for 2-way TLS authentication, for example with Kafka cluster
 
     Returns:
-         string path to client certificate (client.pem)
+         string path to ca chain of certificate
     """
     if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG:
         write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
-
-def get_server_ca_certificate_location():
-    """
-    Get location of trusted CA certificate (server.pem) for 2-way TLS authentication with Kafka cluster
-
-    Returns:
-        string path to ca certificate (server.pem)
-    """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CA_CERTIFICATE_CONFIG:
-        write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CA_CERTIFICATE_CONFIG
-
-def get_server_key_location():
-    """
-    Get location of client private key (client.key) for 2-way TLS authentication with Kafka cluster
-
-    Returns:
-        string path to client private key (client.key)
-    """
-    # Convert JKS to PEMs if they don't exists already
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_KEY_CONFIG:
-        write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_KEY_CONFIG
-
-def get_server_certificate_location():
-    """
-    Get location of client certificate (client.pem) for 2-way TLS authentication with Kafka cluster
-
-    Returns:
-         string path to client certificate (client.pem)
-    """
-    if not os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CERTIFICATE_CONFIG:
-        write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_SERVER_CERTIFICATE_CONFIG
 
 def write_pems():
     """
@@ -238,6 +213,4 @@ def write_pems():
     """
     t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
     k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
-    #write_pem(k_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_client_ca_certificate_location(), kstore_pem_path)
-    #write_pem(t_jks_path, get_key_store_pwd(), get_server_certificate_location(), get_server_key_location(), get_server_ca_certificate_location(), tstore_pem_path)
+    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), get_client_certificate_location(), get_client_key_location(), get_ca_chain_location(), constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
