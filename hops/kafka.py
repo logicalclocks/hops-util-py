@@ -44,21 +44,14 @@ def get_kafka_default_config():
     Returns:
          dict with config_property --> value
     """
-    default_config = {}
-    # Configure Producer Properties
-    default_config[constants.KAFKA_PRODUCER_CONFIG.BOOTSTRAP_SERVERS_CONFIG] = get_broker_endpoints()
-    default_config[
-        constants.KAFKA_PRODUCER_CONFIG.KEY_SERIALIZER_CLASS_CONFIG] = "org.apache.kafka.common.serialization.StringSerializer"
-    default_config[
-        constants.KAFKA_PRODUCER_CONFIG.VALUE_SERIALIZER_CLASS_CONFIG] = "org.apache.kafka.common.serialization.ByteArraySerializer"
-    # Configure SSL Properties
-    default_config[constants.KAFKA_SSL_CONFIG.SECURITY_PROTOCOL_CONFIG] = "SSL"
-    default_config[constants.KAFKA_SSL_CONFIG.SSL_TRUSTSTORE_LOCATION_CONFIG] = tls.get_trust_store()
-    default_config[constants.KAFKA_SSL_CONFIG.SSL_TRUSTSTORE_PASSWORD_CONFIG] = tls.get_trust_store_pwd()
-    default_config[constants.KAFKA_SSL_CONFIG.SSL_KEYSTORE_LOCATION_CONFIG] = tls.get_key_store()
-    default_config[constants.KAFKA_SSL_CONFIG.SSL_KEYSTORE_PASSWORD_CONFIG] = tls.get_key_store_pwd()
-    default_config[constants.KAFKA_SSL_CONFIG.SSL_KEY_PASSWORD_CONFIG] = tls.get_key_store_pwd()
-
+    default_config = {
+        constants.KAFKA_PRODUCER_CONFIG.BOOTSTRAP_SERVERS_CONFIG: get_broker_endpoints(),
+        constants.KAFKA_SSL_CONFIG.SECURITY_PROTOCOL_CONFIG: get_security_protocol(),
+        constants.KAFKA_SSL_CONFIG.SSL_CA_LOCATION_CONFIG: tls.get_ca_chain_location(),
+        constants.KAFKA_SSL_CONFIG.SSL_CERTIFICATE_LOCATION_CONFIG: tls.get_client_certificate_location(),
+        constants.KAFKA_SSL_CONFIG.SSL_PRIVATE_KEY_LOCATION_CONFIG: tls.get_client_key_location(),
+        "group.id": "something"
+    }
     return default_config
 
 def get_schema(topic, version_id=1):

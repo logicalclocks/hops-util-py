@@ -30,6 +30,9 @@ class KAFKA_SSL_CONFIG:
     SSL_KEYSTORE_PASSWORD_CONFIG = "ssl.keystore.password"
     SSL_KEY_PASSWORD_CONFIG = "ssl.key.password"
     SECURITY_PROTOCOL_CONFIG = "security.protocol"
+    SSL_CERTIFICATE_LOCATION_CONFIG = "ssl.certificate.location"
+    SSL_CA_LOCATION_CONFIG = "ssl.ca.location"
+    SSL_PRIVATE_KEY_LOCATION_CONFIG = "ssl.key.location"
 
 # General SSL config properties
 
