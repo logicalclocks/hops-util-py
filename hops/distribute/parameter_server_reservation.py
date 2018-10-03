@@ -69,6 +69,7 @@ class Reservations:
                 if possible_entry_to_switch["task_type"] == "worker" and possible_entry_to_switch["gpus_present"] == False:
                   entry["task_type"] = "worker"
                   possible_entry_to_switch["task_type"] = "ps"
+                  break
               cluster_spec[entry["task_type"]].append(entry["host_port"])
             else:
               cluster_spec[entry["task_type"]].append(entry["host_port"])
