@@ -56,7 +56,7 @@ def get_http_connection(https=False):
     Returns:
         HTTPSConnection
     """
-    host_port_pair = util.get_host_port_pair()
+    host_port_pair = get_host_port_pair()
     if (https):
         ssl_context = ssl.SSLContext()
         connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
