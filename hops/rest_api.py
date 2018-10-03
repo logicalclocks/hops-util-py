@@ -7,7 +7,7 @@ These utils facilitates development by hiding complexity for programs interactin
 import os
 from hops import constants
 from hops import tls
-from hops import util
+
 try:
     import http.client as http
 except ImportError:
@@ -58,7 +58,8 @@ def get_http_connection(https=False):
     """
     host_port_pair = get_host_port_pair()
     if (https):
-        ssl_context = ssl.SSLContext()
+        PROTOCOL = ssl.PROTOCOL_TLSv1_2
+        ssl_context = ssl.SSLContext(PROTOCOL)
         connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
     else:
         connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
