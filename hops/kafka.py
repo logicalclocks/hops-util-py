@@ -73,7 +73,7 @@ def get_schema(topic, version_id=1):
     method = "POST"
     connection = rest_api.get_http_connection(https=True)
     resource = "schema"
-    resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
+    resource_url = "/" + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
     connection.request(method, resource_url, json_embeddable, headers)
     response = connection.getresponse()
     resp_body = response.read()
