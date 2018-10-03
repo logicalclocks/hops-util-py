@@ -65,8 +65,7 @@ def get_schema(topic, version_id=1):
     Returns:
         Avro schema as a string object in JSON format
     """
-    print("Getting schema for topic: {} schema version: {}".format(topic, version_id))
-    json_contents = rest_api.rest_prepare_rest_appservice_json_request()
+    json_contents = rest_api.prepare_rest_appservice_json_request()
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
     json_embeddable = json.dumps(json_contents)
@@ -75,7 +74,6 @@ def get_schema(topic, version_id=1):
     connection = rest_api.get_http_connection(https=True)
     resource = "schema"
     resource_url = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
-    print("Sending REST request to Hopsworks: {}".format(resource_url))
     connection.request(method, resource_url, json_embeddable, headers)
     response = connection.getresponse()
     resp_body = response.read()
