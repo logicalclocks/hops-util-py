@@ -126,7 +126,9 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "ps":
                 ps_thread = threading.Thread(target=lambda: map_fun())
                 ps_thread.start()
+                print("waiting for workers")
                 client.await_all_workers_finished()
+                print("waiting finished")
             else:
                 retval = map_fun()
 
