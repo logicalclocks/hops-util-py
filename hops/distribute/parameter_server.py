@@ -73,6 +73,8 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
 
         role = None
 
+        client = parameter_server_reservation.Client(server_addr)
+
         try:
             host = util.get_ip_address()
 
@@ -80,8 +82,6 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             tmp_socket.bind(('', 0))
             port = tmp_socket.getsockname()[1]
             host_port = host + ":" + str(port)
-
-            client = parameter_server_reservation.Client(server_addr)
 
             exec_spec = {}
             if executor_num < num_ps:
@@ -96,7 +96,6 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             cluster = client.await_reservations()
 
             tmp_socket.close()
-            client.close()
 
             role, index = _find_task_and_index(host_port, cluster)
 
@@ -123,7 +122,14 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
                 hopshdfs.log('Started running task')
             task_start = datetime.datetime.now()
 
-            retval = map_fun()
+            retval=None
+            if role == "ps":
+                ps_thread = threading.Thread(target=lambda: map_fun())
+                ps_thread.start()
+                client.await_all_workers_finished()
+            else:
+                retval = map_fun()
+
             if role == "chief":
                 if retval:
                     _handle_return(retval, hdfs_exec_logdir)
@@ -135,7 +141,6 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "chief":
                 hopshdfs.log(time_str)
         except:
-            #Always do cleanup
             _cleanup(tb_hdfs_path)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
@@ -146,7 +151,12 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
-
+            try:
+                if role == "worker" or role == "chief":
+                    client.register_worker_finished()
+                client.close()
+            except:
+                pass
 
         _cleanup(tb_hdfs_path)
         if devices.get_num_gpus() > 0:

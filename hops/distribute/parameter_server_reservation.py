@@ -100,6 +100,42 @@ class Reservations:
       num_registered = len(self.reservations)
       return self.required - num_registered
 
+
+class WorkerFinished:
+  """Thread-safe store for node reservations.
+
+  Args:
+    :required: expected number of nodes in the cluster.
+  """
+
+  def __init__(self, required):
+    self.required = required
+    self.lock = threading.RLock()
+    self.finished = 0
+    self.check_done = False
+
+  def add(self, meta):
+    """Add a reservation.
+
+    Args:
+      :meta: a dictonary of metadata about a node
+    """
+    with self.lock:
+      self.finished = self.finished + 1
+
+      if self.remaining() == 0:
+        self.check_done = True
+
+  def done(self):
+    """Returns True if the ``required`` number of reservations have been fulfilled."""
+    with self.lock:
+      return self.check_done
+
+  def remaining(self):
+    """Get a count of remaining/unfulfilled reservations."""
+    with self.lock:
+      return self.required - self.finished
+
 class MessageSocket(object):
   """Abstract class w/ length-prefixed socket send/receive functions."""
 
@@ -140,6 +176,7 @@ class Server(MessageSocket):
   def __init__(self, count):
     assert count > 0
     self.reservations = Reservations(count)
+    self.worker_finished = WorkerFinished(util.num_executors() - util.num_param_servers())
 
   def await_reservations(self, sc, status={}, timeout=600):
     """Block until all reservations are received."""
@@ -164,8 +201,13 @@ class Server(MessageSocket):
     if msg_type == 'REG':
       self.reservations.add(msg['data'])
       MessageSocket.send(self, sock, 'OK')
+    elif msg_type == 'REG_DONE':
+      self.worker_finished.add(msg['data'])
+      MessageSocket.send(self, sock, 'OK')
     elif msg_type == 'QUERY':
       MessageSocket.send(self, sock, self.reservations.done())
+    elif msg_type == 'QUERY_DONE':
+      MessageSocket.send(self, sock, self.worker_finished.done())
     elif msg_type == 'QINFO':
       rinfo = self.reservations.get()
       MessageSocket.send(self, sock, rinfo)
@@ -275,6 +317,19 @@ class Client(MessageSocket):
     """Register ``reservation`` with server."""
     resp = self._request('REG', reservation)
     return resp
+
+  def register_worker_finished(self):
+    """Register ``worker as finished`` with server."""
+    resp = self._request('REG_DONE')
+    return resp
+
+  def await_all_workers_finished(self):
+    """Poll until all reservations completed, then return cluster_info."""
+    done = False
+    while not done:
+      done = self._request('QUERY_DONE')
+      time.sleep(5)
+    return True
 
   def get_reservations(self):
     """Get current list of reservations."""
