@@ -126,7 +126,9 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "ps":
                 ps_thread = threading.Thread(target=lambda: map_fun())
                 ps_thread.start()
+                print("waiting for workers")
                 client.await_all_workers_finished()
+                print("waiting finished")
             else:
                 retval = map_fun()
 
@@ -140,6 +142,11 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             print('-------------------------------------------------------')
             if role == "chief":
                 hopshdfs.log(time_str)
+
+            if role == "worker" or role == "chief":
+               client.register_worker_finished()
+            client.close()
+
         except:
             _cleanup(tb_hdfs_path)
             if devices.get_num_gpus() > 0:
@@ -151,12 +158,6 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
-            try:
-                if role == "worker" or role == "chief":
-                    client.register_worker_finished()
-                client.close()
-            except:
-                pass
 
         _cleanup(tb_hdfs_path)
         if devices.get_num_gpus() > 0:
