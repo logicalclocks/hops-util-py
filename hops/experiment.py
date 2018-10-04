@@ -127,6 +127,10 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
       :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
       :name: (optional) name of the job
     """
+
+    num_ps = util.num_param_servers()
+    assert num_ps == 0, "number of parameter servers should be 0"
+
     global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
@@ -184,6 +188,10 @@ def evolutionary_search(objective_function, search_dict, direction = 'max', gene
       :map_fun: The TensorFlow function to run
       :search_dict: (optional) A dictionary containing differential evolutionary boundaries
     """
+
+    num_ps = util.num_param_servers()
+    assert num_ps == 0, "number of parameter servers should be 0"
+
     global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
@@ -235,6 +243,10 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
       :direction: 'max' to maximize, 'min' to minimize
       :name: (optional) name of the job
     """
+
+    num_ps = util.num_param_servers()
+    assert num_ps == 0, "number of parameter servers should be 0"
+
     global running
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
@@ -287,8 +299,8 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
     num_ps = util.num_param_servers()
     num_executors = util.num_executors()
 
-    assert num_ps > 0, "number of parameter servers should be 0"
-    assert num_executors < 2, "number of workers (executors) need to be greater than 1"
+    assert num_ps == 0, "number of parameter servers should be 0"
+    assert num_executors < 2, "number of workers (executors) should be greater than 1"
 
     global running
     if running:
@@ -339,7 +351,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
     num_ps = util.num_param_servers()
     num_executors = util.num_executors()
 
-    assert num_ps > 0, "select a number of parameter servers greater than 0"
+    assert num_ps > 0, "number of parameter servers should be greater than 0"
     assert num_ps < num_executors, "number of parameter servers cannot be greater than number of executors (i.e. num_executors == num_ps + num_workers)"
 
     global running
