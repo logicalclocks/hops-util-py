@@ -4,12 +4,16 @@ Utility functions to retrieve information about available services and setting u
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
 
-import jks
 import string
 import base64
 import textwrap
 from hops import constants
 import os
+
+try:
+    import jks
+except:
+    pass
 
 def get_key_store():
     """
