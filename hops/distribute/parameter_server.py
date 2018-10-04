@@ -158,11 +158,10 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
-
-        _cleanup(tb_hdfs_path)
-        if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join()
+            _cleanup(tb_hdfs_path)
+            if devices.get_num_gpus() > 0:
+               t.do_run = False
+               t.join()
 
     return _wrapper_fun
 
