@@ -124,8 +124,9 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             task_start = datetime.datetime.now()
 
             retval = map_fun()
-            if retval:
-                _handle_return(retval, hdfs_exec_logdir)
+            if role == "chief":
+                if retval:
+                    _handle_return(retval, hdfs_exec_logdir)
 
             task_end = datetime.datetime.now()
             time_str = 'Finished task - took ' + util.time_diff(task_start, task_end)
