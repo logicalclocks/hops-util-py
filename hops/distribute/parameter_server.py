@@ -40,9 +40,18 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps))
 
+    logdir = get_logdir(app_id)
+
+    path_to_metric = logdir + '/metric'
+    if pydoop.hdfs.path.exists(path_to_metric):
+        with pydoop.hdfs.open(path_to_metric, "r") as fi:
+            metric = float(fi.read())
+            fi.close()
+            return metric, logdir
+
     print('Finished Experiment \n')
 
-    return None
+    return None, logdir
 
 def get_logdir(app_id):
     global run_id
@@ -115,6 +124,9 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             task_start = datetime.datetime.now()
 
             retval = map_fun()
+            if retval:
+                _handle_return(retval, hdfs_exec_logdir)
+
             task_end = datetime.datetime.now()
             time_str = 'Finished task - took ' + util.time_diff(task_start, task_end)
             print('\n' + time_str)
@@ -165,4 +177,20 @@ def _find_task_and_index(host_port, cluster_spec):
 
     if cluster_spec["chief"][0] == host_port:
        return "chief", 0
+
+def _handle_return(val, hdfs_exec_logdir):
+    try:
+        test = int(val)
+    except:
+        raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
+
+    metric_file = hdfs_exec_logdir + '/metric'
+    fs_handle = hopshdfs.get_fs()
+    try:
+        fd = fs_handle.open_file(metric_file, mode='w')
+    except:
+        fd = fs_handle.open_file(metric_file, flags='w')
+    fd.write(str(float(val)).encode())
+    fd.flush()
+    fd.close()
 

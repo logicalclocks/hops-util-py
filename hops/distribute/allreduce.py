@@ -38,9 +38,18 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, local_logdir, server_addr))
 
+    logdir = get_logdir(app_id)
+
+    path_to_metric = logdir + '/metric'
+    if pydoop.hdfs.path.exists(path_to_metric):
+        with pydoop.hdfs.open(path_to_metric, "r") as fi:
+            metric = float(fi.read())
+            fi.close()
+            return metric, logdir
+
     print('Finished Experiment \n')
 
-    return None
+    return None, logdir
 
 def get_logdir(app_id):
     global run_id
@@ -68,37 +77,42 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
             port = tmp_socket.getsockname()[1]
 
             client = allreduce_reservation.Client(server_addr)
+            host_port = host + ":" + str(port)
 
-            client.register({"worker": host + ":" + str(port), "index": executor_num})
+            client.register({"worker": host_port, "index": executor_num})
             cluster = client.await_reservations()
             tmp_socket.close()
             client.close()
 
-            cluster["task"] = {"type": "worker", "index": executor_num}
+            task_index = _find_index(host_port, cluster)
+
+            cluster["task"] = {"type": "worker", "index": task_index}
 
             os.environ["TF_CONFIG"] = json.dumps(cluster)
 
-            if executor_num == 0:
+            if task_index == 0:
                 hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'allreduce')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs.init_logger()
                 tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
             gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
-            if executor_num == 0:
+            if task_index == 0:
                 hopshdfs.log(gpu_str)
             print(gpu_str)
             print('-------------------------------------------------------')
             print('Started running task \n')
-            if executor_num == 0:
+            if task_index == 0:
                 hopshdfs.log('Started running task')
             task_start = datetime.datetime.now()
 
             retval = map_fun()
+            if retval:
+                _handle_return(retval, hdfs_exec_logdir)
             task_end = datetime.datetime.now()
             time_str = 'Finished task - took ' + util.time_diff(task_start, task_end)
             print('\n' + time_str)
             print('-------------------------------------------------------')
-            if executor_num == 0:
+            if task_index == 0:
                 hopshdfs.log(time_str)
         except:
             #Always do cleanup
@@ -108,7 +122,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
                 t.join()
             raise
         finally:
-            if executor_num == 0:
+            if task_index == 0:
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
@@ -126,3 +140,27 @@ def _cleanup(tb_hdfs_path):
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
     hopshdfs.kill_logger()
+
+def _handle_return(val, hdfs_exec_logdir):
+    try:
+        test = int(val)
+    except:
+        raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
+
+    metric_file = hdfs_exec_logdir + '/metric'
+    fs_handle = hopshdfs.get_fs()
+    try:
+        fd = fs_handle.open_file(metric_file, mode='w')
+    except:
+        fd = fs_handle.open_file(metric_file, flags='w')
+    fd.write(str(float(val)).encode())
+    fd.flush()
+    fd.close()
+
+def _find_index(host_port, cluster_spec):
+    index = 0
+    for entry in cluster_spec["cluster"]["worker"]:
+        if entry == host_port:
+            return index
+        else:
+            index = index + 1

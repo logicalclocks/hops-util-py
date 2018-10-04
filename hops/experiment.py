@@ -325,9 +325,9 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+        retval, logdir = tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, None, None)
+        experiment_json = util.finalize_experiment(experiment_json, None, retval)
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
@@ -339,7 +339,7 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
         running = False
         sc.setJobGroup("", "")
 
-    return None
+    return logdir
 
 def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """ Run the TensorFlow allreduce
@@ -377,9 +377,9 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+        retval, logdir = ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, None, None)
+        experiment_json = util.finalize_experiment(experiment_json, None, retval)
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
@@ -391,7 +391,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
         running = False
         sc.setJobGroup("", "")
 
-    return None
+    return logdir
 
 def exception_handler():
     global running
