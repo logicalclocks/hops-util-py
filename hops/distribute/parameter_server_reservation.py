@@ -60,19 +60,26 @@ class Reservations:
               cluster_spec["worker"].append(entry["host_port"])
         else:
           added_chief=False
+
+          # switch Worker without GPU with PS with GPU
+          for possible_switch in self.reservations:
+            if possible_switch["task_type"] == "worker" and possible_switch["gpus_present"] == False:
+              for candidate in self.reservations:
+                if candidate["task_type"] == "ps" and candidate["gpus_present"] == True:
+                  candidate["task_type"] = "worker"
+                  possible_switch["task_type"] = "ps"
+                  break
+
           for entry in self.reservations:
             if entry["task_type"] == "worker" and entry["gpus_present"] == True and added_chief == False:
               added_chief=True
               cluster_spec["chief"].append(entry["host_port"])
-            elif entry["task_type"] == "ps" and entry["gpus_present"] == True:
-              for possible_entry_to_switch in self.reservations:
-                if possible_entry_to_switch["task_type"] == "worker" and possible_entry_to_switch["gpus_present"] == False:
-                  entry["task_type"] = "worker"
-                  possible_entry_to_switch["task_type"] = "ps"
-                  break
-              cluster_spec[entry["task_type"]].append(entry["host_port"])
-            else:
-              cluster_spec[entry["task_type"]].append(entry["host_port"])
+            elif entry["task_type"] == "worker" and entry["gpus_present"] == True:
+              cluster_spec["worker"].append(entry["host_port"])
+            elif entry["task_type"] == "ps" and entry["gpus_present"] == False:
+              cluster_spec["ps"].append(entry["host_port"])
+
+
         self.cluster_spec = cluster_spec
 
         self.check_done = True
