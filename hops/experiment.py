@@ -300,7 +300,7 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
     num_executors = util.num_executors()
 
     assert num_ps == 0, "number of parameter servers should be 0"
-    assert num_executors < 2, "number of workers (executors) should be greater than 1"
+    assert num_executors > 1, "number of workers (executors) should be greater than 1"
 
     global running
     if running:
