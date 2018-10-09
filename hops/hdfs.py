@@ -3,7 +3,6 @@ Utility functions to retrieve information about available services and setting u
 
 These utils facilitates development by hiding complexity for programs interacting with Hops services.
 """
-
 import pydoop.hdfs as hdfs
 import os
 import datetime
@@ -78,7 +77,7 @@ def get_fs():
     return hdfs.fs.hdfs('default', 0, user=project_user())
 
 
-def _expand_path(hdfs_path, project=project_name(), exists=True):
+def _expand_path(hdfs_path, project="", exists=True):
     """
     Expands a given path. If the path is /Projects.. hdfs:// is prepended.
     If the path is ../ the full project path is prepended.
@@ -94,6 +93,8 @@ def _expand_path(hdfs_path, project=project_name(), exists=True):
     Returns:
          path expanded with HDFS and project
     """
+    if project == "":
+        project = project_name()
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
     if hdfs_path.startswith("/Projects/"):
         hdfs_path = "hdfs://" + hdfs_path
@@ -211,7 +212,7 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
     return hdfs_exec_logdir, hdfs_appid_logdir
 
 
-def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=project_name()):
+def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     """
     Copies a path from local filesystem to HDFS project (recursively) using local path (relative to (under)
     the path identfied by $PDIR) to a path in hdfs (hdfs_path)
@@ -227,6 +228,9 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=projec
     :overwrite a boolean flag whether to overwrite if the path already exists in HDFS
     :project name of the project, defaults to the current HDFS user's project
     """
+    if project == None:
+        project = project_name()
+
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
@@ -250,7 +254,7 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=projec
     hdfs.put(full_local, hdfs_path)
 
 
-def copy_to_local(hdfs_path, local_path, overwrite=False, project=project_name()):
+def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     """
     Copies a path from HDFS project to local filesystem
 
@@ -261,6 +265,8 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=project_name()
     :overwrite a boolean flag whether to overwrite if the path already exists in HDFS
     :project name of the project, defaults to the current HDFS user's project
     """
+    if project == None:
+        project = project_name()
 
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
@@ -321,7 +327,7 @@ def get_experiments_dir():
 # glob is implemented as  os.listdir() and fnmatch.fnmatch()
 # We implement glob as hdfs.ls() and fnmatch.filter()
 #
-def glob(hdfs_path, recursive=False, project=project_name()):
+def glob(hdfs_path, recursive=False, project=None):
     """ 
     Finds all the pathnames matching a specified pattern according to the rules used by the Unix shell, although results are returned in arbitrary order. 
  
@@ -340,6 +346,8 @@ def glob(hdfs_path, recursive=False, project=project_name()):
     # Get the full path to the dir for the input glob pattern
     # "hdfs://Projects/jim/blah/*.jpg" => "hdfs://Projects/jim/blah"
     # Then, ls on 'hdfs://Projects/jim/blah', then filter out results
+    if project == None:
+        project = project_name()
     lastSep = hdfs_path.rfind("/")
     inputDir = hdfs_path[:lastSep]
     inputDir = _expand_path(inputDir, project)
@@ -350,7 +358,7 @@ def glob(hdfs_path, recursive=False, project=project_name()):
     return fnmatch.filter(dirContents, pattern)
 
 
-def ls(hdfs_path, recursive=False, project=project_name()):
+def ls(hdfs_path, recursive=False, project=None):
     """ 
     Returns all the pathnames in the supplied directory.
 
@@ -362,12 +370,13 @@ def ls(hdfs_path, recursive=False, project=project_name()):
     Returns:
       A possibly-empty list of path names stored in the supplied path.
     """
-
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.ls(hdfs_path, recursive=recursive)
 
 
-def lsl(hdfs_path, recursive=False, project=project_name()):
+def lsl(hdfs_path, recursive=False, project=None):
     """ 
     Returns all the pathnames in the supplied directory.
 
@@ -379,11 +388,13 @@ def lsl(hdfs_path, recursive=False, project=project_name()):
     Returns:
       A possibly-empty list of path names stored in the supplied path.
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.lsl(hdfs_path, recursive=recursive)
 
 
-def rmr(hdfs_path, project=project_name()):
+def rmr(hdfs_path, project=None):
     """ 
     Recursively remove files and directories.
  
@@ -393,11 +404,13 @@ def rmr(hdfs_path, project=project_name()):
      :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.rmr(hdfs_path)
 
 
-def mkdir(hdfs_path, project=project_name()):
+def mkdir(hdfs_path, project=None):
     """ 
     Create a directory and its parents as needed.
  
@@ -407,6 +420,8 @@ def mkdir(hdfs_path, project=project_name()):
      :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project, exists=False)
     return hdfs.mkdir(hdfs_path)
 
@@ -438,7 +453,7 @@ def rename(src, dest):
     return hdfs.rename(src, dest)
 
 
-def chown(hdfs_path, user, group, project=project_name()):
+def chown(hdfs_path, user, group, project=None):
     """ 
     Change file owner and group.
 
@@ -449,11 +464,13 @@ def chown(hdfs_path, user, group, project=project_name()):
      :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
      you can specify the name of the project as a string.
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.chown(hdfs_path, user, group)
 
 
-def chmod(hdfs_path, mode, project=project_name()):
+def chmod(hdfs_path, mode, project=None):
     """ 
     Change file mode bits.
 
@@ -463,11 +480,13 @@ def chmod(hdfs_path, mode, project=project_name()):
      :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
      you can specify the name of the project as a string.
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.chmod(hdfs_path, mode)
 
 
-def stat(hdfs_path, project=project_name()):
+def stat(hdfs_path, project=None):
     """ 
     Performs the equivalent of os.stat() on path, returning a StatResult object.
 
@@ -482,11 +501,13 @@ def stat(hdfs_path, project=project_name()):
     Returns:
         StatResult object
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.stat(hdfs_path)
 
 
-def access(hdfs_path, mode, project=project_name()):
+def access(hdfs_path, mode, project=None):
     """ 
     Perform the equivalent of os.access() on path.
 
@@ -499,6 +520,8 @@ def access(hdfs_path, mode, project=project_name()):
     Returns:
         True if access is allowed, False if not.
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.access(hdfs_path, mode)
 
@@ -522,7 +545,7 @@ def _mkdir_p(path):
             raise
 
 
-def open_file(hdfs_path, project=project_name(), flags='rw', buff_size=0):
+def open_file(hdfs_path, project=None, flags='rw', buff_size=0):
     """ 
     Opens an HDFS file for read/write/append and returns a file descriptor object (fd) that should be closed when no longer needed.
 
@@ -538,6 +561,8 @@ def open_file(hdfs_path, project=project_name(), flags='rw', buff_size=0):
     Raises: IOError
             If the file does not exist.
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     fs_handle = hdfs.get_fs()
     fd = fs_handle.open_file(hdfs_path, flags, buff_size=buff_size)
@@ -551,7 +576,7 @@ def close():
     hdfs.close()
 
 
-def exists(hdfs_path, project=project_name()):
+def exists(hdfs_path, project=None):
     """ 
     Return True if hdfs_path exists in the default HDFS.
 
@@ -566,11 +591,13 @@ def exists(hdfs_path, project=project_name()):
 
     Raises: IOError
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.exists(hdfs_path)
 
 
-def isdir(hdfs_path, project=project_name()):
+def isdir(hdfs_path, project=None):
     """ 
     Return True if path refers to a directory.
 
@@ -585,11 +612,13 @@ def isdir(hdfs_path, project=project_name()):
 
     Raises: IOError
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.isdir(hdfs_path)
 
 
-def isfile(hdfs_path, project=project_name()):
+def isfile(hdfs_path, project=None):
     """ 
     Return True if path refers to a file.
 
@@ -604,6 +633,8 @@ def isfile(hdfs_path, project=project_name()):
 
     Raises: IOError
     """
+    if project == None:
+        project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
     return hdfs.isfile(hdfs_path)
 

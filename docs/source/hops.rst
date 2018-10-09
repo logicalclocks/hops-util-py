@@ -1,0 +1,110 @@
+hops package
+============
+
+Submodules
+----------
+
+hops\.devices module
+--------------------
+
+.. automodule:: hops.devices
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.differential\_evolution module
+------------------------------------
+
+.. automodule:: hops.differential_evolution
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.experiment module
+-----------------------
+
+.. automodule:: hops.experiment
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.facets module
+-------------------
+
+.. automodule:: hops.facets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.grid\_search module
+-------------------------
+
+.. automodule:: hops.grid_search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.hdfs module
+-----------------
+
+.. automodule:: hops.hdfs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.kafka module
+------------------
+
+.. automodule:: hops.kafka
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.launcher module
+---------------------
+
+.. automodule:: hops.launcher
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.serving module
+--------------------
+
+.. automodule:: hops.serving
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.tensorboard module
+------------------------
+
+.. automodule:: hops.tensorboard
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.util module
+-----------------
+
+.. automodule:: hops.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops\.version module
+--------------------
+
+.. automodule:: hops.version
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: hops
+    :members:
+    :undoc-members:
+    :show-inheritance:
