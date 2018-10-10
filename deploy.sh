@@ -17,4 +17,4 @@ echo "Building the docs"
 cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/; make html; cd ..
 
 echo "Uploading the docs to snurran"
-scp docs/build/html/* glassfish@snurran.sics.se:/var/www/hops/hops-util-py-docs/
+scp -r docs/build/html/* glassfish@snurran.sics.se:/var/www/hops/hops-util-py-docs/

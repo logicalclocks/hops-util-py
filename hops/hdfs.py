@@ -1,7 +1,7 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
+API for interacting with the file system on Hops (HopsFS).
 
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+It is a wrapper around pydoop together with utility functions that are Hops-specific.
 """
 import pydoop.hdfs as hdfs
 import os
@@ -530,16 +530,17 @@ def _mkdir_p(path):
 
 
 def open_file(hdfs_path, project=None, flags='rw', buff_size=0):
-    """ 
+    """
     Opens an HDFS file for read/write/append and returns a file descriptor object (fd) that should be closed when no longer needed.
 
     Args:
-        :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :flags: Supported opening modes are “r”, “w”, “a”. In addition, a trailing “t” can be added to specify text mode (e.g., “rt” = open for reading text).
-        :buff_size: Pass 0 as buff_size if you want to use the “configured” values, i.e., the ones set in the Hadoop configuration files.
+        hdfs_path: you can specify either a full hdfs pathname or a relative one (relative to your project's path in HDFS)
+        project:
+        flags: supported opening modes are 'r', 'w', 'a'. In addition, a trailing 't' can be added to specify text mode (e.g, 'rt' = open for reading text)
+        buff_size: Pass 0 as buff_size if you want to use the "configured" values, i.e the ones set in the Hadoop configuration files.
 
     Returns:
-        A file descriptor (fd) that needs to be closed (fd.close()) when it is no longer needed.
+        A file descriptor (fd) that needs to be closed (fd-close()) when it is no longer needed.
 
     Raises:
         IOError: If the file does not exist.

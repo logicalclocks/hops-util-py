@@ -41,8 +41,9 @@ Tutorials and general documentation is available here: hops-examples_
 
 Example notebooks for doing deep learning and big data processing on Hops is available here: hops-io_
 
-API documentation is available here: TODO
+API documentation is available here: API-docs_
 
 
 .. _hops-examples: https://github.com/logicalclocks/hops-examples
 .. _hops-io: https://hops.readthedocs.io/en/latest/user_guide/tensorflow/hops.html
+.. _API-docs: http://snurran.sics.se/hops/hops-util-py-docs/
