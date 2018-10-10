@@ -23,7 +23,17 @@ local_logdir_path = None
 local_logdir_bool = False
 
 def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
+    """
 
+    Args:
+        hdfs_exec_dir:
+        endpoint_dir:
+        exec_num:
+        local_logdir:
+
+    Returns:
+
+    """
     global tb_pid
 
     if tb_pid != 0:
@@ -86,12 +96,13 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
     return endpoint, tb_pid
 
 def logdir():
-    """ Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
+    """
+    Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
     logdir for TensorBoard. Any files written to this directory will be put in your HopsWorks project Logs dataset, so writing the model to this folder could be an alternative
      solution to writing it directly to HopsFS
 
     Returns:
-      The local directory to write TensorBoard events and summaries to
+        The local directory to write TensorBoard events and summaries to
     """
 
     global local_logdir_bool
@@ -102,19 +113,34 @@ def logdir():
     return events_logdir
 
 def interactive_debugger():
+    """
 
+    Returns:
+
+    """
     global debugger_endpoint
     debugger_endpoint =_restart_debugging()
     return debugger_endpoint
 
 def non_interactive_debugger():
+    """
 
+    Returns:
+
+    """
     global debugger_endpoint
     debugger_endpoint =_restart_debugging(interactive=False)
     return debugger_endpoint
 
 def _restart_debugging(interactive=True):
+    """
 
+    Args:
+        interactive:
+
+    Returns:
+
+    """
     global tb_pid
 
     #Kill existing TB
@@ -204,6 +230,11 @@ def visualize(spark_session, hdfs_root_logdir):
     print(stderr)
 
 def _reset_global():
+    """
+
+    Returns:
+
+    """
     global root_logdir_path
     global events_logdir
     global tb_pid

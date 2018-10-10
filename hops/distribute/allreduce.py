@@ -21,6 +21,17 @@ from . import allreduce_reservation
 run_id = 0
 
 def _launch(sc, map_fun, local_logdir=False, name="no-name"):
+    """
+
+    Args:
+        sc:
+        map_fun:
+        local_logdir:
+        name:
+
+    Returns:
+
+    """
     global run_id
     app_id = str(sc.applicationId)
 
@@ -52,12 +63,39 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     return None, logdir
 
 def get_logdir(app_id):
+    """
+
+    Args:
+        app_id:
+
+    Returns:
+
+    """
     global run_id
     return hopshdfs.get_experiments_dir() + '/' + app_id + '/allreduce/run.' + str(run_id)
 
 def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
+    """
 
+    Args:
+        app_id:
+        run_id:
+        map_fun:
+        local_logdir:
+        server_addr:
+
+    Returns:
+
+    """
     def _wrapper_fun(iter):
+        """
+
+        Args:
+            iter:
+
+        Returns:
+
+        """
 
         for i in iter:
             executor_num = i
@@ -137,12 +175,29 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
     return _wrapper_fun
 
 def _cleanup(tb_hdfs_path):
+    """
+
+    Args:
+        tb_hdfs_path:
+
+    Returns:
+
+    """
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
     hopshdfs.kill_logger()
 
 def _handle_return(val, hdfs_exec_logdir):
+    """
+
+    Args:
+        val:
+        hdfs_exec_logdir:
+
+    Returns:
+
+    """
     try:
         test = int(val)
     except:
@@ -159,6 +214,15 @@ def _handle_return(val, hdfs_exec_logdir):
     fd.close()
 
 def _find_index(host_port, cluster_spec):
+    """
+
+    Args:
+        host_port:
+        cluster_spec:
+
+    Returns:
+
+    """
     index = 0
     for entry in cluster_spec["cluster"]["worker"]:
         if entry == host_port:

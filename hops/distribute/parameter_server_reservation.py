@@ -17,13 +17,14 @@ MAX_RETRIES = 3
 BUFSIZE = 1024*2
 
 class Reservations:
-  """Thread-safe store for node reservations.
-
-  Args:
-    :required: expected number of nodes in the cluster.
-  """
+  """Thread-safe store for node reservations."""
 
   def __init__(self, required):
+    """
+
+    Args:
+        required:
+    """
     self.required = required
     self.lock = threading.RLock()
     self.reservations = []
@@ -34,7 +35,7 @@ class Reservations:
     """Add a reservation.
 
     Args:
-      :meta: a dictonary of metadata about a node
+        :meta: a dictonary of metadata about a node
     """
     with self.lock:
       self.reservations.append(meta)
@@ -102,13 +103,14 @@ class Reservations:
 
 
 class WorkerFinished:
-  """Thread-safe store for node reservations.
-
-  Args:
-    :required: expected number of nodes in the cluster.
-  """
+  """Thread-safe store for node reservations."""
 
   def __init__(self, required):
+    """
+
+    Args:
+        :required: expected number of nodes in the cluster.
+    """
     self.required = required
     self.lock = threading.RLock()
     self.finished = 0
@@ -118,7 +120,7 @@ class WorkerFinished:
     """Add a reservation.
 
     Args:
-      :meta: a dictonary of metadata about a node
+        :meta: a dictonary of metadata about a node
     """
     with self.lock:
       self.finished = self.finished + 1
@@ -140,7 +142,15 @@ class MessageSocket(object):
   """Abstract class w/ length-prefixed socket send/receive functions."""
 
   def receive(self, sock):
-    """Receive a message on ``sock``."""
+    """
+    Receive a message on ``sock``
+
+    Args:
+        sock:
+
+    Returns:
+
+    """
     msg = None
     data = b''
     recv_done = False
@@ -162,7 +172,16 @@ class MessageSocket(object):
     return msg
 
   def send(self, sock, msg):
-    """Send ``msg`` to destination ``sock``."""
+    """
+    Send ``msg`` to destination ``sock``.
+
+    Args:
+        sock:
+        msg:
+
+    Returns:
+
+    """
     data = pickle.dumps(msg)
     buf = struct.pack('>I', len(data)) + data
     sock.sendall(buf)
@@ -174,12 +193,27 @@ class Server(MessageSocket):
   done = False
 
   def __init__(self, count):
+    """
+
+    Args:
+        count:
+    """
     assert count > 0
     self.reservations = Reservations(count)
     self.worker_finished = WorkerFinished(util.num_executors() - util.num_param_servers())
 
   def await_reservations(self, sc, status={}, timeout=600):
-    """Block until all reservations are received."""
+    """
+    Block until all reservations are received.
+
+    Args:
+        sc:
+        status:
+        timeout:
+
+    Returns:
+
+    """
     timespent = 0
     while not self.reservations.done():
       logging.info("waiting for {0} reservations".format(self.reservations.remaining()))
@@ -196,6 +230,15 @@ class Server(MessageSocket):
     return self.reservations.get()
 
   def _handle_message(self, sock, msg):
+    """
+
+    Args:
+        sock:
+        msg:
+
+    Returns:
+
+    """
     logging.debug("received: {0}".format(msg))
     msg_type = msg['type']
     if msg_type == 'REG':
@@ -219,10 +262,11 @@ class Server(MessageSocket):
       MessageSocket.send(self, sock, 'ERR')
 
   def start(self):
-    """Start listener in a background thread
+    """
+    Start listener in a background thread
 
     Returns:
-      address of the Server as a tuple of (host, port)
+        address of the Server as a tuple of (host, port)
     """
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -271,7 +315,7 @@ class Client(MessageSocket):
   """Client to register and await node reservations.
 
   Args:
-    :server_addr: a tuple of (host, port) pointing to the Server.
+      :server_addr: a tuple of (host, port) pointing to the Server.
   """
   sock = None                   #: socket to server TCP connection
   server_addr = None            #: address of server
@@ -314,38 +358,61 @@ class Client(MessageSocket):
     self.sock.close()
 
   def register(self, reservation):
-    """Register ``reservation`` with server."""
-    resp = self._request('REG', reservation)
-    return resp
+      """
+      Register ``reservation`` with server.
+
+      Args:
+          reservation:
+
+      Returns:
+
+      """
+      resp = self._request('REG', reservation)
+      return resp
 
   def register_worker_finished(self):
-    """Register ``worker as finished`` with server."""
-    resp = self._request('REG_DONE')
-    return resp
+      """
+      Register ``worker as finished`` with server.
+
+      Returns:
+
+      """
+      resp = self._request('REG_DONE')
+      return resp
 
   def await_all_workers_finished(self):
-    """Poll until all reservations completed, then return cluster_info."""
-    done = False
-    while not done:
-      done = self._request('QUERY_DONE')
-      time.sleep(5)
-    return True
+      """
+      Poll until all reservations completed, then return cluster_info.
+
+      Returns:
+
+      """
+      done = False
+      while not done:
+          done = self._request('QUERY_DONE')
+          time.sleep(5)
+      return True
 
   def get_reservations(self):
-    """Get current list of reservations."""
-    cluster_info = self._request('QINFO')
-    return cluster_info
+      """
+      Get current list of reservations.
+
+      Returns:
+
+      """
+      cluster_info = self._request('QINFO')
+      return cluster_info
 
   def await_reservations(self):
-    """Poll until all reservations completed, then return cluster_info."""
-    done = False
-    while not done:
-      done = self._request('QUERY')
-      time.sleep(1)
-    reservations = self.get_reservations()
-    return reservations
+      """Poll until all reservations completed, then return cluster_info."""
+      done = False
+      while not done:
+          done = self._request('QUERY')
+          time.sleep(1)
+      reservations = self.get_reservations()
+      return reservations
 
   def request_stop(self):
-    """Request server stop."""
-    resp = self._request('STOP')
-    return resp
+      """Request server stop."""
+      resp = self._request('STOP')
+      return resp

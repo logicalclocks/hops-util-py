@@ -18,12 +18,19 @@ import datetime
 run_id = 0
 
 def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, name="no-name"):
-    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    """
+    Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
-      :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+        sc:
+        map_fun:
+        args_dict:
+        direction:
+        local_logdir:
+        name:
+
+    Returns:
+
     """
     global run_id
     app_id = str(sc.applicationId)
@@ -89,12 +96,29 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
     return hdfs_runid_dir, param_combination, best_val
 
 def get_logdir(app_id):
+    """
+
+    Args:
+        app_id:
+
+    Returns:
+
+    """
     global run_id
     return hopshdfs.get_experiments_dir() + '/' + app_id + '/grid_search/run.' + str(run_id)
 
 
 
 def write_result(runid_dir, string):
+    """
+
+    Args:
+        runid_dir:
+        string:
+
+    Returns:
+
+    """
     metric_file = runid_dir + '/summary'
     fs_handle = hopshdfs.get_fs()
     try:
@@ -106,8 +130,28 @@ def write_result(runid_dir, string):
     fd.close()
 
 def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
+    """
+
+    Args:
+        app_id:
+        run_id:
+        map_fun:
+        args_dict:
+        local_logdir:
+
+    Returns:
+
+    """
 
     def _wrapper_fun(iter):
+        """
+
+        Args:
+            iter:
+
+        Returns:
+
+        """
 
         for i in iter:
             executor_num = i
@@ -178,6 +222,19 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
 
 
 def _get_best(args_dict, num_combinations, arg_names, arg_count, hdfs_appid_dir, run_id):
+    """
+
+    Args:
+        args_dict:
+        num_combinations:
+        arg_names:
+        arg_count:
+        hdfs_appid_dir:
+        run_id:
+
+    Returns:
+
+    """
 
     max_hp = ''
     max_val = ''
@@ -237,6 +294,15 @@ def _get_best(args_dict, num_combinations, arg_names, arg_count, hdfs_appid_dir,
 
 
 def _handle_return(val, hdfs_exec_logdir):
+    """
+
+    Args:
+        val:
+        hdfs_exec_logdir:
+
+    Returns:
+
+    """
     try:
         test = int(val)
     except:
@@ -253,6 +319,14 @@ def _handle_return(val, hdfs_exec_logdir):
     fd.close()
 
 def _cleanup(tb_hdfs_path):
+    """
+
+    Args:
+        tb_hdfs_path:
+
+    Returns:
+
+    """
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)

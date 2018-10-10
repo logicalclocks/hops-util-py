@@ -14,7 +14,18 @@ run_id = 0
 
 
 def launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
+    """
 
+    Args:
+        sc:
+        map_fun:
+        args_dict:
+        local_logdir:
+        name:
+
+    Returns:
+
+    """
     global run_id
 
     app_id = str(sc.applicationId)
@@ -50,14 +61,41 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
     return None, hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
 def get_logdir(app_id):
+    """
+
+    Args:
+        app_id:
+
+    Returns:
+
+    """
     global run_id
     return hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
 
 #Helper to put Spark required parameter iter in function signature
 def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
+    """
 
+    Args:
+        app_id:
+        run_id:
+        map_fun:
+        args_dict:
+        local_logdir:
+
+    Returns:
+
+    """
     def _wrapper_fun(iter):
+        """
+
+        Args:
+            iter:
+
+        Returns:
+
+        """
 
         for i in iter:
             executor_num = i
@@ -149,6 +187,14 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
     return _wrapper_fun
 
 def _cleanup(tb_hdfs_path):
+    """
+
+    Args:
+        tb_hdfs_path:
+
+    Returns:
+
+    """
     global experiment_json
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
@@ -156,6 +202,15 @@ def _cleanup(tb_hdfs_path):
     hopshdfs.kill_logger()
 
 def _handle_return(val, hdfs_exec_logdir):
+    """
+
+    Args:
+        val:
+        hdfs_exec_logdir:
+
+    Returns:
+
+    """
     try:
         test = int(val)
     except:
