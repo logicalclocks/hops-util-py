@@ -46,8 +46,7 @@ def project_path(project=None):
     appended with the name of your dataset.
 
     Args:
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         returns the project absolute path
@@ -468,8 +467,7 @@ def chmod(hdfs_path, mode, project=None):
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :mode: File mode (user/group/world privilege) bits
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
     """
     if project == None:
         project = project_name()
@@ -483,8 +481,7 @@ def stat(hdfs_path, project=None):
 
     Args:
         :hdfs_path: If this value is not specified, it will get the path to your project. You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         StatResult object
@@ -568,8 +565,7 @@ def exists(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
 
     Returns:
@@ -589,8 +585,7 @@ def isdir(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         True if path refers to a directory.
@@ -609,8 +604,7 @@ def isfile(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project,
-        you can specify the name of the project as a string.
+        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         True if path refers to a file.

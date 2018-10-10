@@ -99,7 +99,7 @@ def logdir():
     """
     Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
     logdir for TensorBoard. Any files written to this directory will be put in your HopsWorks project Logs dataset, so writing the model to this folder could be an alternative
-     solution to writing it directly to HopsFS
+    solution to writing it directly to HopsFS
 
     Returns:
         The local directory to write TensorBoard events and summaries to
