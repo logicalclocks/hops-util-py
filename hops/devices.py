@@ -8,7 +8,12 @@ import time
 import threading
 
 def get_gpu_info():
-    # Get the gpu information
+    """
+    Get the gpu information
+
+    Returns:
+
+    """
     gpu_str = ''
     try:
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name,memory.total,memory.used,utilization.gpu"]).decode()
@@ -31,6 +36,11 @@ def get_gpu_info():
     return gpu_str
 
 def get_gpu_util():
+    """
+
+    Returns:
+
+    """
     gpu_str = ''
     try:
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name,memory.total,memory.used,utilization.gpu"]).decode()
@@ -47,6 +57,11 @@ def get_gpu_util():
     return gpu_str
 
 def print_periodic_gpu_utilization():
+    """
+
+    Returns:
+
+    """
     t = threading.currentThread()
     while getattr(t, "do_run", True):
         print(get_gpu_util())
@@ -56,7 +71,7 @@ def get_num_gpus():
     """ Get the number of GPUs available in the environment
 
     Returns:
-      Number of GPUs available in the environment
+        Number of GPUs available in the environment
     """
     try:
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=name"]).decode()
@@ -71,7 +86,11 @@ def get_num_gpus():
     return count
 
 def get_minor_gpu_device_numbers():
+    """
 
+    Returns:
+
+    """
     gpu_info = []
     try:
         gpu_info = subprocess.check_output(["nvidia-smi", "--format=csv,noheader,nounits", "--query-gpu=pci.bus_id"]).decode()

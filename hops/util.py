@@ -35,6 +35,11 @@ except ImportError:
     import httplib as http
 
 def _get_elastic_endpoint():
+    """
+
+    Returns:
+
+    """
     elastic_endpoint = os.environ['ELASTIC_ENDPOINT']
     host, port = elastic_endpoint.split(':')
     return host + ':' + port
@@ -47,6 +52,11 @@ except:
 
 
 def _get_hopsworks_rest_endpoint():
+    """
+
+    Returns:
+
+    """
     elastic_endpoint = os.environ['REST_ENDPOINT']
     return elastic_endpoint
 
@@ -57,7 +67,15 @@ except:
     pass
 
 def _find_in_path(path, file):
-    """Find a file in a given path string."""
+    """
+
+    Args:
+        :path:
+        :file:
+
+    Returns:
+
+    """
     for p in path.split(os.pathsep):
         candidate = os.path.join(p, file)
         if (os.path.exists(os.path.join(p, file))):
@@ -82,6 +100,9 @@ def on_executor_exit(signame):
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
+
+    Args:
+        :signame:
 
     Returns:
         set_parent_exit_signal
@@ -120,6 +141,9 @@ def grid_params(dict):
     """
     Generate all possible combinations (cartesian product) of the hyperparameter values
 
+    Args:
+        :dict:
+
     Returns:
         A new dictionary with a grid of all the possible hyperparameter combinations
     """
@@ -143,6 +167,7 @@ def grid_params(dict):
 def get_ip_address():
     """
     Simple utility to get host IP address
+
     Returns:
         x
     """
@@ -363,6 +388,11 @@ def convert_to_dict(best_param):
         return best_param_dict
 
 def _find_spark():
+    """
+
+    Returns:
+
+    """
     return SparkSession.builder.getOrCreate()
 
 

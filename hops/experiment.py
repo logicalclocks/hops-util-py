@@ -31,15 +31,29 @@ driver_tensorboard_hdfs_path = None
 run_id = 0
 
 def get_logdir(app_id):
+    """
+
+    Args:
+        app_id:
+
+    Returns:
+
+    """
     global run_id
     return hopshdfs.get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
 
 def begin(name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Start an experiment
+    """
+    Start an experiment
 
     Args:
-      :spark_session: SparkSession object
-      :name: (optional) name of the job
+        :name:
+        :local_logdir:
+        :versioned_resources:
+        :description:
+
+    Returns:
+
     """
     global running
     if running:
@@ -83,6 +97,14 @@ def begin(name='no-name', local_logdir=False, versioned_resources=None, descript
     return
 
 def end(metric=None):
+    """
+
+    Args:
+        metric:
+
+    Returns:
+
+    """
     global running
     global experiment_json
     global elastic_id
@@ -181,12 +203,25 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
 
 
 def evolutionary_search(objective_function, search_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    """
+    Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
-      :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :search_dict: (optional) A dictionary containing differential evolutionary boundaries
+        objective_function:
+        search_dict:
+        direction:
+        generations:
+        population:
+        mutation:
+        crossover:
+        cleanup_generations:
+        name:
+        local_logdir:
+        versioned_resources:
+        description:
+
+    Returns:
+
     """
 
     num_ps = util.num_param_servers()
@@ -234,14 +269,20 @@ def evolutionary_search(objective_function, search_dict, direction = 'max', gene
     return tensorboard_logdir, best_param_dict
 
 def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    """
+    Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
-      :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :args_dict: A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
-      :direction: 'max' to maximize, 'min' to minimize
-      :name: (optional) name of the job
+        map_fun:
+        args_dict:
+        direction:
+        name:
+        local_logdir:
+        versioned_resources:
+        description:
+
+    Returns:
+
     """
 
     num_ps = util.num_param_servers()
@@ -289,11 +330,18 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
     return tensorboard_logdir
 
 def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the TensorFlow allreduce
+    """
+    Run the TensorFlow allreduce
 
     Args:
-      :map_fun: The TensorFlow function to run
-      :name: (optional) name of the job
+        map_fun:
+        name:
+        local_logdir:
+        versioned_resources:
+        description:
+
+    Returns:
+
     """
 
     num_ps = util.num_param_servers()
@@ -342,11 +390,17 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
     return logdir
 
 def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the TensorFlow allreduce
+    """
 
     Args:
-      :map_fun: The TensorFlow function to run
-      :name: (optional) name of the job
+        map_fun:
+        name:
+        local_logdir:
+        versioned_resources:
+        description:
+
+    Returns:
+
     """
     num_ps = util.num_param_servers()
     num_executors = util.num_executors()
@@ -394,6 +448,11 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
     return logdir
 
 def exception_handler():
+    """
+
+    Returns:
+
+    """
     global running
     global experiment_json
     if running and experiment_json != None:
@@ -404,6 +463,11 @@ def exception_handler():
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
 def exit_handler():
+    """
+
+    Returns:
+
+    """
     global running
     global experiment_json
     if running and experiment_json != None:

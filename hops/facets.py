@@ -6,7 +6,7 @@ def dive(jsonstr):
     """ Display json string in HTML
 
     Args:
-      :jsonstr: json string
+        :jsonstr: json string
     """
     HTML_TEMPLATE = """<link rel="import" href="/nbextensions/facets-dist/facets-jupyter.html">
             <facets-dive id="elem" height="600"></facets-dive>
@@ -18,11 +18,12 @@ def dive(jsonstr):
     display(HTML(html))    
     
 def overview(train_data, test_data):
-    """ Calculate the feature statistics proto from the datasets and stringify it and display in facets overview
+    """
+    Calculate the feature statistics proto from the datasets and stringify it and display in facets overview
 
     Args:
-      :train_data: the train data
-      :test_data: the test data
+        :train_data: the train data
+        :test_data: the test data
     """
     # Calculate the feature statistics proto from the datasets and stringify it for use in facets overview
     gfsg = generic_feature_statistics_generator.GenericFeatureStatisticsGenerator()

@@ -25,11 +25,19 @@ generation_id = 0
 run_id = 0
 
 def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
-
-    '''
+    """
     Retrieves all accuracies from the parallel executions (each one is in a
     different file, one per combination of wrapper function parameter)
-    '''
+
+    Args:
+        :tensorboard_hdfs_logdir:
+        :args_dict:
+        :number_params:
+
+    Returns:
+
+    """
+
     results=[]
 
     #Important, this must be ordered equally than _parse_to_dict function
@@ -51,11 +59,18 @@ def get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
     return [float(res) for res in results]
 
 def execute_all(population_dict, name="no-name"):
-    '''
+    """
     Executes wrapper function with all values of population_dict parallely.
     Returns a list of accuracies (or metric returned in the wrapper) in the
     same order as in the population_dict.
-    '''
+
+    Args:
+        :population_dict:
+        :name:
+
+    Returns:
+
+    """
     initial_pop = copy.deepcopy(population_dict)
 
     number_hp_combinations=[len(v) for v in population_dict.values()][0]
@@ -84,6 +99,17 @@ def execute_all(population_dict, name="no-name"):
 
 
 def duplicate_entry(i, keys, population, len):
+    """
+
+    Args:
+        :i:
+        :keys:
+        :population:
+        :len:
+
+    Returns:
+
+    """
     hp_combinations = []
     duplicate_indices = []
 
@@ -109,6 +135,20 @@ class DifferentialEvolution:
     _param_names = []
 
     def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, name="no-name"):
+        """
+
+        Args:
+            :objective_function:
+            :parbounds:
+            :types:
+            :ordered_dict:
+            :direction:
+            :generations:
+            :popsize:
+            :mutation:
+            :crossover:
+            :name:
+        """
         self.objective_function = objective_function
         self.parbounds = parbounds
         self.direction = direction
@@ -131,6 +171,14 @@ class DifferentialEvolution:
 
     # run differential evolution algorithms
     def solve(self, root_dir):
+        """
+
+        Args:
+            :root_dir:
+
+        Returns:
+
+        """
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
         global fs_handle
@@ -219,6 +267,11 @@ class DifferentialEvolution:
 
     # define bounds of each individual depending on type
     def _individual_representation(self):
+        """
+
+        Returns:
+
+        """
         bounds = []
 
         for index, item in enumerate(self.types):
@@ -234,6 +287,11 @@ class DifferentialEvolution:
 
     # initialise population
     def _population_initialisation(self):
+        """
+
+        Returns:
+
+        """
         population = []
         num_parameters = len(self.parbounds)
         for i in range(self.n):
@@ -248,6 +306,15 @@ class DifferentialEvolution:
 
     # ensure that any mutated individual is within bounds
     def _ensure_bounds(self, indiv, bounds):
+        """
+
+        Args:
+            :indiv:
+            :bounds:
+
+        Returns:
+
+        """
         indiv_correct = []
 
         for i in range(len(indiv)):
@@ -269,6 +336,15 @@ class DifferentialEvolution:
 
     # create donor population based on mutation of three vectors
     def _mutation(self, population, bounds):
+        """
+
+        Args:
+            :population:
+            :bounds:
+
+        Returns:
+
+        """
         donor_population = []
         for i in range(self.n):
 
@@ -290,6 +366,15 @@ class DifferentialEvolution:
 
     # recombine donor vectors according to crossover probability
     def _recombination(self, population, donor_population):
+        """
+
+        Args:
+            :population:
+            :donor_population:
+
+        Returns:
+
+        """
         trial_population = []
         for k in range(self.n):
             target_vec = population[k]
@@ -308,6 +393,15 @@ class DifferentialEvolution:
 
     # select the best individuals from each generation
     def _selection(self, population, trial_population):
+        """
+
+        Args:
+            :population:
+            :trial_population:
+
+        Returns:
+
+        """
         # Calculate trial vectors and target vectors and select next generation
 
         if self._generation == 0:
@@ -380,6 +474,14 @@ class DifferentialEvolution:
         return population
     # parse the converted values back to original
     def _parse_back(self, individual):
+        """
+
+        Args:
+            :individual:
+
+        Returns:
+
+        """
         original_representation = []
         for index, parameter in enumerate(individual):
             if self.types[index] == self._types[2]:
@@ -393,6 +495,14 @@ class DifferentialEvolution:
     # for parallelization purposes one can parse the population from a list to a  dictionary format
     # User only has to add the parameters he wants to optimize to population_dict
     def _parse_to_dict(self, population):
+        """
+
+        Args:
+            :population:
+
+        Returns:
+
+        """
 
         # reset entries
         for entry in self._ordered_population_dict:
@@ -411,6 +521,24 @@ class DifferentialEvolution:
         return self._ordered_population_dict
 
 def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name"):
+    """
+
+    Args:
+        :spark:
+        :function:
+        :search_dict:
+        :direction:
+        :generations:
+        :popsize:
+        :mutation:
+        :crossover:
+        :cleanup_generations:
+        :local_logdir:
+        :name:
+
+    Returns:
+
+    """
 
     global run_id
     global local_logdir_bool
@@ -474,6 +602,14 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
     return str(root_dir), best_param, best_metric
 
 def get_logdir(app_id):
+    """
+
+    Args:
+        :app_id:
+
+    Returns:
+
+    """
     global run_id
     return hopshdfs.get_experiments_dir() + "/" + app_id + "/differential_evolution/run." + str(run_id)
 
@@ -482,9 +618,9 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None, name="no-name")
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
-      :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
+        :spark_session: SparkSession object
+        :map_fun: The TensorFlow function to run
+        :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
 
     sc = spark_session.sparkContext
@@ -518,8 +654,28 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None, name="no-name")
 
 #Helper to put Spark required parameter iter in function signature
 def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
+    """
+
+    Args:
+        :app_id:
+        :generation_id:
+        :map_fun:
+        :args_dict:
+        :run_id:
+
+    Returns:
+
+    """
 
     def _wrapper_fun(iter):
+        """
+
+        Args:
+            :iter:
+
+        Returns:
+
+        """
 
         for i in iter:
             executor_num = i
@@ -614,6 +770,17 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
     return _wrapper_fun
 
 def _get_metric(param_string, app_id, generation_id, run_id):
+    """
+
+    Args:
+        :param_string:
+        :app_id:
+        :generation_id:
+        :run_id:
+
+    Returns:
+
+    """
     project_path = hopshdfs.project_path()
     handle = hopshdfs.get()
     for i in range(generation_id):
@@ -629,6 +796,14 @@ def _get_metric(param_string, app_id, generation_id, run_id):
 
 
 def _cleanup(tb_hdfs_path):
+    """
+
+    Args:
+        :tb_hdfs_path:
+
+    Returns:
+
+    """
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
