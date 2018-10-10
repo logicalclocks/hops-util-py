@@ -1,6 +1,6 @@
-================
+============
 hops-util-py
-================
+============
 
 `hops-utily-py` is a helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security for python programs interacting with Hops services.
 
@@ -8,9 +8,9 @@ It provides an API to scale out TensorFlow training on a Hops Hadoop cluster. Pr
 
 Moreover it provides an easy-to-use API for defining TLS-secured Kafka producers and consumers on the Hops platform.
 
-------------
+-----------
 Quick Start
-------------
+-----------
 
 To Install:
 
@@ -26,10 +26,16 @@ Sample usage:
 >>>                   description='A minimal mnist example with two hidden layers',
 >>>                   versioned_resources=[notebook]
 
+To build docs:
 
-------------
+>>> cd docs
+>>> sphinx-apidoc -f -o source/ ../hops ../hops/distribute/
+>>> make html
+
+
+-------------
 Documentation
-------------
+-------------
 
 Tutorials and general documentation is available here: hops-examples_
 
