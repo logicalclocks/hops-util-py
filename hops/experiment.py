@@ -1,7 +1,15 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
+Experiment module used for running Experiments, Parallel Experiments and Distributed Training on Hopsworks.
 
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+The programming model is that you wrap the code to run inside a wrapper function.
+Inside that wrapper function provide all imports and parts that make up your experiment, see examples below.
+Whenever a function to run an experiment is invoked it is also registered in the Experiments service along with the provided information.
+
+*Three different types of experiments*
+    - Run a single standalone Experiment using the *launch* function.
+    - Run Parallel Experiments performing hyperparameter optimization using *grid_search* or *differential_evolution*.
+    - Run single or multi-machine Distributed Training using *parameter_server* or *collective_all_reduce*.
+
 """
 
 from hops import hdfs as hopshdfs
@@ -30,7 +38,7 @@ running = False
 driver_tensorboard_hdfs_path = None
 run_id = 0
 
-def get_logdir(app_id):
+def _get_logdir(app_id):
     """
 
     Args:
@@ -44,15 +52,27 @@ def get_logdir(app_id):
 
 def begin(name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
-    Start an experiment
+    Start a custom Experiment, at the end of the experiment call *end(metric)*.
+
+    *IMPORTANT* - This call should not be combined with other functions in the experiment module, other than *end*.
+    Other experiment functions such as *grid_search* manages the *begin* and *end* functions internally
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> experiment.begin(name='calculate pi')
+    >>> # Code to calculate pi
+    >>> pi = calc_pi()
+    >>> experiment.end(pi)
 
     Args:
-        :name:
-        :local_logdir:
-        :versioned_resources:
-        :description:
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: A longer description for the experiment
 
     Returns:
+        HDFS path in your project where the experiment is stored
 
     """
     global running
@@ -73,36 +93,33 @@ def begin(name='no-name', local_logdir=False, versioned_resources=None, descript
 
         run_id = run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, _get_logdir(app_id))
 
         experiment_json = None
 
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'begin', get_logdir(app_id), None, versioned_path, description)
-
-        util.version_resources(versioned_resources, get_logdir(app_id))
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'begin', _get_logdir(app_id), None, versioned_path, description)
 
         util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'begin')
+        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'begin')
 
         pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
 
-        hopshdfs.init_logger()
+        hopshdfs._init_logger()
 
-        driver_tensorboard_hdfs_path,_ = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir)
+        driver_tensorboard_hdfs_path,_ = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir)
     except:
-        exception_handler()
+        _exception_handler()
         raise
 
-    return
+    return driver_tensorboard_hdfs_path
 
 def end(metric=None):
     """
+    End a custom Experiment previously registered with *begin* and register a metric to associate with it.
 
     Args:
-        metric:
-
-    Returns:
+        :metric: The metric to associate with the Experiment
 
     """
     global running
@@ -114,13 +131,13 @@ def end(metric=None):
         raise RuntimeError("An experiment is not running. Did you forget to call experiment.end()?")
     try:
         if metric:
-            experiment_json = util.finalize_experiment(experiment_json, None, str(metric))
-            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+            experiment_json = util._finalize_experiment(experiment_json, None, str(metric))
+            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
         else:
-            experiment_json = util.finalize_experiment(experiment_json, None, None)
-            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+            experiment_json = util._finalize_experiment(experiment_json, None, None)
+            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         elastic_id +=1
@@ -132,22 +149,45 @@ def end(metric=None):
 
         if tensorboard.local_logdir_bool:
             local_tb = tensorboard.local_logdir_path
-            util.store_local_tensorboard(local_tb, tensorboard.events_logdir)
+            util._store_local_tensorboard(local_tb, tensorboard.events_logdir)
 
         if not tensorboard.endpoint == None and not tensorboard.endpoint == '' \
                 and handle.exists(tensorboard.endpoint):
             handle.delete(tensorboard.endpoint)
-        hopshdfs.kill_logger()
+        hopshdfs._kill_logger()
 
 
 def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    """
+
+    *Experiment* or *Parallel Experiment*
+
+    Run an Experiment contained in *map_fun* one time with no arguments or multiple times with different arguments if
+    *args_dict* is specified.
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> def train_nn():
+    >>>    import tensorflow
+    >>>    from hops import tensorboard
+    >>>    logdir = tensorboard.logdir()
+    >>>    # code for preprocessing, training and exporting model
+    >>>    # optionally return a value for the experiment which is registered in Experiments service
+    >>> experiment.launch(train_nn)
 
     Args:
-      :spark_session: SparkSession object
-      :map_fun: The TensorFlow function to run
-      :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
-      :name: (optional) name of the job
+        :map_fun: The function to run
+        :args_dict: If specified will run the same function multiple times with different arguments, {'a':[1,2], 'b':[5,3]}
+         would run the function two times with arguments (1,5) and (2,3) provided that the function signature contains two arguments like *def func(a,b):*
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: A longer description for the experiment
+
+    Returns:
+        HDFS path in your project where the experiment is stored
+
     """
 
     num_ps = util.num_param_servers()
@@ -168,31 +208,31 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
 
         launcher.run_id = launcher.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, launcher._get_logdir(app_id))
 
         experiment_json = None
         if args_dict:
-            experiment_json = util.populate_experiment(sc, name, 'experiment', 'launcher', launcher.get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
+            experiment_json = util._populate_experiment(sc, name, 'experiment', 'launcher', launcher._get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
         else:
-            experiment_json = util.populate_experiment(sc, name, 'experiment', 'launcher', launcher.get_logdir(app_id), None, versioned_path, description)
+            experiment_json = util._populate_experiment(sc, name, 'experiment', 'launcher', launcher._get_logdir(app_id), None, versioned_path, description)
 
-        util.version_resources(versioned_resources, launcher.get_logdir(app_id))
+        util._version_resources(versioned_resources, launcher._get_logdir(app_id))
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        retval, tensorboard_logdir = launcher.launch(sc, map_fun, args_dict, local_logdir)
+        retval, tensorboard_logdir = launcher._launch(sc, map_fun, args_dict, local_logdir)
 
         if retval:
-            experiment_json = util.finalize_experiment(experiment_json, None, retval)
-            util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+            experiment_json = util._finalize_experiment(experiment_json, None, retval)
+            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
             return tensorboard_logdir
 
-        experiment_json = util.finalize_experiment(experiment_json, None, None)
+        experiment_json = util._finalize_experiment(experiment_json, None, None)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         #cleanup spark jobs
@@ -202,25 +242,41 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
     return tensorboard_logdir
 
 
-def evolutionary_search(objective_function, search_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def differential_evolution(objective_function, boundary_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
-    Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    *Parallel Experiment*
+
+    Run differential evolution to explore a given search space for each hyperparameter and figure out the best hyperparameter combination.
+    The function is treated as a blackbox that returns a metric for some given hyperparameter combination.
+    The returned metric is used to evaluate how 'good' the hyperparameter combination was.
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> boundary_dict = {'learning_rate':[0.01, 0.2], 'dropout': [0.1, 0.9]}
+    >>> def train_nn(learning_rate, dropout):
+    >>>    import tensorflow
+    >>>    # code for preprocessing, training and exporting model
+    >>>    # mandatory return a value for the experiment which is registered in Experiments service
+    >>>    return network.evaluate(learning_rate, dropout)
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max')
 
     Args:
-        objective_function:
-        search_dict:
-        direction:
-        generations:
-        population:
-        mutation:
-        crossover:
-        cleanup_generations:
-        name:
-        local_logdir:
-        versioned_resources:
-        description:
+        :objective_function: the function to run, must return a metric
+        :boundary_dict: a dict where each key corresponds to an argument of *objective_function* and the correspond value should be a list of two elements. The first element being the lower bound for the parameter and the the second element the upper bound.
+        :direction: 'max' to maximize the returned metric, 'min' to minize the returned metric
+        :generations: number of generations
+        :population: size of population
+        :mutation: mutation rate to explore more different hyperparameters
+        :crossover: how fast to adapt the population to the best in each generation
+        :cleanup_generations: remove previous generations from HDFS, only keep the last 2
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: a longer description for the experiment
 
     Returns:
+        HDFS path in your project where the experiment is stored, dict with best hyperparameters
 
     """
 
@@ -242,23 +298,23 @@ def evolutionary_search(objective_function, search_dict, direction = 'max', gene
 
         diff_evo.run_id = diff_evo.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, diff_evo.get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, diff_evo._get_logdir(app_id))
 
         experiment_json = None
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'evolutionary_search', diff_evo.get_logdir(app_id), json.dumps(search_dict), versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'evolutionary_search', diff_evo._get_logdir(app_id), json.dumps(boundary_dict), versioned_path, description)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, search_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir, name=name)
+        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, boundary_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, best_param, best_metric)
+        experiment_json = util._finalize_experiment(experiment_json, best_param, best_metric)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        best_param_dict = util.convert_to_dict(best_param)
+        best_param_dict = util._convert_to_dict(best_param)
 
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         #cleanup spark jobs
@@ -270,18 +326,41 @@ def evolutionary_search(objective_function, search_dict, direction = 'max', gene
 
 def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
-    Run the wrapper function with each hyperparameter combination as specified by the dictionary
+    *Parallel Experiment*
+
+    Run multiple experiments and test a grid of hyperparameters for a neural network to maximize e.g. a Neural Network's accuracy.
+
+    The following example will run *train_nn* with 6 different hyperparameter combinations
+
+    >>> from hops import experiment
+    >>> grid_dict = {'learning_rate':[0.1, 0.3], 'dropout': [0.4, 0.6, 0.1]}
+    >>> def train_nn(learning_rate, dropout):
+    >>>    import tensorflow
+    >>>    # code for preprocessing, training and exporting model
+    >>>    # mandatory return a value for the experiment which is registered in Experiments service
+    >>>    return network.evaluate(learning_rate, dropout)
+    >>> experiment.grid_search(train_nn, grid_dict, direction='max')
+
+    The following values will be injected in the function and run and evaluated.
+
+        - (learning_rate=0.1, dropout=0.4)
+        - (learning_rate=0.1, dropout=0.6)
+        - (learning_rate=0.1, dropout=0.1)
+        - (learning_rate=0.3, dropout=0.4)
+        - (learning_rate=0.3, dropout=0.6)
+        - (learning_rate=0.3, dropout=0.1)
 
     Args:
-        map_fun:
-        args_dict:
-        direction:
-        name:
-        local_logdir:
-        versioned_resources:
-        description:
+        :map_fun: the function to run, must return a metric
+        :args_dict: a dict with a key for each argument with a corresponding value being a list containing the hyperparameters to test, internally all possible combinations will be generated and run as separate Experiments
+        :direction: 'max' to maximize the returned metric, 'min' to minize the returned metric
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: a longer description for the experiment
 
     Returns:
+        HDFS path in your project where the experiment is stored
 
     """
 
@@ -303,23 +382,23 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
 
         gs.run_id = gs.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, gs.get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, gs._get_logdir(app_id))
 
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'grid_search', gs.get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'grid_search', gs._get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
 
-        util.version_resources(versioned_resources, gs.get_logdir(app_id))
+        util._version_resources(versioned_resources, gs._get_logdir(app_id))
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         grid_params = util.grid_params(args_dict)
 
         tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, param, metric)
+        experiment_json = util._finalize_experiment(experiment_json, param, metric)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         #cleanup spark jobs
@@ -329,18 +408,34 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
 
     return tensorboard_logdir
 
-def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
-    Run the TensorFlow allreduce
+    *Distributed Training*
+
+    Sets up the cluster to run CollectiveAllReduceStrategy.
+
+    TF_CONFIG is exported in the background and does not need to be set by the user themselves.
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> def distributed_training():
+    >>>    import tensorflow
+    >>>    from hops import tensorboard
+    >>>    from hops import devices
+    >>>    logdir = tensorboard.logdir()
+    >>>    ...CollectiveAllReduceStrategy(num_gpus_per_worker=devices.get_num_gpus())...
+    >>> experiment.collective_all_reduce(distributed_training, local_logdir=True)
 
     Args:
-        map_fun:
-        name:
-        local_logdir:
-        versioned_resources:
-        description:
+        :map_fun: the function containing code to run CollectiveAllReduceStrategy
+        :name: the name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: a longer description for the experiment
 
     Returns:
+        HDFS path in your project where the experiment is stored
 
     """
 
@@ -365,21 +460,21 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
 
         tf_allreduce.run_id = tf_allreduce.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, tf_allreduce.get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
 
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'allreduce', tf_allreduce.get_logdir(app_id), None, versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'allreduce', tf_allreduce._get_logdir(app_id), None, versioned_path, description)
 
-        util.version_resources(versioned_resources, tf_allreduce.get_logdir(app_id))
+        util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         retval, logdir = tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, None, retval)
+        experiment_json = util._finalize_experiment(experiment_json, None, retval)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         #cleanup spark jobs
@@ -391,22 +486,39 @@ def allreduce(map_fun, name='no-name', local_logdir=False, versioned_resources=N
 
 def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
+    *Distributed Training*
+
+    Sets up the cluster to run ParameterServerStrategy.
+
+    TF_CONFIG is exported in the background and does not need to be set by the user themselves.
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> def distributed_training():
+    >>>    import tensorflow
+    >>>    from hops import tensorboard
+    >>>    from hops import devices
+    >>>    logdir = tensorboard.logdir()
+    >>>    ...ParameterServerStrategy(num_gpus_per_worker=devices.get_num_gpus())...
+    >>> experiment.parameter_server(distributed_training, local_logdir=True)
 
     Args:
-        map_fun:
-        name:
-        local_logdir:
-        versioned_resources:
-        description:
+        :map_fun: contains the code where you are using ParameterServerStrategy.
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: a longer description for the experiment
 
     Returns:
+        HDFS path in your project where the experiment is stored
 
     """
     num_ps = util.num_param_servers()
     num_executors = util.num_executors()
 
     assert num_ps > 0, "number of parameter servers should be greater than 0"
-    assert num_ps < num_executors, "number of parameter servers cannot be greater than number of executors (i.e. num_executors == num_ps + num_workers)"
+    assert num_ps < num_executors, "num_ps cannot be greater than num_executors (i.e. num_executors == num_ps + num_workers)"
 
     global running
     if running:
@@ -423,21 +535,21 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
         ps.run_id = ps.run_id + 1
 
-        versioned_path = util.version_resources(versioned_resources, ps.get_logdir(app_id))
+        versioned_path = util._version_resources(versioned_resources, ps._get_logdir(app_id))
 
-        experiment_json = util.populate_experiment(sc, name, 'experiment', 'parameter_server', ps.get_logdir(app_id), None, versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'parameter_server', ps._get_logdir(app_id), None, versioned_path, description)
 
-        util.version_resources(versioned_resources, ps.get_logdir(app_id))
+        util._version_resources(versioned_resources, ps._get_logdir(app_id))
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         retval, logdir = ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
-        experiment_json = util.finalize_experiment(experiment_json, None, retval)
+        experiment_json = util._finalize_experiment(experiment_json, None, retval)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
     except:
-        exception_handler()
+        _exception_handler()
         raise
     finally:
         #cleanup spark jobs
@@ -447,7 +559,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
     return logdir
 
-def exception_handler():
+def _exception_handler():
     """
 
     Returns:
@@ -460,9 +572,9 @@ def exception_handler():
         experiment_json['status'] = "FAILED"
         experiment_json['finished'] = datetime.now().isoformat()
         experiment_json = json.dumps(experiment_json)
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-def exit_handler():
+def _exit_handler():
     """
 
     Returns:
@@ -475,6 +587,6 @@ def exit_handler():
         experiment_json['status'] = "KILLED"
         experiment_json['finished'] = datetime.now().isoformat()
         experiment_json = json.dumps(experiment_json)
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-atexit.register(exit_handler)
+atexit.register(_exit_handler)

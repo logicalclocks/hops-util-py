@@ -45,6 +45,10 @@ def project_path(project=None):
     """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
     appended with the name of your dataset.
 
+    >>> from hops import hdfs
+    >>> project_path = hdfs.project_path()
+    >>> print("Project path: {}".format(project_path))
+
     Args:
         :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
@@ -107,7 +111,7 @@ def _expand_path(hdfs_path, project="", exists=True):
     return hdfs_path
 
 
-def init_logger():
+def _init_logger():
     """
     Initialize the logger by opening the log file and pointing the global fd to the open file
     """
@@ -136,7 +140,7 @@ def log(string):
                                         'ERROR! Attempting to write a non-string object to logfile') + '\n').encode())
 
 
-def kill_logger():
+def _kill_logger():
     """
     Closes the logfile
     """
@@ -149,7 +153,7 @@ def kill_logger():
             pass
 
 
-def create_directories(app_id, run_id, param_string, type, sub_type=None):
+def _create_directories(app_id, run_id, param_string, type, sub_type=None):
     """
     Creates directories for an experiment, if Experiments folder exists it will create directories
     below it, otherwise it will create them in the Logs directory.
@@ -209,12 +213,13 @@ def create_directories(app_id, run_id, param_string, type, sub_type=None):
 
 def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     """
-    Copies a path from local filesystem to HDFS project (recursively) using local path (relative to (under)
-    the path identfied by $PDIR) to a path in hdfs (hdfs_path)
+    Copies a path from local filesystem to HDFS project (recursively) using relative path in $CWD to a path in hdfs (hdfs_path)
 
     For example, if you execute:
+
     >>> copy_to_hdfs("data.tfrecords", "/Resources/", project="demo")
-    This will copy the file in $PDIR/data.tfrecords to hdfs://Projects/demo/Resources/data.tfrecords
+
+    This will copy the file data.tfrecords to hdfs://Projects/demo/Resources/data.tfrecords
 
     Args:
         :local_path: the path on the local filesystem to copy
@@ -298,7 +303,7 @@ def cp(src_hdfs_path, dest_hdfs_path):
     hdfs.cp(src_hdfs_path, dest_hdfs_path)
 
 
-def get_experiments_dir():
+def _get_experiments_dir():
     """
     Gets the folder where the experiments are writing their results
 
@@ -327,7 +332,7 @@ def glob(hdfs_path, recursive=False, project=None):
 
     Args:
      :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS.
-     :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+     :project: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Raises:
         IOError if the supplied hdfs path does not exist
@@ -358,7 +363,7 @@ def ls(hdfs_path, recursive=False, project=None):
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
         :recursive: if it is a directory and recursive is True, the list contains one item for every file or directory in the tree rooted at hdfs_path.
-        :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+        :project: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Returns:
       A possibly-empty list of path names stored in the supplied path.
@@ -376,7 +381,7 @@ def lsl(hdfs_path, recursive=False, project=None):
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
         :recursive: if it is a directory and recursive is True, the list contains one item for every file or directory in the tree rooted at hdfs_path.
-        :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+        :project: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     Returns:
         A possibly-empty list of path names stored in the supplied path.
@@ -393,7 +398,7 @@ def rmr(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
-        :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+        :project: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     """
     if project == None:
@@ -408,7 +413,7 @@ def mkdir(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to project_name in HDFS).
-        :project_name: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
+        :project: If the supplied hdfs_path is a relative path, it will look for that file in this project's subdir in HDFS.
 
     """
     if project == None:
@@ -452,7 +457,7 @@ def chown(hdfs_path, user, group, project=None):
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to the given project path in HDFS).
         :user: New hdfs username
         :group: New hdfs group
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
     """
     if project == None:
         project = project_name()
@@ -467,7 +472,7 @@ def chmod(hdfs_path, mode, project=None):
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :mode: File mode (user/group/world privilege) bits
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
     """
     if project == None:
         project = project_name()
@@ -481,7 +486,7 @@ def stat(hdfs_path, project=None):
 
     Args:
         :hdfs_path: If this value is not specified, it will get the path to your project. You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         StatResult object
@@ -499,7 +504,7 @@ def access(hdfs_path, mode, project=None):
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :mode: File mode (user/group/world privilege) bits
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         True if access is allowed, False if not.
@@ -535,7 +540,6 @@ def open_file(hdfs_path, project=None, flags='rw', buff_size=0):
 
     Args:
         hdfs_path: you can specify either a full hdfs pathname or a relative one (relative to your project's path in HDFS)
-        project:
         flags: supported opening modes are 'r', 'w', 'a'. In addition, a trailing 't' can be added to specify text mode (e.g, 'rt' = open for reading text)
         buff_size: Pass 0 as buff_size if you want to use the "configured" values, i.e the ones set in the Hadoop configuration files.
 
@@ -566,7 +570,7 @@ def exists(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
 
     Returns:
@@ -586,7 +590,7 @@ def isdir(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         True if path refers to a directory.
@@ -605,7 +609,7 @@ def isfile(hdfs_path, project=None):
 
     Args:
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         True if path refers to a file.

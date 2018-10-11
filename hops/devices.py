@@ -1,13 +1,13 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
 
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+Utility functions to retrieve information about available devices in the environment.
+
 """
 import subprocess
 import time
 import threading
 
-def get_gpu_info():
+def _get_gpu_info():
     """
     Get the gpu information
 
@@ -35,7 +35,7 @@ def get_gpu_info():
 
     return gpu_str
 
-def get_gpu_util():
+def _get_gpu_util():
     """
 
     Returns:
@@ -56,7 +56,7 @@ def get_gpu_util():
     gpu_str += '-----------------------------------------------------------------------------------\n'
     return gpu_str
 
-def print_periodic_gpu_utilization():
+def _print_periodic_gpu_utilization():
     """
 
     Returns:
@@ -64,11 +64,17 @@ def print_periodic_gpu_utilization():
     """
     t = threading.currentThread()
     while getattr(t, "do_run", True):
-        print(get_gpu_util())
+        print(_get_gpu_util())
         time.sleep(10)
 
 def get_num_gpus():
-    """ Get the number of GPUs available in the environment
+    """ Get the number of GPUs available in the environment and consequently by the application
+
+    Assuming there is one GPU in the environment
+
+    >>> from hops import devices
+    >>> devices.get_num_gpus()
+    >>> 1
 
     Returns:
         Number of GPUs available in the environment
@@ -85,7 +91,7 @@ def get_num_gpus():
             count += 1
     return count
 
-def get_minor_gpu_device_numbers():
+def _get_minor_gpu_device_numbers():
     """
 
     Returns:

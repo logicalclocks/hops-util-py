@@ -1,5 +1,8 @@
-""" This module is used to manage the life-cycle of the TensorBoard """
+"""
 
+Utility functions to manage the lifecycle of TensorBoard and get the path to write TensorBoard events.
+
+"""
 import socket
 import subprocess
 import time
@@ -22,7 +25,7 @@ tb_path = None
 local_logdir_path = None
 local_logdir_bool = False
 
-def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
+def _register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
     """
 
     Args:
@@ -59,7 +62,7 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
         tb_addr, tb_port = tb_socket.getsockname()
 
         global tb_path
-        tb_path = util.find_tensorboard()
+        tb_path = util._find_tensorboard()
 
         tb_socket.close()
 
@@ -77,10 +80,10 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
                 os.makedirs(local_logdir_path)
 
             tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % local_logdir_path, "--port=%d" % tb_port],
-                                       env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                       env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
         else:
             tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % events_logdir, "--port=%d" % tb_port],
-                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
 
         tb_pid = tb_proc.pid
 
@@ -97,12 +100,15 @@ def register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
 
 def logdir():
     """
-    Get the TensorBoard logdir. This function should be called in your code for TensorFlow, TensorFlowOnSpark or Horovod and passed as the
-    logdir for TensorBoard. Any files written to this directory will be put in your HopsWorks project Logs dataset, so writing the model to this folder could be an alternative
-    solution to writing it directly to HopsFS
+    Get the TensorBoard logdir. This function should be called in your wrapper function for Experiment, Parallel Experiment or Distributed Training and passed as the
+    logdir for TensorBoard.
+
+    *Case 1: local_logdir=True*, then the logdir is on the local filesystem, otherwise it is in the folder for your experiment in your project in HDFS. Once the experiment is finished all the files that are present in the directory will be uploaded to tour experiment directory in the Experiments dataset.
+
+    *Case 2: local_logdir=False*, then the logdir is in HDFS in your experiment directory in the Experiments dataset.
 
     Returns:
-        The local directory to write TensorBoard events and summaries to
+        The path to store files for your experiment. The content is also visualized in TensorBoard.
     """
 
     global local_logdir_bool
@@ -115,7 +121,8 @@ def logdir():
 def interactive_debugger():
     """
 
-    Returns:
+    Returns: address for interactive debugger in TensorBoard
+
 
     """
     global debugger_endpoint
@@ -125,7 +132,7 @@ def interactive_debugger():
 def non_interactive_debugger():
     """
 
-    Returns:
+    Returns: address for non-interactive debugger in TensorBoard
 
     """
     global debugger_endpoint
@@ -162,12 +169,12 @@ def _restart_debugging(interactive=True):
 
     if interactive:
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_port=%d" % debugger_port],
-                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
     if not interactive:
         tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir(), "--port=%d" % tb_port, "--debugger_data_server_grpc_port=%d" % debugger_port],
-                                   env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+                                   env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
         tb_pid = tb_proc.pid
 
     time.sleep(2)
@@ -175,16 +182,15 @@ def _restart_debugging(interactive=True):
     return 'localhost:' + str(debugger_port)
 
 
-def visualize(spark_session, hdfs_root_logdir):
+def visualize(hdfs_root_logdir):
     """ Visualize all TensorBoard events for a given path in HopsFS. This is intended for use after running TensorFlow jobs to visualize
     them all in the same TensorBoard. tflauncher.launch returns the path in HopsFS which should be handed as argument for this method to visualize all runs.
 
     Args:
-      :spark_session: SparkSession object
       :hdfs_root_logdir: the path in HopsFS to enter as the logdir for TensorBoard
     """
 
-    sc = spark_session.sparkContext
+    sc = util._find_spark().sparkContext
     app_id = str(sc.applicationId)
 
     pypath = os.getenv("PYSPARK_PYTHON")
@@ -201,7 +207,7 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_socket.bind(('',0))
     tb_addr, tb_port = tb_socket.getsockname()
 
-    tb_path = util.find_tensorboard()
+    tb_path = util._find_tensorboard()
 
     tb_socket.close()
 
@@ -209,11 +215,11 @@ def visualize(spark_session, hdfs_root_logdir):
     tb_env['CUDA_VISIBLE_DEVICES'] = ''
 
     tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port],
-                               env=tb_env, preexec_fn=util.on_executor_exit('SIGTERM'))
+                               env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
 
     host = socket.gethostname()
     tb_url = "http://{0}:{1}".format(host, tb_port)
-    tb_endpoint = hopshdfs.get_experiments_dir() + "/" + app_id + "/TensorBoard.visualize"
+    tb_endpoint = hopshdfs._get_experiments_dir() + "/" + app_id + "/TensorBoard.visualize"
     #dump tb host:port to hdfs
     pydoop.hdfs.dump(tb_url, tb_endpoint, user=hopshdfs.project_user())
 

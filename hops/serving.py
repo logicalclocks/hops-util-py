@@ -1,7 +1,7 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
 
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+Utility functions to export models to the Models dataset and get information about models currently being served in the project.
+
 """
 
 from hops import hdfs

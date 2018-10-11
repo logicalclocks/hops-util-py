@@ -1,7 +1,7 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
 
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+Miscellaneous utility functions for user applications.
+
 """
 
 import os
@@ -82,7 +82,7 @@ def _find_in_path(path, file):
             return candidate
     return False
 
-def find_tensorboard():
+def _find_tensorboard():
     """
 
     Returns:
@@ -96,7 +96,7 @@ def find_tensorboard():
         raise Exception("Unable to find 'tensorboard' in: {}".format(search_path))
     return tb_path
 
-def on_executor_exit(signame):
+def _on_executor_exit(signame):
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
@@ -164,7 +164,7 @@ def grid_params(dict):
         args_dict[key] = args_arr
     return args_dict
 
-def get_ip_address():
+def _get_ip_address():
     """
     Simple utility to get host IP address
 
@@ -175,7 +175,7 @@ def get_ip_address():
     s.connect(("8.8.8.8", 80))
     return s.getsockname()[0]
 
-def time_diff(task_start, task_end):
+def _time_diff(task_start, task_end):
     """
     Args:
         :task_start:
@@ -200,7 +200,7 @@ def time_diff(task_start, task_end):
     else:
         return 'unknown time'
 
-def put_elastic(project, appid, elastic_id, json_data):
+def _put_elastic(project, appid, elastic_id, json_data):
     """
     Args:
         :project:
@@ -230,7 +230,7 @@ def put_elastic(project, appid, elastic_id, json_data):
 
 
 
-def populate_experiment(sc, model_name, module, function, logdir, hyperparameter_space, versioned_resources, description):
+def _populate_experiment(sc, model_name, module, function, logdir, hyperparameter_space, versioned_resources, description):
     """
     Args:
          :sc:
@@ -264,7 +264,7 @@ def populate_experiment(sc, model_name, module, function, logdir, hyperparameter
                        'versioned_resources': versioned_resources,
                        'description': description})
 
-def finalize_experiment(experiment_json, hyperparameter, metric):
+def _finalize_experiment(experiment_json, hyperparameter, metric):
     """
     Args:
         :experiment_json:
@@ -298,7 +298,7 @@ def _add_version(experiment_json):
     experiment_json['kafka'] = os.environ['KAFKA_VERSION']
     return experiment_json
 
-def store_local_tensorboard(local_tb, hdfs_exec_logdir):
+def _store_local_tensorboard(local_tb, hdfs_exec_logdir):
     """
 
     Args:
@@ -312,41 +312,7 @@ def store_local_tensorboard(local_tb, hdfs_exec_logdir):
     for entry in tb_contents:
         pydoop.hdfs.put(local_tb + '/' + entry, hdfs_exec_logdir)
 
-def get_notebook_path():
-    """
-
-    Returns:
-
-    """
-    material_passwd = os.getcwd() + '/material_passwd'
-
-    if not os.path.exists(material_passwd):
-        raise AssertionError('material_passwd is not present in current working directory')
-
-    with open(material_passwd) as f:
-        keyStorePwd = f.read()
-
-    k_certificate = os.getcwd() + '/k_certificate'
-
-    if not os.path.exists(k_certificate):
-        raise AssertionError('k_certificate is not present in current working directory')
-
-    with open(k_certificate, 'rb') as f:
-        keyStore = f.read()
-        keyStore = base64.b64encode(keyStore)
-
-    json_contents = {'keyStorePwd': keyStorePwd,
-                     'keyStore': keyStore}
-
-    json_data = json.dumps(json_contents)
-
-    headers = {'Content-type': 'application/json'}
-    session = requests.Session()
-    resp = session.post(hopsworks_endpoint + '/hopsworks-api/api/appservice/notebook', data=json_data, headers=headers, verify=False)
-
-    return os.environ['HDFS_BASE_DIR'] + resp['notebook_path']
-
-def version_resources(versioned_resources, rundir):
+def _version_resources(versioned_resources, rundir):
     """
 
     Args:
@@ -372,7 +338,7 @@ def version_resources(versioned_resources, rundir):
 
     return ', '.join(versioned_paths)
 
-def convert_to_dict(best_param):
+def _convert_to_dict(best_param):
     """
 
     Args:

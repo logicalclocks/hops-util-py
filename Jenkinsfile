@@ -31,13 +31,8 @@ pipeline {
       steps {
         sh """
         source $WORKSPACE/../hops-util-py-env/bin/activate
-        cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/; make html; cd ..
+        cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/version.py; make html; cd ..
         """
-      }
-    }
-    stage ('deploy-doc') {
-      steps {
-        sh 'scp -r docs/build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
       }
     }
     stage ('deploy-bin') {
@@ -49,6 +44,11 @@ pipeline {
         source $WORKSPACE/../hops-util-py-env/bin/activate
     	  twine upload -u $PYPI_USR -p $PYPI_PSW dist/*
         """
+      }
+    }
+    stage ('deploy-doc') {
+      steps {
+        sh 'scp -r docs/build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
       }
     }
   }

@@ -12,14 +12,6 @@ hops\.devices module
     :undoc-members:
     :show-inheritance:
 
-hops\.differential\_evolution module
-------------------------------------
-
-.. automodule:: hops.differential_evolution
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 hops\.experiment module
 -----------------------
 
@@ -36,14 +28,6 @@ hops\.facets module
     :undoc-members:
     :show-inheritance:
 
-hops\.grid\_search module
--------------------------
-
-.. automodule:: hops.grid_search
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 hops\.hdfs module
 -----------------
 
@@ -56,14 +40,6 @@ hops\.kafka module
 ------------------
 
 .. automodule:: hops.kafka
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-hops\.launcher module
----------------------
-
-.. automodule:: hops.launcher
     :members:
     :undoc-members:
     :show-inheritance:
@@ -88,14 +64,6 @@ hops\.util module
 -----------------
 
 .. automodule:: hops.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-hops\.version module
---------------------
-
-.. automodule:: hops.version
     :members:
     :undoc-members:
     :show-inheritance:

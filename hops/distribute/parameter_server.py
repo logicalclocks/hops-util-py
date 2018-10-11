@@ -51,7 +51,7 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     #Force execution on executor, since GPU is located on executor
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps))
 
-    logdir = get_logdir(app_id)
+    logdir = _get_logdir(app_id)
 
     path_to_metric = logdir + '/metric'
     if pydoop.hdfs.path.exists(path_to_metric):
@@ -64,7 +64,7 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
 
     return None, logdir
 
-def get_logdir(app_id):
+def _get_logdir(app_id):
     """
 
     Args:
@@ -74,7 +74,7 @@ def get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs.get_experiments_dir() + '/' + app_id + '/parameter_server/run.' + str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/parameter_server/run.' + str(run_id)
 
 def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
     """
@@ -107,7 +107,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
         tb_hdfs_path = ''
         hdfs_exec_logdir = ''
 
-        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        t = threading.Thread(target=devices._print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
             t.start()
 
@@ -116,7 +116,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
         client = parameter_server_reservation.Client(server_addr)
 
         try:
-            host = util.get_ip_address()
+            host = util._get_ip_address()
 
             tmp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             tmp_socket.bind(('', 0))
@@ -148,11 +148,11 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             os.environ["TF_CONFIG"] = json.dumps(cluster_spec)
 
             if role == "chief":
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'parameter_server')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'parameter_server')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
-            gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                hopshdfs._init_logger()
+                tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
+            gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
             if role == "chief":
                 hopshdfs.log(gpu_str)
             print(gpu_str)
@@ -166,9 +166,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "ps":
                 ps_thread = threading.Thread(target=lambda: map_fun())
                 ps_thread.start()
-                print("waiting for workers")
                 client.await_all_workers_finished()
-                print("waiting finished")
             else:
                 retval = map_fun()
 
@@ -177,16 +175,11 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
                     _handle_return(retval, hdfs_exec_logdir)
 
             task_end = datetime.datetime.now()
-            time_str = 'Finished task - took ' + util.time_diff(task_start, task_end)
+            time_str = 'Finished task - took ' + util._time_diff(task_start, task_end)
             print('\n' + time_str)
             print('-------------------------------------------------------')
             if role == "chief":
                 hopshdfs.log(time_str)
-
-            if role == "worker" or role == "chief":
-               client.register_worker_finished()
-            client.close()
-
         except:
             _cleanup(tb_hdfs_path)
             if devices.get_num_gpus() > 0:
@@ -197,11 +190,18 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "chief":
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
-                    util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
-            _cleanup(tb_hdfs_path)
-            if devices.get_num_gpus() > 0:
-               t.do_run = False
-               t.join()
+                    util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
+            try:
+                if role == "worker" or role == "chief":
+                    client.register_worker_finished()
+                client.close()
+            except:
+                pass
+
+        _cleanup(tb_hdfs_path)
+        if devices.get_num_gpus() > 0:
+            t.do_run = False
+            t.join()
 
     return _wrapper_fun
 
@@ -217,7 +217,7 @@ def _cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
-    hopshdfs.kill_logger()
+    hopshdfs._kill_logger()
 
 def _find_task_and_index(host_port, cluster_spec):
     """
