@@ -17,10 +17,8 @@ MAX_RETRIES = 3
 BUFSIZE = 1024*2
 
 class Reservations:
-  """Thread-safe store for node reservations.
-
-  Args:
-    :required: expected number of nodes in the cluster.
+  """
+  Thread-safe store for node reservations.
   """
 
   def __init__(self, required):
@@ -30,10 +28,11 @@ class Reservations:
     self.check_done = False
 
   def add(self, meta):
-    """Add a reservation.
+    """
+    Add a reservation.
 
     Args:
-      :meta: a dictonary of metadata about a node
+        :meta: a dictonary of metadata about a node
     """
     with self.lock:
       self.reservations["cluster"]["worker"][meta["index"]] = meta["worker"]
@@ -66,7 +65,14 @@ class MessageSocket(object):
   """Abstract class w/ length-prefixed socket send/receive functions."""
 
   def receive(self, sock):
-    """Receive a message on ``sock``."""
+    """
+    Receive a message on ``sock``
+    Args:
+        sock:
+
+    Returns:
+
+    """
     msg = None
     data = b''
     recv_done = False
@@ -88,7 +94,15 @@ class MessageSocket(object):
     return msg
 
   def send(self, sock, msg):
-    """Send ``msg`` to destination ``sock``."""
+    """
+    Send ``msg`` to destination ``sock``
+    Args:
+        sock:
+        msg:
+
+    Returns:
+
+    """
     data = pickle.dumps(msg)
     buf = struct.pack('>I', len(data)) + data
     sock.sendall(buf)
@@ -104,7 +118,17 @@ class Server(MessageSocket):
     self.reservations = Reservations(count)
 
   def await_reservations(self, sc, status={}, timeout=600):
-    """Block until all reservations are received."""
+    """
+    Block until all reservations are received.
+
+    Args:
+        sc:
+        status:
+        timeout:
+
+    Returns:
+
+    """
     timespent = 0
     while not self.reservations.done():
       logging.info("waiting for {0} reservations".format(self.reservations.remaining()))
@@ -121,6 +145,15 @@ class Server(MessageSocket):
     return self.reservations.get()
 
   def _handle_message(self, sock, msg):
+    """
+
+    Args:
+        sock:
+        msg:
+
+    Returns:
+
+    """
     logging.debug("received: {0}".format(msg))
     msg_type = msg['type']
     if msg_type == 'REG':
@@ -140,10 +173,11 @@ class Server(MessageSocket):
       MessageSocket.send(self, sock, 'ERR')
 
   def start(self):
-    """Start listener in a background thread
+    """
+    Start listener in a background thread
 
     Returns:
-      address of the Server as a tuple of (host, port)
+        address of the Server as a tuple of (host, port)
     """
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -156,6 +190,15 @@ class Server(MessageSocket):
     addr = (host,port)
 
     def _listen(self, sock):
+      """
+
+      Args:
+          self:
+          sock:
+
+      Returns:
+
+      """
       CONNECTIONS = []
       CONNECTIONS.append(sock)
 
@@ -189,22 +232,32 @@ class Server(MessageSocket):
 
 
 class Client(MessageSocket):
-  """Client to register and await node reservations.
-
-  Args:
-    :server_addr: a tuple of (host, port) pointing to the Server.
-  """
+  """Client to register and await node reservations."""
   sock = None                   #: socket to server TCP connection
   server_addr = None            #: address of server
 
   def __init__(self, server_addr):
+    """
+
+    Args:
+        :server_addr: a tuple of (host, port) pointing to the Server.
+    """
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.sock.connect(server_addr)
     self.server_addr = server_addr
     logging.info("connected to server at {0}".format(server_addr))
 
   def _request(self, msg_type, msg_data=None):
-    """Helper function to wrap msg w/ msg_type."""
+    """
+    Helper function to wrap msg w/ msg_type.
+
+    Args:
+        msg_type:
+        msg_data:
+
+    Returns:
+
+    """
     msg = {}
     msg['type'] = msg_type
     if msg_data or ((msg_data == True) or (msg_data == False)):
@@ -235,7 +288,15 @@ class Client(MessageSocket):
     self.sock.close()
 
   def register(self, reservation):
-    """Register ``reservation`` with server."""
+    """
+    Register ``reservation`` with server.
+
+    Args:
+        reservation:
+
+    Returns:
+
+    """
     resp = self._request('REG', reservation)
     return resp
 

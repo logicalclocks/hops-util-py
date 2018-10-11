@@ -18,6 +18,16 @@ except ImportError:
 
 # model_path could be local or in HDFS, return path in hopsworks where it is placed
 def export(local_model_path, model_name, model_version):
+    """
+
+    Args:
+        local_model_path:
+        model_name:
+        model_version:
+
+    Returns:
+
+    """
 
     project_path = hdfs.project_path()
 
@@ -45,6 +55,15 @@ def export(local_model_path, model_name, model_version):
         break
 
 def get_serving_endpoint(model, project=None):
+    """
+
+    Args:
+        model:
+        project:
+
+    Returns:
+
+    """
 
     endpoint = os.environ['REST_ENDPOINT']
 

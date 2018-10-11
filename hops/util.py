@@ -35,6 +35,11 @@ except ImportError:
     import httplib as http
 
 def _get_elastic_endpoint():
+    """
+
+    Returns:
+
+    """
     elastic_endpoint = os.environ['ELASTIC_ENDPOINT']
     host, port = elastic_endpoint.split(':')
     return host + ':' + port
@@ -47,6 +52,11 @@ except:
 
 
 def _get_hopsworks_rest_endpoint():
+    """
+
+    Returns:
+
+    """
     elastic_endpoint = os.environ['REST_ENDPOINT']
     return elastic_endpoint
 
@@ -57,7 +67,15 @@ except:
     pass
 
 def _find_in_path(path, file):
-    """Find a file in a given path string."""
+    """
+
+    Args:
+        :path:
+        :file:
+
+    Returns:
+
+    """
     for p in path.split(os.pathsep):
         candidate = os.path.join(p, file)
         if (os.path.exists(os.path.join(p, file))):
@@ -65,6 +83,11 @@ def _find_in_path(path, file):
     return False
 
 def find_tensorboard():
+    """
+
+    Returns:
+         tb_path
+    """
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
     search_path = os.pathsep.join([pydir, os.environ['PATH'], os.environ['PYTHONPATH']])
@@ -77,6 +100,12 @@ def on_executor_exit(signame):
     """
     Return a function to be run in a child process which will trigger
     SIGNAME to be sent when the parent process dies
+
+    Args:
+        :signame:
+
+    Returns:
+        set_parent_exit_signal
     """
     signum = getattr(signal, signame)
     def set_parent_exit_signal():
@@ -89,25 +118,34 @@ def on_executor_exit(signame):
     return set_parent_exit_signal
 
 def num_executors():
-    """ Get the number of executors configured for Jupyter
+    """
+    Get the number of executors configured for Jupyter
+
     Returns:
-      Number of configured executors for Jupyter
+        Number of configured executors for Jupyter
     """
     sc = _find_spark().sparkContext
     return int(sc._conf.get("spark.executor.instances"))
 
 def num_param_servers():
-    """ Get the number of parameter servers configured for Jupyter
+    """
+    Get the number of parameter servers configured for Jupyter
+
     Returns:
-      Number of configured parameter servers for Jupyter
+        Number of configured parameter servers for Jupyter
     """
     sc = _find_spark().sparkContext
     return int(sc._conf.get("spark.tensorflow.num.ps"))
 
 def grid_params(dict):
-    """ Generate all possible combinations (cartesian product) of the hyperparameter values
+    """
+    Generate all possible combinations (cartesian product) of the hyperparameter values
+
+    Args:
+        :dict:
+
     Returns:
-      A new dictionary with a grid of all the possible hyperparameter combinations
+        A new dictionary with a grid of all the possible hyperparameter combinations
     """
     keys = dict.keys()
     val_arr = []
@@ -127,12 +165,25 @@ def grid_params(dict):
     return args_dict
 
 def get_ip_address():
-    """Simple utility to get host IP address"""
+    """
+    Simple utility to get host IP address
+
+    Returns:
+        x
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     return s.getsockname()[0]
 
 def time_diff(task_start, task_end):
+    """
+    Args:
+        :task_start:
+        :tast_end:
+
+    Returns:
+
+    """
     time_diff = task_end - task_start
 
     seconds = time_diff.seconds
@@ -150,6 +201,16 @@ def time_diff(task_start, task_end):
         return 'unknown time'
 
 def put_elastic(project, appid, elastic_id, json_data):
+    """
+    Args:
+        :project:
+        :appid:
+        :elastic_id:
+        :json_data:
+
+    Returns:
+
+    """
     if not elastic_endpoint:
         return
     headers = {'Content-type': 'application/json'}
@@ -170,6 +231,20 @@ def put_elastic(project, appid, elastic_id, json_data):
 
 
 def populate_experiment(sc, model_name, module, function, logdir, hyperparameter_space, versioned_resources, description):
+    """
+    Args:
+         :sc:
+         :model_name:
+         :module:
+         :function:
+         :logdir:
+         :hyperparameter_space:
+         :versioned_resources:
+         :description:
+
+    Returns:
+
+    """
     user = None
     if 'HOPSWORKS_USER' in os.environ:
         user = os.environ['HOPSWORKS_USER']
@@ -190,6 +265,15 @@ def populate_experiment(sc, model_name, module, function, logdir, hyperparameter
                        'description': description})
 
 def finalize_experiment(experiment_json, hyperparameter, metric):
+    """
+    Args:
+        :experiment_json:
+        :hyperparameter:
+        :metric:
+
+    Returns:
+
+    """
     experiment_json = json.loads(experiment_json)
     experiment_json['metric'] = metric
     experiment_json['hyperparameter'] = hyperparameter
@@ -215,12 +299,25 @@ def _add_version(experiment_json):
     return experiment_json
 
 def store_local_tensorboard(local_tb, hdfs_exec_logdir):
+    """
+
+    Args:
+        :local_tb:
+        :hdfs_exec_logdir:
+
+    Returns:
+
+    """
     tb_contents = os.listdir(local_tb)
     for entry in tb_contents:
         pydoop.hdfs.put(local_tb + '/' + entry, hdfs_exec_logdir)
 
 def get_notebook_path():
+    """
 
+    Returns:
+
+    """
     material_passwd = os.getcwd() + '/material_passwd'
 
     if not os.path.exists(material_passwd):
@@ -250,6 +347,15 @@ def get_notebook_path():
     return os.environ['HDFS_BASE_DIR'] + resp['notebook_path']
 
 def version_resources(versioned_resources, rundir):
+    """
+
+    Args:
+        versioned_resources:
+        rundir:
+
+    Returns:
+
+    """
     if not versioned_resources:
         return None
     pyhdfs_handle = hdfs.get()
@@ -267,20 +373,26 @@ def version_resources(versioned_resources, rundir):
     return ', '.join(versioned_paths)
 
 def convert_to_dict(best_param):
-  best_param_dict={}
-  for hp in best_param:
-      hp = hp.split('=')
-      best_param_dict[hp[0]] = hp[1]
-  return best_param_dict
+    """
+
+    Args:
+        best_param:
+
+    Returns:
+
+    """
+    best_param_dict={}
+    for hp in best_param:
+        hp = hp.split('=')
+        best_param_dict[hp[0]] = hp[1]
+        return best_param_dict
 
 def _find_spark():
+    """
+
+    Returns:
+
+    """
     return SparkSession.builder.getOrCreate()
-
-
-
-
-
-
-
 
 

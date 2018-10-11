@@ -5,4 +5,9 @@ These utils facilitates development by hiding complexity for programs interactin
 """
 
 def getEndpoint():
+    """
+
+    Returns:
+
+    """
     return os.environ['KAFKA_ENDPOINT']
