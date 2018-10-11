@@ -1,7 +1,5 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
-
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+Gridsearch implementation
 """
 
 import os
@@ -57,11 +55,11 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
     nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir))
     job_end = datetime.datetime.now()
 
-    job_time_str = util.time_diff(job_start, job_end)
+    job_time_str = util._time_diff(job_start, job_end)
 
     arg_count = six.get_function_code(map_fun).co_argcount
     arg_names = six.get_function_code(map_fun).co_varnames
-    hdfs_appid_dir = hopshdfs.get_experiments_dir() + '/' + app_id
+    hdfs_appid_dir = hopshdfs._get_experiments_dir() + '/' + app_id
     hdfs_runid_dir = hdfs_appid_dir + '/grid_search/run.' + str(run_id)
 
     max_val, max_hp, min_val, min_hp, avg = _get_best(args_dict, num_executions, arg_names, arg_count, hdfs_appid_dir, run_id)
@@ -77,7 +75,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
           'WORST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
           'AVERAGE metric -- ' + str(avg) + '\n' \
           'Total job time ' + job_time_str + '\n'
-        write_result(hdfs_runid_dir, results)
+        _write_result(hdfs_runid_dir, results)
         print(results)
     elif direction == 'min':
         param_combination = min_hp
@@ -87,7 +85,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
         'WORST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
         'AVERAGE metric -- ' + str(avg) + '\n' \
         'Total job time ' + job_time_str + '\n'
-        write_result(hdfs_runid_dir, results)
+        _write_result(hdfs_runid_dir, results)
         print(results)
 
 
@@ -95,7 +93,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
 
     return hdfs_runid_dir, param_combination, best_val
 
-def get_logdir(app_id):
+def _get_logdir(app_id):
     """
 
     Args:
@@ -105,11 +103,11 @@ def get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs.get_experiments_dir() + '/' + app_id + '/grid_search/run.' + str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/grid_search/run.' + str(run_id)
 
 
 
-def write_result(runid_dir, string):
+def _write_result(runid_dir, string):
     """
 
     Args:
@@ -159,7 +157,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
         tb_hdfs_path = ''
         hdfs_exec_logdir = ''
 
-        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        t = threading.Thread(target=devices._print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
             t.start()
 
@@ -181,12 +179,12 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'grid_search')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, param_string, 'grid_search')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
+                hopshdfs._init_logger()
+                tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
 
-                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
                 print('-------------------------------------------------------')
@@ -196,7 +194,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 retval = map_fun(*args)
                 task_end = datetime.datetime.now()
                 _handle_return(retval, hdfs_exec_logdir)
-                time_str = 'Finished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                time_str = 'Finished task ' + param_string + ' - took ' + util._time_diff(task_start, task_end)
                 print('\n' + time_str)
                 print('-------------------------------------------------------')
                 hopshdfs.log(time_str)
@@ -210,7 +208,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
         finally:
             if local_logdir:
                 local_tb = tensorboard.local_logdir_path
-                util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
+                util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
 
 
         _cleanup(tb_hdfs_path)
@@ -330,4 +328,4 @@ def _cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
-    hopshdfs.kill_logger()
+    hopshdfs._kill_logger()

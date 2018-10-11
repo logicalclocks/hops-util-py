@@ -1,3 +1,9 @@
+"""
+
+Google Facets utility functions.
+
+"""
+
 from IPython.core.display import display, HTML
 from hopsfacets import generic_feature_statistics_generator as generic_feature_statistics_generator
 import base64

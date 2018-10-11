@@ -1,6 +1,9 @@
+"""
+Simple experiment implementation
+"""
+
 from hops import util
 from hops import hdfs as hopshdfs
-import pydoop.hdfs as hdfs
 from hops import tensorboard
 from hops import devices
 
@@ -13,7 +16,7 @@ import os
 run_id = 0
 
 
-def launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
+def _launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
     """
 
     Args:
@@ -51,16 +54,16 @@ def launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
     print('Finished Experiment \n')
 
     if args_dict == None:
-        path_to_metric = get_logdir(app_id) + '/metric'
+        path_to_metric = _get_logdir(app_id) + '/metric'
         if pydoop.hdfs.path.exists(path_to_metric):
             with pydoop.hdfs.open(path_to_metric, "r") as fi:
                 metric = float(fi.read())
                 fi.close()
-                return metric, hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
+                return metric, hopshdfs._get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
-    return None, hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
+    return None, hopshdfs._get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
-def get_logdir(app_id):
+def _get_logdir(app_id):
     """
 
     Args:
@@ -70,7 +73,7 @@ def get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs.get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
 
 
 #Helper to put Spark required parameter iter in function signature
@@ -104,7 +107,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
         tb_hdfs_path = ''
         hdfs_exec_logdir = ''
 
-        t = threading.Thread(target=devices.print_periodic_gpu_utilization)
+        t = threading.Thread(target=devices._print_periodic_gpu_utilization)
         if devices.get_num_gpus() > 0:
             t.start()
 
@@ -126,12 +129,12 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, param_string, 'launcher')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, param_string, 'launcher')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
+                hopshdfs._init_logger()
+                tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
 
-                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
                 print('-------------------------------------------------------')
@@ -140,16 +143,16 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 task_start = datetime.datetime.now()
                 map_fun(*args)
                 task_end = datetime.datetime.now()
-                time_str = 'Finished task ' + param_string + ' - took ' + util.time_diff(task_start, task_end)
+                time_str = 'Finished task ' + param_string + ' - took ' + util._time_diff(task_start, task_end)
                 print('\n' + time_str)
                 print('-------------------------------------------------------')
                 hopshdfs.log(time_str)
             else:
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs.create_directories(app_id, run_id, None, 'launcher')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'launcher')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs.init_logger()
-                tb_hdfs_path, tb_pid = tensorboard.register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
-                gpu_str = '\nChecking for GPUs in the environment' + devices.get_gpu_info()
+                hopshdfs._init_logger()
+                tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
+                gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
                 hopshdfs.log(gpu_str)
                 print(gpu_str)
                 print('-------------------------------------------------------')
@@ -160,7 +163,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 task_end = datetime.datetime.now()
                 if retval:
                     _handle_return(retval, hdfs_exec_logdir)
-                time_str = 'Finished task - took ' + util.time_diff(task_start, task_end)
+                time_str = 'Finished task - took ' + util._time_diff(task_start, task_end)
                 print('\n' + time_str)
                 print('-------------------------------------------------------')
                 hopshdfs.log(time_str)
@@ -175,7 +178,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
             try:
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
-                    util.store_local_tensorboard(local_tb, hdfs_exec_logdir)
+                    util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
             except:
                 pass
 
@@ -199,7 +202,7 @@ def _cleanup(tb_hdfs_path):
     handle = hopshdfs.get()
     if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
         handle.delete(tb_hdfs_path)
-    hopshdfs.kill_logger()
+    hopshdfs._kill_logger()
 
 def _handle_return(val, hdfs_exec_logdir):
     """

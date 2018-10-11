@@ -116,7 +116,7 @@ class WorkerFinished:
     self.finished = 0
     self.check_done = False
 
-  def add(self):
+  def add(self, meta):
     """Add a reservation.
 
     Args:
@@ -245,7 +245,7 @@ class Server(MessageSocket):
       self.reservations.add(msg['data'])
       MessageSocket.send(self, sock, 'OK')
     elif msg_type == 'REG_DONE':
-      self.worker_finished.add()
+      self.worker_finished.add(msg['data'])
       MessageSocket.send(self, sock, 'OK')
     elif msg_type == 'QUERY':
       MessageSocket.send(self, sock, self.reservations.done())
@@ -274,7 +274,7 @@ class Server(MessageSocket):
     server_sock.listen(10)
 
     # hostname may not be resolvable but IP address probably will be
-    host = util.get_ip_address()
+    host = util._get_ip_address()
     port = server_sock.getsockname()[1]
     addr = (host,port)
 
