@@ -1,7 +1,5 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
-
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+A module for getting TLS certificates in YARN containers, used for setting up Kafka inside Jobs/Notebooks on Hops.
 """
 
 import string
@@ -95,16 +93,16 @@ def get_trust_store_pwd():
     return _get_cert_pw()
 
 
-def bytes_to_pem_str(der_bytes, pem_type):
+def _bytes_to_pem_str(der_bytes, pem_type):
     """
     Utility function for creating PEM files
 
     Args:
-    :der_bytes: DER encoded bytes
-    :pem_type: type of PEM, e.g Certificate, Private key, or RSA private key
+        der_bytes: DER encoded bytes
+        pem_type: type of PEM, e.g Certificate, Private key, or RSA private key
 
     Returns:
-         PEM String for a DER-encoded certificate or private key
+        PEM String for a DER-encoded certificate or private key
     """
     pem_str = ""
     pem_str = pem_str + "-----BEGIN {}-----".format(pem_type) + "\n"
@@ -135,16 +133,16 @@ def _convert_jks_to_pem(jks_path, keystore_pw):
     # Convert private keys and their certificates into PEM format and append to string
     for alias, pk in ks.private_keys.items():
         if pk.algorithm_oid == jks.util.RSA_ENCRYPTION_OID:
-            private_keys = bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
+            private_keys = _bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
         else:
-            private_keys = bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
+            private_keys = _bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
         for c in pk.cert_chain:
             # c[0] contains type of cert, i.e X.509
-            private_keys_certs = bytes_to_pem_str(c[1], "CERTIFICATE")
+            private_keys_certs = _bytes_to_pem_str(c[1], "CERTIFICATE")
 
     # Convert CA Certificates into PEM format and append to string
     for alias, c in ks.certs.items():
-        ca_certs = ca_certs + bytes_to_pem_str(c.cert, "CERTIFICATE")
+        ca_certs = ca_certs + _bytes_to_pem_str(c.cert, "CERTIFICATE")
     return private_keys_certs, private_keys, ca_certs
 
 def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):

@@ -1,7 +1,52 @@
 """
 A module for setting up Kafka Brokers and Consumers on the Hops platform. It hides the complexity of
-configuration Kafka by providing utility methods such as `get_broker_endpoints()`, `get_security_protocol`,
- `get_kafka_default_config` etc.
+configuring Kafka by providing utility methods such as:
+
+    - `get_broker_endpoints()`.
+    - `get_security_protocol()`.
+    - `get_kafka_default_config()`.
+    - etc.
+
+Using these utility functions you can setup Kafka with the Kafka client-library of your choice, e.g SparkStreaming or
+confluent-kafka-python. For example, assuming that you have created a topic called "test" on Hopsworks and that you
+have installed confluent-kafka-python inside your project's anaconda environment:
+
+    >>> from hops import kafka
+    >>> from hops import tls
+    >>> from confluent_kafka import Producer, Consumer
+    >>> TOPIC_NAME = "test"
+    >>> config = kafka.get_kafka_default_config()
+    >>> producer = Producer(config)
+    >>> consumer = Consumer(config)
+    >>> consumer.subscribe(["test"])
+    >>> # wait a little while before executing the rest of the code (put it in a different Jupyter cell)
+    >>> # so that the consumer get chance to subscribe (asynchronous call)
+    >>> for i in range(0, 10):
+    >>> producer.produce(TOPIC_NAME, "message {}".format(i), "key", callback=delivery_callback)
+    >>> # Trigger the sending of all messages to the brokers, 10sec timeout
+    >>> producer.flush(10)
+    >>> for i in range(0, 10):
+    >>> msg = consumer.poll(timeout=5.0)
+    >>> if msg is not None:
+    >>>     print('Consumed Message: {} from topic: {}'.format(msg.value(), msg.topic()))
+    >>> else:
+    >>>     print("Topic empty, timeout when trying to consume message")
+
+
+Similarly, you can define a pyspark kafka consumer as follows, using the spark session defined in variable `spark`
+
+    >>> from hops import kafka
+    >>> from hops import tls
+    >>> TOPIC_NAME = "test"
+    >>> df = spark \.format("kafka")
+    >>> .option("kafka.bootstrap.servers", kafka.get_broker_endpoints())
+    >>> .option("kafka.ssl.truststore.location", tls.get_trust_store())
+    >>> .option("kafka.ssl.truststore.password", tls.get_key_store_pwd())
+    >>> .option("kafka.ssl.keystore.location", tls.get_key_store())
+    >>> .option("kafka.ssl.keystore.password", tls.get_key_store_pwd())
+    >>> .option("kafka.ssl.key.password", tls.get_trust_store_pwd())
+    >>> .option("subscribe", TOPIC_NAME)
+    >>> .load()
 """
 
 import os
