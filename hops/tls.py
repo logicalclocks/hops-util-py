@@ -113,7 +113,7 @@ def bytes_to_pem_str(der_bytes, pem_type):
     return pem_str
 
 
-def convert_jks_to_pem(jks_path, keystore_pw):
+def _convert_jks_to_pem(jks_path, keystore_pw):
     """
     Converts a keystore JKS that contains client private key,
      client certificate and CA certificate that was used to
@@ -147,7 +147,7 @@ def convert_jks_to_pem(jks_path, keystore_pw):
         ca_certs = ca_certs + bytes_to_pem_str(c.cert, "CERTIFICATE")
     return private_keys_certs, private_keys, ca_certs
 
-def write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):
+def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path, ca_cert_path, ca_root_pub_pem_path):
     """
     Converts the JKS keystore, JKS truststore, and the root ca.pem
     client certificate, client key, and ca certificate
@@ -162,8 +162,8 @@ def write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_
     :ca_root_pub_pem_path: path to root CA on the host (root CA certificate is not present in the keystores, only the intermediate CA certificate is)
 
     """
-    keystore_key_cert, keystore_key, keystore_ca_cert = convert_jks_to_pem(jks_key_store_path, keystore_pw)
-    truststore_key_cert, truststore_key, truststore_ca_cert = convert_jks_to_pem(jks_trust_store_path, keystore_pw)
+    keystore_key_cert, keystore_key, keystore_ca_cert = _convert_jks_to_pem(jks_key_store_path, keystore_pw)
+    truststore_key_cert, truststore_key, truststore_ca_cert = _convert_jks_to_pem(jks_trust_store_path, keystore_pw)
     with open(ca_root_pub_pem_path, "r") as f:
         ca_root_cert = f.read()
     with open(client_key_cert_path, "w") as f:
@@ -183,7 +183,7 @@ def get_client_certificate_location():
         string path to client certificate in PEM format
     """
     if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG):
-        write_pems()
+        _write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
 
 def get_client_key_location():
@@ -196,7 +196,7 @@ def get_client_key_location():
     """
     # Convert JKS to PEMs if they don't exists already
     if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG):
-        write_pems()
+        _write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
 
 def get_ca_chain_location():
@@ -209,10 +209,10 @@ def get_ca_chain_location():
          string path to ca chain of certificate
     """
     if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG):
-        write_pems()
+        _write_pems()
     return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
 
-def write_pems():
+def _write_pems():
     """
     Converts JKS keystore file into PEM to be compatible with Python libraries
     """
@@ -221,4 +221,4 @@ def write_pems():
     client_certificate_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
     client_key_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
     ca_chain_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
-    write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path, constants.SSL_CONFIG.PEM_CA_ROOT_CERT)
+    _write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path, constants.SSL_CONFIG.PEM_CA_ROOT_CERT)

@@ -1,13 +1,13 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
-
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+A module for setting up Kafka Brokers and Consumers on the Hops platform. It hides the complexity of
+configuration Kafka by providing utility methods such as `get_broker_endpoints()`, `get_security_protocol`,
+ `get_kafka_default_config` etc.
 """
 
 import os
 from hops import constants
 from hops import tls
-from hops import rest_api
+from hops import util
 import json
 
 def get_broker_endpoints():
@@ -22,6 +22,7 @@ def get_broker_endpoints():
 def get_security_protocol():
     """
     Gets the security protocol used for communicating with Kafka brokers in a Hopsworks cluster
+
     Returns:
         the security protocol for communicating with Kafka brokers in a Hopsworks cluster
     """
@@ -54,6 +55,20 @@ def get_kafka_default_config():
     }
     return default_config
 
+def _prepare_rest_appservice_json_request():
+    """
+    Prepares a REST JSON Request to Hopsworks APP-service
+
+    Returns:
+        a dict with keystore cert bytes and password string
+    """
+    key_store_pwd = tls.get_key_store_pwd()
+    key_store_cert = tls.get_key_store_cert()
+    json_contents = {}
+    json_contents[constants.REST_CONFIG.JSON_KEYSTOREPWD] = key_store_pwd
+    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert.decode("latin-1") # raw bytes is not serializable by JSON -_-
+    return json_contents
+
 def get_schema(topic, version_id=1):
     """
     Gets the Avro schema for a particular Kafka topic and its version.
@@ -65,13 +80,13 @@ def get_schema(topic, version_id=1):
     Returns:
         Avro schema as a string object in JSON format
     """
-    json_contents = rest_api.prepare_rest_appservice_json_request()
+    json_contents = _prepare_rest_appservice_json_request()
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
     json_embeddable = json.dumps(json_contents)
     headers = {'Content-type': 'application/json'}
     method = "POST"
-    connection = rest_api.get_http_connection(https=True)
+    connection = util.get_http_connection(https=True)
     resource = "schema"
     resource_url = "/" + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
     connection.request(method, resource_url, json_embeddable, headers)

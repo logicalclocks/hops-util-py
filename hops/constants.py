@@ -1,7 +1,5 @@
 """
-Utility functions to retrieve information about available services and setting up security for the Hops platform.
-
-These utils facilitates development by hiding complexity for programs interacting with Hops services.
+String Constants used in Hops-Util: Environment variables, Kafka Config, SSL Config etc.
 """
 
 class ENV_VARIABLES:

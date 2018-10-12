@@ -35,13 +35,14 @@ try:
 except ImportError:
     import httplib as http
 
+
 def _get_elastic_endpoint():
     """
 
     Returns:
 
     """
-    elastic_endpoint = os.environ['ELASTIC_ENDPOINT']
+    elastic_endpoint = os.environ[constants.ENV_VARIABLES.ELASTIC_ENDPOINT_ENV_VAR]
     host, port = elastic_endpoint.split(':')
     return host + ':' + port
 
@@ -58,7 +59,7 @@ def _get_hopsworks_rest_endpoint():
     Returns:
 
     """
-    elastic_endpoint = os.environ['REST_ENDPOINT']
+    elastic_endpoint = os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR]
     return elastic_endpoint
 
 hopsworks_endpoint = None
@@ -117,6 +118,40 @@ def _on_executor_exit(signame):
         if result != 0:
             raise Exception('prctl failed with error code %s' % result)
     return set_parent_exit_signal
+
+def _get_host_port_pair():
+    """
+    Removes "http or https" from the rest endpoint and returns a list
+    [endpoint, port], where endpoint is on the format /path.. without http://
+
+    Returns:
+        a list [endpoint, port]
+    """
+    endpoint = _get_hopsworks_rest_endpoint()
+    if 'http' in endpoint:
+        last_index = endpoint.rfind('/')
+        endpoint = endpoint[last_index + 1:]
+    host_port_pair = endpoint.split(':')
+    return host_port_pair
+
+def _get_http_connection(https=False):
+    """
+    Opens a HTTP(S) connection to Hopsworks
+
+    Args:
+        https: boolean flag whether to use Secure HTTP or regular HTTP
+
+    Returns:
+        HTTP(S)Connection
+    """
+    host_port_pair = _get_host_port_pair()
+    if (https):
+        PROTOCOL = ssl.PROTOCOL_TLSv1_2
+        ssl_context = ssl.SSLContext(PROTOCOL)
+        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
+    else:
+        connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+    return connection
 
 def num_executors():
     """
