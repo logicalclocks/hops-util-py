@@ -48,7 +48,7 @@ def _get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs.get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
 
 def begin(name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
@@ -99,7 +99,7 @@ def begin(name='no-name', local_logdir=False, versioned_resources=None, descript
 
         experiment_json = util._populate_experiment(sc, name, 'experiment', 'begin', _get_logdir(app_id), None, versioned_path, description)
 
-        util.put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'begin')
 
