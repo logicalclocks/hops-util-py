@@ -131,7 +131,7 @@ def get_schema(topic, version_id=1):
     json_embeddable = json.dumps(json_contents)
     headers = {'Content-type': 'application/json'}
     method = "POST"
-    connection = util.get_http_connection(https=True)
+    connection = util._get_http_connection(https=True)
     resource = "schema"
     resource_url = "/" + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
     connection.request(method, resource_url, json_embeddable, headers)
