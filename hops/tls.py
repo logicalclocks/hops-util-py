@@ -133,12 +133,12 @@ def _convert_jks_to_pem(jks_path, keystore_pw):
     # Convert private keys and their certificates into PEM format and append to string
     for alias, pk in ks.private_keys.items():
         if pk.algorithm_oid == jks.util.RSA_ENCRYPTION_OID:
-            private_keys = _bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
+            private_keys = private_keys + _bytes_to_pem_str(pk.pkey, "RSA PRIVATE KEY")
         else:
-            private_keys = _bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
+            private_keys = private_keys + _bytes_to_pem_str(pk.pkey_pkcs8, "PRIVATE KEY")
         for c in pk.cert_chain:
             # c[0] contains type of cert, i.e X.509
-            private_keys_certs = _bytes_to_pem_str(c[1], "CERTIFICATE")
+            private_keys_certs = private_keys_certs + _bytes_to_pem_str(c[1], "CERTIFICATE")
 
     # Convert CA Certificates into PEM format and append to string
     for alias, c in ks.certs.items():
@@ -157,7 +157,6 @@ def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key
     :client_key_cert_path: path to write the client's certificate for its private key in PEM format
     :client_key_path: path to write the client's private key in PEM format
     :ca_cert_path: path to write the chain of CA certificates required to validate certificates
-
     """
     keystore_key_cert, keystore_key, keystore_ca_cert = _convert_jks_to_pem(jks_key_store_path, keystore_pw)
     truststore_key_cert, truststore_key, truststore_ca_cert = _convert_jks_to_pem(jks_trust_store_path, keystore_pw)
@@ -166,7 +165,7 @@ def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key
     with open(client_key_path, "w") as f:
         f.write(keystore_key)
     with open(ca_cert_path, "w") as f:
-        f.write(truststore_ca_cert)
+        f.write(keystore_ca_cert + truststore_ca_cert)
 
 def get_client_certificate_location():
     """

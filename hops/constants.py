@@ -45,7 +45,7 @@ class SSL_CONFIG:
     PEM_CA_CHAIN_CERTIFICATE_CONFIG = "ca_chain.pem"
     DOMAIN_CA_TRUSTSTORE = "domain_ca_truststore"
     CRYPTO_MATERIAL_PASSWORD = "material_passwd"
-    PEM_CA_ROOT_CERT = "/srv/hops/kagent/host-certs/ca_pub.pem"
+    PEM_CA_ROOT_CERT = "/srv/hops/kagent/host-certs/hops_root_ca.pem"
 
 class KAFKA_PRODUCER_CONFIG:
     """
