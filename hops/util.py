@@ -17,6 +17,7 @@ from hops import hdfs
 from hops import version
 from pyspark.sql import SparkSession
 from hops import constants
+import ssl
 
 #! Needed for hops library backwards compatability
 try:
