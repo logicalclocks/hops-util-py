@@ -16,6 +16,8 @@ import time
 from hops import hdfs
 from hops import version
 from pyspark.sql import SparkSession
+from hops import constants
+import ssl
 
 #! Needed for hops library backwards compatability
 try:
@@ -34,13 +36,14 @@ try:
 except ImportError:
     import httplib as http
 
+
 def _get_elastic_endpoint():
     """
 
     Returns:
 
     """
-    elastic_endpoint = os.environ['ELASTIC_ENDPOINT']
+    elastic_endpoint = os.environ[constants.ENV_VARIABLES.ELASTIC_ENDPOINT_ENV_VAR]
     host, port = elastic_endpoint.split(':')
     return host + ':' + port
 
@@ -57,7 +60,7 @@ def _get_hopsworks_rest_endpoint():
     Returns:
 
     """
-    elastic_endpoint = os.environ['REST_ENDPOINT']
+    elastic_endpoint = os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR]
     return elastic_endpoint
 
 hopsworks_endpoint = None
@@ -90,7 +93,7 @@ def _find_tensorboard():
     """
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
-    search_path = os.pathsep.join([pydir, os.environ['PATH'], os.environ['PYTHONPATH']])
+    search_path = os.pathsep.join([pydir, os.environ[constants.ENV_VARIABLES.PATH_ENV_VAR], os.environ[constants.ENV_VARIABLES.PYTHONPATH_ENV_VAR]])
     tb_path = _find_in_path(search_path, 'tensorboard')
     if not tb_path:
         raise Exception("Unable to find 'tensorboard' in: {}".format(search_path))
@@ -116,6 +119,40 @@ def _on_executor_exit(signame):
         if result != 0:
             raise Exception('prctl failed with error code %s' % result)
     return set_parent_exit_signal
+
+def _get_host_port_pair():
+    """
+    Removes "http or https" from the rest endpoint and returns a list
+    [endpoint, port], where endpoint is on the format /path.. without http://
+
+    Returns:
+        a list [endpoint, port]
+    """
+    endpoint = _get_hopsworks_rest_endpoint()
+    if 'http' in endpoint:
+        last_index = endpoint.rfind('/')
+        endpoint = endpoint[last_index + 1:]
+    host_port_pair = endpoint.split(':')
+    return host_port_pair
+
+def _get_http_connection(https=False):
+    """
+    Opens a HTTP(S) connection to Hopsworks
+
+    Args:
+        https: boolean flag whether to use Secure HTTP or regular HTTP
+
+    Returns:
+        HTTP(S)Connection
+    """
+    host_port_pair = _get_host_port_pair()
+    if (https):
+        PROTOCOL = ssl.PROTOCOL_TLSv1_2
+        ssl_context = ssl.SSLContext(PROTOCOL)
+        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
+    else:
+        connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
+    return connection
 
 def num_executors():
     """
@@ -246,8 +283,8 @@ def _populate_experiment(sc, model_name, module, function, logdir, hyperparamete
 
     """
     user = None
-    if 'HOPSWORKS_USER' in os.environ:
-        user = os.environ['HOPSWORKS_USER']
+    if constants.ENV_VARIABLES.HOPSWORKS_USER_ENV_VAR in os.environ:
+        user = os.environ[constants.ENV_VARIABLES.HOPSWORKS_USER_ENV_VAR]
     return json.dumps({'project': hdfs.project_name(),
                        'user': user,
                        'name': model_name,
@@ -289,13 +326,13 @@ def _add_version(experiment_json):
     try:
         experiment_json['tensorflow'] = tensorflow.__version__
     except:
-        experiment_json['tensorflow'] = os.environ['TENSORFLOW_VERSION']
+        experiment_json['tensorflow'] = os.environ[constants.ENV_VARIABLES.TENSORFLOW_VERSION_ENV_VAR]
 
     experiment_json['hops_py'] = version.__version__
-    experiment_json['hops'] = os.environ['HADOOP_VERSION']
-    experiment_json['hopsworks'] = os.environ['HOPSWORKS_VERSION']
-    experiment_json['cuda'] = os.environ['CUDA_VERSION']
-    experiment_json['kafka'] = os.environ['KAFKA_VERSION']
+    experiment_json['hops'] = os.environ[constants.ENV_VARIABLES.HADOOP_VERSION_ENV_VAR]
+    experiment_json['hopsworks'] = os.environ[constants.ENV_VARIABLES.HOPSWORKS_VERSION_ENV_VAR]
+    experiment_json['cuda'] = os.environ[constants.ENV_VARIABLES.CUDA_VERSION_ENV_VAR]
+    experiment_json['kafka'] = os.environ[constants.ENV_VARIABLES.KAFKA_VERSION_ENV_VAR]
     return experiment_json
 
 def _store_local_tensorboard(local_tb, hdfs_exec_logdir):
@@ -360,5 +397,3 @@ def _find_spark():
 
     """
     return SparkSession.builder.getOrCreate()
-
-

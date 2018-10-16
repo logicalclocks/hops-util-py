@@ -33,9 +33,7 @@ Sample usage:
 
 To build docs:
 
->>> cd docs
->>> sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/version.py
->>> make html
+>>> cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/version.py ../hops/constants.py; make html; cd ..
 
 
 -------------

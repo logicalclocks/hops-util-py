@@ -60,6 +60,14 @@ hops\.tensorboard module
     :undoc-members:
     :show-inheritance:
 
+hops\.tls module
+----------------
+
+.. automodule:: hops.tls
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops\.util module
 -----------------
 
