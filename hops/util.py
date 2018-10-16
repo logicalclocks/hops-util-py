@@ -93,7 +93,7 @@ def _find_tensorboard():
     """
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
-    search_path = os.pathsep.join([pydir, os.environ['PATH'], os.environ['PYTHONPATH']])
+    search_path = os.pathsep.join([pydir, os.environ[constants.PATH_ENV_VAR], os.environ[constants.PYTHONPATH_ENV_VAR]])
     tb_path = _find_in_path(search_path, 'tensorboard')
     if not tb_path:
         raise Exception("Unable to find 'tensorboard' in: {}".format(search_path))
@@ -283,8 +283,8 @@ def _populate_experiment(sc, model_name, module, function, logdir, hyperparamete
 
     """
     user = None
-    if 'HOPSWORKS_USER' in os.environ:
-        user = os.environ['HOPSWORKS_USER']
+    if constants.HOPSWORKS_USER_ENV_VAR in os.environ:
+        user = os.environ[constants.HOPSWORKS_USER_ENV_VAR]
     return json.dumps({'project': hdfs.project_name(),
                        'user': user,
                        'name': model_name,
@@ -326,13 +326,13 @@ def _add_version(experiment_json):
     try:
         experiment_json['tensorflow'] = tensorflow.__version__
     except:
-        experiment_json['tensorflow'] = os.environ['TENSORFLOW_VERSION']
+        experiment_json['tensorflow'] = os.environ[constants.TENSORFLOW_VERSION_ENV_VAR]
 
     experiment_json['hops_py'] = version.__version__
-    experiment_json['hops'] = os.environ['HADOOP_VERSION']
-    experiment_json['hopsworks'] = os.environ['HOPSWORKS_VERSION']
-    experiment_json['cuda'] = os.environ['CUDA_VERSION']
-    experiment_json['kafka'] = os.environ['KAFKA_VERSION']
+    experiment_json['hops'] = os.environ[constants.HADOOP_VERSION_ENV_VAR]
+    experiment_json['hopsworks'] = os.environ[constants.HOPSWORKS_VERSION_ENV_VAR]
+    experiment_json['cuda'] = os.environ[constants.CUDA_VERSION_ENV_VAR]
+    experiment_json['kafka'] = os.environ[constants.KAFKA_VERSION_ENV_VAR]
     return experiment_json
 
 def _store_local_tensorboard(local_tb, hdfs_exec_logdir):
