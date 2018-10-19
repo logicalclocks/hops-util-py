@@ -572,11 +572,11 @@ def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=No
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
-    >>>    ...MirroredStrategy(num_gpus=devices.get_num_gpus())...
+    >>>    ...MirroredStrategy()...
     >>> experiment.mirrored(mirrored_training)
 
     Args:
-        :map_fun: contains the code where you are using ParameterServerStrategy.
+        :map_fun: contains the code where you are using MirroredStrategy.
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :versioned_resources: A list of HDFS paths of resources to version with this experiment
