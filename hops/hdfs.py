@@ -580,8 +580,12 @@ def exists(hdfs_path, project=None):
     """
     if project == None:
         project = project_name()
-    hdfs_path = _expand_path(hdfs_path, project)
-    return hdfs.exists(hdfs_path)
+
+    try:
+        hdfs_path = _expand_path(hdfs_path, project)
+    except IOError:
+        return False
+    return hdfs.path.exists(hdfs_path)
 
 
 def isdir(hdfs_path, project=None):
