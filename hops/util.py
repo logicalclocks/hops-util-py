@@ -388,7 +388,8 @@ def _convert_to_dict(best_param):
     for hp in best_param:
         hp = hp.split('=')
         best_param_dict[hp[0]] = hp[1]
-        return best_param_dict
+
+    return best_param_dict
 
 def _find_spark():
     """

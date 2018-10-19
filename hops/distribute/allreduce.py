@@ -41,7 +41,7 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("TensorFlow CollectiveAllReduceStrategy", "{} | Distributed Training".format(name))
+    sc.setJobGroup("CollectiveAllReduceStrategy", "{} | Distributed Training".format(name))
 
     server = allreduce_reservation.Server(num_executions)
     server_addr = server.start()
@@ -72,7 +72,7 @@ def _get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs._get_experiments_dir() + '/' + app_id + '/allreduce/run.' + str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/collective_all_reduce/run.' + str(run_id)
 
 def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
     """
@@ -129,7 +129,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
             os.environ["TF_CONFIG"] = json.dumps(cluster)
 
             if task_index == 0:
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'allreduce')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'collective_all_reduce')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs._init_logger()
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)

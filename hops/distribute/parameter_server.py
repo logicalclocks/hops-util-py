@@ -41,7 +41,7 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("TensorFlow ParameterServerStrategy", "{} | Distributed Training".format(name))
+    sc.setJobGroup("ParameterServerStrategy", "{} | Distributed Training".format(name))
 
     server = parameter_server_reservation.Server(num_executions)
     server_addr = server.start()
