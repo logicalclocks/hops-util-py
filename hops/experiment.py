@@ -19,6 +19,7 @@ from hops import grid_search as gs
 from hops import launcher as launcher
 from hops.distribute import allreduce as tf_allreduce
 from hops.distribute import parameter_server as ps
+from hops.distribute import mirrored as mirrored_impl
 
 from hops import tensorboard
 
@@ -301,7 +302,7 @@ def differential_evolution(objective_function, boundary_dict, direction = 'max',
         versioned_path = util._version_resources(versioned_resources, diff_evo._get_logdir(app_id))
 
         experiment_json = None
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'evolutionary_search', diff_evo._get_logdir(app_id), json.dumps(boundary_dict), versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'differential_evolution', diff_evo._get_logdir(app_id), json.dumps(boundary_dict), versioned_path, description)
 
         util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
@@ -462,7 +463,7 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned
 
         versioned_path = util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'allreduce', tf_allreduce._get_logdir(app_id), None, versioned_path, description)
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'collective_all_reduce', tf_allreduce._get_logdir(app_id), None, versioned_path, description)
 
         util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
 
@@ -544,6 +545,75 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
         util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
         retval, logdir = ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+
+        experiment_json = util._finalize_experiment(experiment_json, None, retval)
+
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    except:
+        _exception_handler()
+        raise
+    finally:
+        #cleanup spark jobs
+        elastic_id +=1
+        running = False
+        sc.setJobGroup("", "")
+
+    return logdir
+
+def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+    """
+    *Distributed Training* single machine - multiple GPUs
+
+    Example usage:
+
+    >>> from hops import experiment
+    >>> def mirrored_training():
+    >>>    import tensorflow
+    >>>    from hops import tensorboard
+    >>>    from hops import devices
+    >>>    logdir = tensorboard.logdir()
+    >>>    ...MirroredStrategy(num_gpus=devices.get_num_gpus())...
+    >>> experiment.mirrored(mirrored_training)
+
+    Args:
+        :map_fun: contains the code where you are using ParameterServerStrategy.
+        :name: name of the experiment
+        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
+        :versioned_resources: A list of HDFS paths of resources to version with this experiment
+        :description: a longer description for the experiment
+
+    Returns:
+        HDFS path in your project where the experiment is stored
+
+    """
+
+    num_ps = util.num_param_servers()
+    assert num_ps == 0, "number of parameter servers should be 0"
+
+    global running
+    if running:
+        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+
+    try:
+        global app_id
+        global experiment_json
+        global elastic_id
+        running = True
+
+        sc = util._find_spark().sparkContext
+        app_id = str(sc.applicationId)
+
+        mirrored_impl.run_id = mirrored_impl.run_id + 1
+
+        versioned_path = util._version_resources(versioned_resources, mirrored_impl._get_logdir(app_id))
+
+        experiment_json = util._populate_experiment(sc, name, 'experiment', 'mirrored', mirrored_impl._get_logdir(app_id), None, versioned_path, description)
+
+        util._version_resources(versioned_resources, mirrored_impl._get_logdir(app_id))
+
+        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+
+        retval, logdir = mirrored_impl._launch(sc, map_fun, local_logdir=local_logdir, name=name)
 
         experiment_json = util._finalize_experiment(experiment_json, None, retval)
 

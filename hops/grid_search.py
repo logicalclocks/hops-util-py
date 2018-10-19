@@ -48,7 +48,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
 
     #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("Grid search", "{} | Grid search through supplied hyperparameters".format(name))
+    sc.setJobGroup("Grid Search", "{} | Hyperparameter Optimization".format(name))
 
     #Force execution on executor, since GPU is located on executor
     job_start = datetime.datetime.now()
