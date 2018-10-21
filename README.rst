@@ -40,13 +40,13 @@ To build docs:
 Documentation
 -------------
 
-Tutorials and general documentation is available here: hops-examples_
+An overview of HopsML, a python-first ML pipeline is available here: hopsML_
 
-Example notebooks for doing deep learning and big data processing on Hops is available here: hops-io_
+Example notebooks for doing deep learning and big data processing on Hops are available here: hops-examples_
 
 API documentation is available here: API-docs_
 
 
 .. _hops-examples: https://github.com/logicalclocks/hops-examples
-.. _hops-io: https://hops.readthedocs.io/en/latest/user_guide/tensorflow/hops.html
+.. _hopsML: https://hops.readthedocs.io/en/latest/hopsml/hopsML.html
 .. _API-docs: http://hops-py.logicalclocks.com/
