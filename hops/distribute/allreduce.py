@@ -107,6 +107,8 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
         if devices.get_num_gpus() > 0:
             t.start()
 
+        task_index = None
+
         try:
             host = util._get_ip_address()
 
