@@ -31,7 +31,7 @@ pipeline {
       steps {
         sh """
         source $WORKSPACE/../hops-util-py-env/bin/activate
-        cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/version.py ../hops/constants.py; make html; cd ..
+        cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/random_search.py ../hops/version.py ../hops/constants.py; make html; cd ..
         """
       }
     }

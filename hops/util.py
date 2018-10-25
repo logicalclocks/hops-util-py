@@ -172,7 +172,10 @@ def num_param_servers():
         Number of configured parameter servers for Jupyter
     """
     sc = _find_spark().sparkContext
-    return int(sc._conf.get("spark.tensorflow.num.ps"))
+    try:
+        return int(sc._conf.get("spark.tensorflow.num.ps"))
+    except:
+        return 0
 
 def grid_params(dict):
     """
