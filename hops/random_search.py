@@ -1,29 +1,29 @@
 """
-Gridsearch implementation
+Random Search implementation
 """
 
-import os
+from hops import util
 from hops import hdfs as hopshdfs
 from hops import tensorboard
 from hops import devices
-from hops import util
 
 import pydoop.hdfs
 import threading
 import six
 import datetime
+import os
+import random
 
 run_id = 0
 
-def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, name="no-name"):
+
+def _launch(sc, map_fun, args_dict, samples, direction='max', local_logdir=False, name="no-name"):
     """
-    Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
         sc:
         map_fun:
         args_dict:
-        direction:
         local_logdir:
         name:
 
@@ -31,28 +31,44 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
 
     """
     global run_id
-    app_id = str(sc.applicationId)
-    num_executions = 1
 
-    if direction != 'max' and direction != 'min':
-        raise ValueError('Invalid direction ' + direction +  ', must be max or min')
+    app_id = str(sc.applicationId)
 
     arg_lists = list(args_dict.values())
-    currentLen = len(arg_lists[0])
     for i in range(len(arg_lists)):
-        if currentLen != len(arg_lists[i]):
-            raise ValueError('Length of each function argument list must be equal')
-        num_executions = len(arg_lists[i])
+       if len(arg_lists[i]) != 2:
+           raise ValueError('Boundary list must contain exactly two elements, [lower_bound, upper_bound] for each hyperparameter')
 
+    hp_names = args_dict.keys()
+
+    random_dict = {}
+    for hp in hp_names:
+        lower_bound = args_dict[hp][0]
+        upper_bound = args_dict[hp][1]
+
+        assert lower_bound < upper_bound, "lower bound: " + str(lower_bound) + " must be less than upper bound: " + str(upper_bound)
+
+        random_values = []
+
+        if type(lower_bound) == int and type(upper_bound) == int:
+            for i in range(samples):
+                random_values.append(random.randint(lower_bound, upper_bound))
+        elif type(lower_bound) == float and type(upper_bound) == float:
+            for i in range(samples):
+                random_values.append(random.uniform(lower_bound, upper_bound))
+        else:
+            raise ValueError('Only float and int is currently supported')
+
+        random_dict[hp] = random_values
+
+    random_dict, new_samples = _remove_duplicates(random_dict, samples)
+
+    sc.setJobGroup("Random Search", "{} | Hyperparameter Optimization".format(name))
     #Each TF task should be run on 1 executor
-    nodeRDD = sc.parallelize(range(num_executions), num_executions)
+    nodeRDD = sc.parallelize(range(new_samples), new_samples)
 
-    #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("Grid Search", "{} | Hyperparameter Optimization".format(name))
-
-    #Force execution on executor, since GPU is located on executor
     job_start = datetime.datetime.now()
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, random_dict, local_logdir))
     job_end = datetime.datetime.now()
 
     job_time_str = util._time_diff(job_start, job_end)
@@ -62,7 +78,7 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
     hdfs_appid_dir = hopshdfs._get_experiments_dir() + '/' + app_id
     hdfs_runid_dir = _get_logdir(app_id)
 
-    max_val, max_hp, min_val, min_hp, avg = _get_best(args_dict, num_executions, arg_names, arg_count, hdfs_appid_dir, run_id)
+    max_val, max_hp, min_val, min_hp, avg = _get_best(random_dict, new_samples, arg_names, arg_count, hdfs_appid_dir, run_id)
 
     param_combination = ""
     best_val = ""
@@ -70,17 +86,17 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
     if direction == 'max':
         param_combination = max_hp
         best_val = str(max_val)
-        results = '\n------ Grid Search results ------ direction(' + direction + ') \n' \
-          'BEST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
-          'WORST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
-          'AVERAGE metric -- ' + str(avg) + '\n' \
-          'Total job time ' + job_time_str + '\n'
+        results = '\n------ Random Search results ------ direction(' + direction + ') \n' \
+        'BEST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
+        'WORST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
+        'AVERAGE metric -- ' + str(avg) + '\n' \
+        'Total job time ' + job_time_str + '\n'
         _write_result(hdfs_runid_dir, results)
         print(results)
     elif direction == 'min':
         param_combination = min_hp
         best_val = str(min_val)
-        results = '\n------ Grid Search results ------ direction(' + direction + ') \n' \
+        results = '\n------ Random Search results ------ direction(' + direction + ') \n' \
         'BEST combination ' + min_hp + ' -- metric ' + str(min_val) + '\n' \
         'WORST combination ' + max_hp + ' -- metric ' + str(max_val) + '\n' \
         'AVERAGE metric -- ' + str(avg) + '\n' \
@@ -88,10 +104,41 @@ def _grid_launch(sc, map_fun, args_dict, direction='max', local_logdir=False, na
         _write_result(hdfs_runid_dir, results)
         print(results)
 
-
     print('Finished Experiment \n')
 
     return hdfs_runid_dir, param_combination, best_val
+
+def _remove_duplicates(random_dict, samples):
+    hp_names = random_dict.keys()
+    concatenated_hp_combs_arr = []
+    for index in range(samples):
+        separated_hp_comb = ""
+        for hp in hp_names:
+            separated_hp_comb = separated_hp_comb + str(random_dict[hp][index]) + "%"
+        concatenated_hp_combs_arr.append(separated_hp_comb)
+
+    entry_index = 0
+    indices_to_skip = []
+    for entry in concatenated_hp_combs_arr:
+        inner_index = 0
+        for possible_dup_entry in concatenated_hp_combs_arr:
+            if entry == possible_dup_entry and inner_index > entry_index:
+                indices_to_skip.append(inner_index)
+            inner_index = inner_index + 1
+        entry_index = entry_index + 1
+    indices_to_skip = list(set(indices_to_skip))
+
+    for hp in hp_names:
+        index = 0
+        pruned_duplicates_arr = []
+        for random_value in random_dict[hp]:
+            if index not in indices_to_skip:
+                pruned_duplicates_arr.append(random_value)
+            index = index + 1
+        random_dict[hp] = pruned_duplicates_arr
+
+    return random_dict, samples - len(indices_to_skip)
+
 
 def _get_logdir(app_id):
     """
@@ -103,30 +150,10 @@ def _get_logdir(app_id):
 
     """
     global run_id
-    return hopshdfs._get_experiments_dir() + '/' + app_id + '/grid_search/run.' + str(run_id)
+    return hopshdfs._get_experiments_dir() + '/' + app_id + '/random_search/run.' +  str(run_id)
 
 
-
-def _write_result(runid_dir, string):
-    """
-
-    Args:
-        runid_dir:
-        string:
-
-    Returns:
-
-    """
-    metric_file = runid_dir + '/summary'
-    fs_handle = hopshdfs.get_fs()
-    try:
-        fd = fs_handle.open_file(metric_file, mode='w')
-    except:
-        fd = fs_handle.open_file(metric_file, flags='w')
-    fd.write(string.encode())
-    fd.flush()
-    fd.close()
-
+#Helper to put Spark required parameter iter in function signature
 def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
     """
 
@@ -140,7 +167,6 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
     Returns:
 
     """
-
     def _wrapper_fun(iter):
         """
 
@@ -154,6 +180,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
         for i in iter:
             executor_num = i
 
+        tb_pid = 0
         tb_hdfs_path = ''
         hdfs_exec_logdir = ''
 
@@ -179,7 +206,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                     argcount -= 1
                     argIndex += 1
                 param_string = param_string[:-1]
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, param_string, 'grid_search')
+                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, param_string, 'random_search')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs._init_logger()
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
@@ -207,10 +234,12 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 t.join()
             raise
         finally:
-            if local_logdir:
-                local_tb = tensorboard.local_logdir_path
-                util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
-
+            try:
+                if local_logdir:
+                    local_tb = tensorboard.local_logdir_path
+                    util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
+            except:
+                pass
 
         _cleanup(tb_hdfs_path)
         if devices.get_num_gpus() > 0:
@@ -218,6 +247,46 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
             t.join()
 
     return _wrapper_fun
+
+def _cleanup(tb_hdfs_path):
+    """
+
+    Args:
+        tb_hdfs_path:
+
+    Returns:
+
+    """
+    global experiment_json
+    handle = hopshdfs.get()
+    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
+        handle.delete(tb_hdfs_path)
+    hopshdfs._kill_logger()
+
+def _handle_return(val, hdfs_exec_logdir):
+    """
+
+    Args:
+        val:
+        hdfs_exec_logdir:
+
+    Returns:
+
+    """
+    try:
+        test = int(val)
+    except:
+        raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
+
+    metric_file = hdfs_exec_logdir + '/metric'
+    fs_handle = hopshdfs.get_fs()
+    try:
+        fd = fs_handle.open_file(metric_file, mode='w')
+    except:
+        fd = fs_handle.open_file(metric_file, flags='w')
+    fd.write(str(float(val)).encode())
+    fd.flush()
+    fd.close()
 
 
 def _get_best(args_dict, num_combinations, arg_names, arg_count, hdfs_appid_dir, run_id):
@@ -262,7 +331,7 @@ def _get_best(args_dict, num_combinations, arg_names, arg_count, hdfs_appid_dir,
 
         param_string = param_string[:-1]
 
-        path_to_metric = hdfs_appid_dir + '/grid_search/run.' + str(run_id) + '/' + param_string + '/metric'
+        path_to_metric = hdfs_appid_dir + '/random_search/run.' + str(run_id) + '/' + param_string + '/metric'
 
         metric = None
 
@@ -291,42 +360,23 @@ def _get_best(args_dict, num_combinations, arg_names, arg_count, hdfs_appid_dir,
 
     return max_val, max_hp, min_val, min_hp, avg
 
-
-def _handle_return(val, hdfs_exec_logdir):
+def _write_result(runid_dir, string):
     """
 
     Args:
-        val:
-        hdfs_exec_logdir:
+        runid_dir:
+        string:
 
     Returns:
 
     """
-    try:
-        test = int(val)
-    except:
-        raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
-
-    metric_file = hdfs_exec_logdir + '/metric'
+    metric_file = runid_dir + '/summary'
     fs_handle = hopshdfs.get_fs()
     try:
         fd = fs_handle.open_file(metric_file, mode='w')
     except:
         fd = fs_handle.open_file(metric_file, flags='w')
-    fd.write(str(float(val)).encode())
+    fd.write(string.encode())
     fd.flush()
     fd.close()
 
-def _cleanup(tb_hdfs_path):
-    """
-
-    Args:
-        tb_hdfs_path:
-
-    Returns:
-
-    """
-    handle = hopshdfs.get()
-    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
-        handle.delete(tb_hdfs_path)
-    hopshdfs._kill_logger()

@@ -14,7 +14,7 @@ echo "Uploading the package to snurran"
 scp dist/* glassfish@snurran.sics.se:/var/www/hops/hops-util-py/
 
 echo "Building the docs"
-cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/version.py ../hops/constants.py; make html; cd ..
+cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/random_search.py ../hops/version.py ../hops/constants.py; make html; cd ..
 
 echo "Uploading the docs to snurran"
 scp -r docs/build/html/* glassfish@snurran.sics.se:/var/www/hops/hops-util-py-docs/

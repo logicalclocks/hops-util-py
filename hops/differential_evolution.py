@@ -565,6 +565,12 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
 
     app_id = spark.sparkContext.applicationId
 
+    arg_lists = list(search_dict.values())
+    for i in range(len(arg_lists)):
+        if len(arg_lists[i]) != 2:
+            raise ValueError('Boundary list must contain exactly two elements, [lower_bound, upper_bound] for float/int '
+                             'or [category1, category2] in the case of strings')
+
     argIndex = 0
     while argcount != 0:
         ordered_arr.append((arg_names[argIndex], search_dict[arg_names[argIndex]]))
@@ -619,7 +625,7 @@ def _get_logdir(app_id):
     return hopshdfs._get_experiments_dir() + "/" + app_id + "/differential_evolution/run." + str(run_id)
 
 
-def _evolutionary_launch(spark_session, map_fun, args_dict=None, name="no-name"):
+def _evolutionary_launch(spark_session, map_fun, args_dict, name="no-name"):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -631,15 +637,9 @@ def _evolutionary_launch(spark_session, map_fun, args_dict=None, name="no-name")
     sc = spark_session.sparkContext
     app_id = str(sc.applicationId)
 
-    if args_dict == None:
-        num_executions = 1
-    else:
-        arg_lists = list(args_dict.values())
-        currentLen = len(arg_lists[0])
-        for i in range(len(arg_lists)):
-            if currentLen != len(arg_lists[i]):
-                raise ValueError('Length of each function argument list must be equal')
-            num_executions = len(arg_lists[i])
+
+    arg_lists = list(args_dict.values())
+    num_executions = len(arg_lists[0])
 
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
