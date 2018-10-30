@@ -8,7 +8,7 @@ It provides an Experiment API to run Python programs such as TensorFlow, Keras a
 
 An Experiment could be a single Python program, which we refer to as an *Experiment*. Grid search or genetic hyperparameter optimization such as differential evolution which runs several Experiments in parallel, which we refer to as *Parallel Experiment*. The library supports ParameterServerStrategy and CollectiveAllReduceStrategy, making multi-machine/multi-gpu training as simple as invoking a function for orchestration. This mode is referred to as *Distributed Training*.
 
-Moreover it provides an easy-to-use API for defining TLS-secured Kafka producers and consumers on the Hops platform.
+Moreover it provides an easy-to-use API for defining TLS-secured Kafka producers and consumers on the Hops platform as well as an API for interacting with the Hopsworks Feature Store
 
 -----------
 Quick Start

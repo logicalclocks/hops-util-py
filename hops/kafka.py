@@ -71,7 +71,7 @@ def get_security_protocol():
     Returns:
         the security protocol for communicating with Kafka brokers in a Hopsworks cluster
     """
-    return "SSL"
+    return constants.KAFKA_SSL_CONFIG.SSL
 
 
 def get_broker_endpoints_list():
@@ -100,20 +100,6 @@ def get_kafka_default_config():
     }
     return default_config
 
-def _prepare_rest_appservice_json_request():
-    """
-    Prepares a REST JSON Request to Hopsworks APP-service
-
-    Returns:
-        a dict with keystore cert bytes and password string
-    """
-    key_store_pwd = tls.get_key_store_pwd()
-    key_store_cert = tls.get_key_store_cert()
-    json_contents = {}
-    json_contents[constants.REST_CONFIG.JSON_KEYSTOREPWD] = key_store_pwd
-    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert.decode("latin-1") # raw bytes is not serializable by JSON -_-
-    return json_contents
-
 def get_schema(topic, version_id=1):
     """
     Gets the Avro schema for a particular Kafka topic and its version.
@@ -125,15 +111,15 @@ def get_schema(topic, version_id=1):
     Returns:
         Avro schema as a string object in JSON format
     """
-    json_contents = _prepare_rest_appservice_json_request()
+    json_contents = tls._prepare_rest_appservice_json_request()
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
     json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
     json_embeddable = json.dumps(json_contents)
-    headers = {'Content-type': 'application/json'}
-    method = "POST"
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    method = constants.HTTP_CONFIG.HTTP_POST
     connection = util._get_http_connection(https=True)
     resource = constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
-    resource_url = "/" + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + "/" + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + "/" + resource
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
     connection.request(method, resource_url, json_embeddable, headers)
     response = connection.getresponse()
     resp_body = response.read()
