@@ -257,16 +257,21 @@ def _put_elastic(project, appid, elastic_id, json_data):
     session = requests.Session()
 
     retries = 3
+    resp=None
     while retries > 0:
-        resp = session.put("http://" + elastic_endpoint + "/" +  project + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
+        resp = session.put("http://" + elastic_endpoint + "/" +  project.lower() + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
         if resp.status_code == 200:
             return
         else:
-            time.sleep(20)
+            time.sleep(5)
             retries = retries - 1
 
-    raise RuntimeError("Failed to publish experiment json file to Elastic, it is possible Elastic is experiencing problems. "
-                       "Please contact an administrator.")
+    if resp != None:
+        raise RuntimeError("Failed to publish experiment json file to Elastic. Response: " + str(resp) +
+                           ". It is possible Elastic is experiencing problems. Please contact an administrator.")
+    else:
+        raise RuntimeError("Failed to publish experiment json file to Elastic." +
+                           " It is possible Elastic is experiencing problems. Please contact an administrator.")
 
 
 
