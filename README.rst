@@ -97,11 +97,12 @@ The good news is that all you will need to do to get started is to move your cod
 
 Logging in the Driver
 ---------------------------
-This works as expected, as stdout and stderr in the Driver program is printed out in the Jupyter console.
+When you print to stdout and stderr in the Driver program, the output is printed in the Jupyter console.
 
 .. code-block:: python
-   
-  print('log message is printed to Jupyter cell output')
+
+   # main scope of program or any non-Executor function
+   print('log message is printed to Jupyter cell output')
 
 
 Logging to stdout/stderr in the Executor
@@ -162,10 +163,10 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :scale: 75 %
     :figclass: align-center
 	       
-Logging to file (HDFS) in the Executor
----------------------------------------------
+Logging to file (HDFS) in the Executor or Driver
+---------------------------------------------------
 
-You can also write log messages from the executors to a logfile in HDFS.
+You can also write log messages from either an Executor or Driver to the same logfile in HDFS.
 
 .. code-block:: python
 		
@@ -175,7 +176,7 @@ You can also write log messages from the executors to a logfile in HDFS.
     hdfs.log("Executor log message write to a file in the Experiments dataset. The log message will not be printed in the Jupyter cell.")
 
 You can navigate to the log file created in the Datasets view in Hopsworks for your project, inside the Experiments dataset. The file created will be called “logfile” and if you right-click on it, you can preview its contents to see the first or last 1000 lines in the file. If you have the data-owner role in the project, you will also be allowed to download this file from here.
-
+    
 .. _executor-hdfs-log.png: imgs/executor-hdfs-log.png
 .. figure:: imgs/executor-hdfs-log.png
     :alt: hdfs-log
@@ -184,6 +185,7 @@ You can navigate to the log file created in the Datasets view in Hopsworks for y
     :scale: 75 %
     :figclass: align-center
 
+Note that the default log file is the same for all Executors. If many Executors write concurrently to the same file, this may have negative performance implications as Executors may block, waiting for write access to the file. In large-scale experiments, you can configure each Executors to write to its own log file (append a unique ID to the filename).
 
 
     
