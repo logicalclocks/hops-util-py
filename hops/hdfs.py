@@ -255,14 +255,23 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 
 def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     """
-    Copies a path from HDFS project to local filesystem
+    Copies a path from HDFS project to local filesystem. If there is not enough space on the local scratch directory, an exception is thrown.
+
+    Raises:
+      IOError if there is not enough space to localize the file/directory in HDFS to the scratch directory ($PDIR)
 
     Args:
         :local_path: the path on the local filesystem to copy
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :overwrite: a boolean flag whether to overwrite if the path already exists in HDFS
         :project: name of the project, defaults to the current HDFS user's project
+
+    Returns:
+        the full local pathname of the file/dir
     """
+    import os
+    import pydoop.hdfs.path as path
+    
     if project == None:
         project = project_name()
 
@@ -270,11 +279,20 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
         full_local = os.getcwd() + '/' + local_path
-
+        
     project_hdfs_path = _expand_path(hdfs_path, project=project)
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
+    # Get the amount of free space on the local drive
+    stat = os.statvfs(full_local)
+    free_space_bytes = stat.f_bsize * stat.f_bavail    
+
+    hdfs_size = path.getsize(project_hdfs_path)
+
+    if (hdfs_size > free_space_bytes):
+        raise IOError("Not enough local free space available on scratch directory: %s" % path)        
+    
     if overwrite:
         split = rel_path.split('/')
         filename = split[len(split) - 1]
@@ -286,6 +304,7 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
 
     hdfs.get(project_hdfs_path, full_local)
 
+    return full_local
 
 def cp(src_hdfs_path, dest_hdfs_path):
     """
@@ -705,9 +724,8 @@ def abs_path(hdfs_path):
 
 def localize(hdfs_path):
     """
-     Localizes (copies) the given file or directory from HDFS into a local scratch directory, indicated by the env variable $PDIR.n
-     Returns the absolute path for the local file.
-     If there will not be enough space on the local scratch directory, an exception is thrown.
+     Localizes (copies) the given file or directory from HDFS into a local scratch directory, indicated by the env variable $PDIR.
+     Returns the absolute path for the local file. If there is not enough space on the local scratch directory, an exception is thrown.
 
      Args:
          :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
@@ -718,7 +736,6 @@ def localize(hdfs_path):
      Returns:
         Return an absolute path for local file/directory.
     """
-    remote = _expand_path(hdfs_path)
 
-    return ""
+    return copy_to_local(hdfs_path, "", overwrite=True)
 
