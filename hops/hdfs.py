@@ -703,3 +703,22 @@ def abs_path(hdfs_path):
     """
     return _expand_path(hdfs_path)
 
+def localize(hdfs_path):
+    """
+     Localizes (copies) the given file or directory from HDFS into a local scratch directory, indicated by the env variable $PDIR.n
+     Returns the absolute path for the local file.
+     If there will not be enough space on the local scratch directory, an exception is thrown.
+
+     Args:
+         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+     Raises:
+        IOError if there is not enough space to localize the file/directory in HDFS to the scratch directory ($PDIR)
+
+     Returns:
+        Return an absolute path for local file/directory.
+    """
+    remote = _expand_path(hdfs_path)
+
+    return ""
+
