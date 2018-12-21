@@ -175,7 +175,7 @@ You can also write log messages from either an Executor or Driver to the same lo
   train():
     # This will write to your Experiments/ directory in your project
     from hops import hdfs
-    hdfs.log("Executor log message write to a file in the Experiments dataset. The log message will not be printed in the Jupyter cell.")
+    hdfs.log("This is written to the logfile in the Experiments dataset, not output in Jupyter cell.")
 
 You can navigate to the log file created in the Datasets view in Hopsworks for your project, inside the Experiments dataset. The file created will be called “logfile” and if you right-click on it, you can preview its contents to see the first or last 1000 lines in the file. If you have the data-owner role in the project, you will also be allowed to download this file from here.
     
