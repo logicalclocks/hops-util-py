@@ -71,7 +71,7 @@ If you want to run a Python program, e.g.,  to train a neural network on a GPU o
     :scale: 75 %
     :figclass: align-center
 
-The good news is that all you will need to do to get started is to move your code inside a function, see table below. You need to define a function - this code will get run on the Executors, and you need to invoke that function from the Driver (the main part of your Python program). 
+The good news is that all you will need to do to get started is to move your code inside a function, see the code snippet below. You need to define a function (we called the function *train*, but it can have any name) - and the code inside the function will get run on Executors (containers). To invoke that function (*train*) from the Driver (the main part of your Python program), you just use the Experiment API in hopsml. You can launch a single Executor with *experiment.launch(<fn_name>)*.  Other possible ways to call *train* on many Executors are *experiment.grid_search(<fn_name>)* for hyperparameter optimization, and *experiment.collective_all_reduce(<fn_name>)* for distributed training.
 
 
 .. code-block:: python
@@ -83,7 +83,7 @@ The good news is that all you will need to do to get started is to move your cod
   
   # Driver code starts here
   from hops import experiment
-  hops.experiment.launch(train)
+  experiment.launch(train)
 
 
 .. _driver.png: imgs/driver.png
