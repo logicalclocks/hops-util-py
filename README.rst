@@ -31,7 +31,10 @@ Sample usage:
 
 To build docs:
 
->>> cd docs; sphinx-apidoc -f -o source/ ../hops ../hops/distribute/ ../hops/launcher.py ../hops/grid_search.py ../hops/differential_evolution.py ../hops/random_search.py ../hops/version.py ../hops/constants.py; make html; cd ..
+>>> pip install sphinx sphinx-autobuild recommonmark sphinx_rtd_theme jupyter_sphinx_theme hops
+>>> cd docs; make html
+
+
 
 
 -------------
@@ -91,7 +94,7 @@ The good news is that all you will need to do to get started is to move your cod
     :alt: HopsML Python Program
     :target: `driver.png`_
     :align: center
-    :scale: 50 %
+    :scale: 90 %
     :figclass: align-center
 
 
