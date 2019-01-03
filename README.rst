@@ -8,7 +8,7 @@ It provides an Experiment API to run Python programs such as TensorFlow, Keras a
 
 An Experiment could be a single Python program, which we refer to as an *Experiment*. Grid search or genetic hyperparameter optimization such as differential evolution which runs several Experiments in parallel, which we refer to as *Parallel Experiment*. The library supports ParameterServerStrategy and CollectiveAllReduceStrategy, making multi-machine/multi-gpu training as simple as invoking a function for orchestration. This mode is referred to as *Distributed Training*.
 
-Moreover it provides an easy-to-use API for defining TLS-secured Kafka producers and consumers on the Hops platform as well as an API for interacting with the Hopsworks Feature Store
+Moreover it provides an easy-to-use API for defining TLS-secured Kafka producers and consumers on the Hopsworks platform as well as an API for interacting with the Hopsworks Feature Store
 
 -----------
 Quick Start
@@ -78,11 +78,11 @@ The good news is that all you will need to do to get started is to move your cod
 
 
 .. code-block:: python
-   
+
   def train():
     import tensorflow as tf
     # training code here
-  
+
   # Driver code starts here
   from hops import experiment
   experiment.launch(train)
@@ -113,7 +113,7 @@ Logging to stdout/stderr in the Executor
 If you execute print(‘...’) in the executor, it will send the output to stdout and stderr on the executor. This will not be displayed in Jupyter console. You can, however, read output in the executors using the Spark UI. As soon as the Spark application has exited, these logs are cleaned up - they are no longer available.
 
 .. code-block:: python
-		
+
   train():
     # This will write to stdout/stderr on the Spark Executors
     # You can only view this log entry from the Spark UI while the application
@@ -132,9 +132,9 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :scale: 75 %
     :figclass: align-center
 
-	       
+
 2.  Select the “Executors” tab from the Spark UI (click on the button inside the yellow highlighter):
-		   
+
 .. _executor-stderr2.png: imgs/executor-stderr2.png
 .. figure:: imgs/executor-stderr2.png
     :alt: Stdout-err-2
@@ -142,8 +142,8 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :align: center
     :scale: 75 %
     :figclass: align-center
-	       
-	       
+
+
 3. Now you should see all the Executors that are running (active) or have finished running more than 90 seconds ago (dead). There will be stdout and stderr logs available for every Executor here - if you ran with 10 GPUs, with 1 GPU per Executor, there will be 10 different stdout and 10 different stderr log files available.. Click on the stderr or stdout log for the Executor you want to examine (yellow highlighted text below):
 
 .. _executor-stderr3.png: imgs/executor-stderr3.png
@@ -154,9 +154,9 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :scale: 75 %
     :figclass: align-center
 
-	       
+
 4. Now you can see the logs for that Executor on the screen:
-		  
+
 .. _executor-stderr4.png: imgs/executor-stderr4.png
 .. figure:: imgs/executor-stderr4.png
     :alt: Stdout-err-4
@@ -164,21 +164,21 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :align: center
     :scale: 75 %
     :figclass: align-center
-	       
+
 Logging to file (HDFS) in the Executor or Driver
 ---------------------------------------------------
 
 You can also write log messages from either an Executor or Driver to the same logfile in HDFS.
 
 .. code-block:: python
-		
+
   train():
     # This will write to your Experiments/ directory in your project
     from hops import hdfs
     hdfs.log("This is written to the logfile in the Experiments dataset, not output in Jupyter cell.")
 
 You can navigate to the log file created in the Datasets view in Hopsworks for your project, inside the Experiments dataset. The file created will be called “logfile” and if you right-click on it, you can preview its contents to see the first or last 1000 lines in the file. If you have the data-owner role in the project, you will also be allowed to download this file from here.
-    
+
 .. _executor-hdfs-log.png: imgs/executor-hdfs-log.png
 .. figure:: imgs/executor-hdfs-log.png
     :alt: hdfs-log
@@ -190,7 +190,7 @@ You can navigate to the log file created in the Datasets view in Hopsworks for y
 Note that the default log file is the same for all Executors. If many Executors write concurrently to the same file, this may have negative performance implications as Executors may block, waiting for write access to the file. In large-scale experiments, you can configure each Executors to write to its own log file (append a unique ID to the filename).
 
 
-    
+
 Installing Python Libraries in Hopsworks
 ---------------------------------------------
 
@@ -216,12 +216,11 @@ Adding Python modules to a Jupyter notebook
     :align: center
     :scale: 75 %
     :figclass: align-center
-	       
+
 
 
 References
 --------------
 
 - https://github.com/logicalclocks/hops-examples/blob/master/tensorflow/notebooks/Plotting/data_visualizations.ipynb
-- https://github.com/jupyter-incubator/sparkmagic/blob/master/examples/Magics%20in%20IPython%20Kernel.ipynb 
-
+- https://github.com/jupyter-incubator/sparkmagic/blob/master/examples/Magics%20in%20IPython%20Kernel.ipynb
