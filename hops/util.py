@@ -406,3 +406,24 @@ def _find_spark():
 
     """
     return SparkSession.builder.getOrCreate()
+
+def _parse_rest_error(response_dict):
+    """
+    Parses a JSON response from hopsworks after an unsuccessful request
+
+    Args:
+        response_dict: the JSON response represented as a dict
+
+    Returns:
+        error_code, error_msg, user_msg
+    """
+    error_code = -1
+    error_msg = ""
+    user_msg = ""
+    if constants.REST_CONFIG.JSON_ERROR_CODE in response_dict:
+        error_code = response_dict[constants.REST_CONFIG.JSON_ERROR_CODE]
+    if constants.REST_CONFIG.JSON_ERROR_MSG in response_dict:
+        error_msg = response_dict[constants.REST_CONFIG.JSON_ERROR_MSG]
+    if constants.REST_CONFIG.JSON_USR_MSG in response_dict:
+        user_msg = response_dict[constants.REST_CONFIG.JSON_USR_MSG]
+    return error_code, error_msg, user_msg
