@@ -48,7 +48,7 @@ pipeline {
     }
     stage ('deploy-doc') {
       steps {
-        sh 'scp -r docs/build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
+        sh 'scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
       }
     }
   }
