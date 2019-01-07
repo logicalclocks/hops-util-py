@@ -1027,8 +1027,8 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
     A helper function for computing a correlation matrix of a spark dataframe (works only with numeric columns).
     The correlation matrix represents the pair correlation of all the variables. By default the method will use
     Pearson correlation (a measure of the linear correlation between two variables X and Y,
-    it has a value between +1 and −1, where 1 is total positive linear correlation,
-    0 is no linear correlation, and −1 is total negative linear correlation).
+    it has a value between +1 and -1, where 1 is total positive linear correlation,
+    0 is no linear correlation, and -1 is total negative linear correlation).
 
     The correlation matrix is computed with Spark.
 
