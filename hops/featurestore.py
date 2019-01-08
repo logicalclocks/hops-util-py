@@ -189,12 +189,13 @@ def project_featurestore():
 def _run_and_log_sql(spark, sql_str):
     """
     Runs and logs an SQL query with sparkSQL
+
     Args:
-        spark: the spark session
-        sql_str: the query to run
+        :spark: the spark session
+        :sql_str: the query to run
 
     Returns:
-
+        the result of the SQL query
     """
     print("Running sql: {}".format(sql_str))
     return spark.sql(sql_str)
@@ -203,9 +204,10 @@ def _run_and_log_sql(spark, sql_str):
 def _get_table_name(featuregroup, version):
     """
     Gets the Hive table name of a featuregroup and version
+
     Args:
-        featuregroup: the featuregroup to get the table name of
-        version: the version of the featuregroup
+        :featuregroup: the featuregroup to get the table name of
+        :version: the version of the featuregroup
 
     Returns:
         The Hive table name of the featuregroup with the specified version
@@ -219,7 +221,7 @@ def _get_feature_store_metadata(featurestore=None):
     the provided featurestore, authenticating with keystore and password.
 
     Args:
-        featurestore: the name of the database, defaults to the project's featurestore
+        :featurestore: the name of the database, defaults to the project's featurestore
 
     Returns:
         JSON list of featuregroups
@@ -247,7 +249,7 @@ def _parse_featuregroups_json(featuregroups):
     Parses the list of JSON featuregroups into a dict {featuregroup --> {features, version}}
 
     Args:
-        featuregroups: a list of JSON featuregroups
+        :featuregroups: a list of JSON featuregroups
 
     Returns:
         A list of of [{featuregroupName, features, version}]
@@ -268,8 +270,8 @@ def _find_featuregroup_that_contains_feature(featuregroups, feature):
     Go through list of featuregroups and find the ones that contain the feature
 
     Args:
-        featuregroups: featuregroups to search through
-        feature: the feature to look for
+        :featuregroups: featuregroups to search through
+        :feature: the feature to look for
 
     Returns:
         a list of featuregroup names and versions for featuregroups that contain the given feature
@@ -292,8 +294,8 @@ def _use_featurestore(spark, featurestore=None):
     Selects the featurestore database in Spark
 
     Args:
-        spark: the spark session
-        featurestore: the name of the database, defaults to the project's featurestore
+        :spark: the spark session
+        :featurestore: the name of the database, defaults to the project's featurestore
 
     Returns:
         None
@@ -315,8 +317,8 @@ def _return_dataframe_type(dataframe, dataframe_type):
     Helper method for returning te dataframe in spark/pandas/numpy/python, depending on user preferences
 
     Args:
-        dataframe: the spark dataframe to convert
-        dataframe_type: the type to convert to (spark,pandas,numpy,python)
+        :dataframe: the spark dataframe to convert
+        :dataframe_type: the type to convert to (spark,pandas,numpy,python)
 
     Returns:
         The dataframe converted to either spark, pandas, numpy or python.
@@ -336,7 +338,7 @@ def _convert_dataframe_to_spark(dataframe):
     Helper method for converting a user-provided dataframe into a spark dataframe
 
     Args:
-        dataframe: the input dataframe (supported types are spark rdds, spark dataframes, pandas dataframes, python 2D lists, and numpy 2D arrays)
+        :dataframe: the input dataframe (supported types are spark rdds, spark dataframes, pandas dataframes, python 2D lists, and numpy 2D arrays)
 
     Returns:
         the dataframe convertd to a spark dataframe
@@ -383,10 +385,10 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
     >>> trx_summary_features = featurestore.get_featuregroup("trx_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version = 1)
 
     Args:
-        featuregroup: the featuregroup to get
-        featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
-        featuregroup_version: (Optional) the version of the featuregroup
-        dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featuregroup: the featuregroup to get
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
         a spark dataframe with the contents of the featurestore
@@ -411,9 +413,9 @@ def _find_feature(feature, featurestore, featuregroups_parsed):
     Otherwise it throws an exception
 
     Args:
-        feature: the feature to search for
-        featurestore: the featurestore where the featuregroups resides
-        featuregroups_parsed: the featuregroups to look through
+        :feature: the feature to search for
+        :featurestore: the featurestore where the featuregroups resides
+        :featuregroups_parsed: the featuregroups to look through
 
     Returns:
         the featuregroup that contains the feature
@@ -452,11 +454,11 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     >>> max_trx_feature = featurestore.get_feature("max_trx", featurestore=featurestore.project_featurestore(), featuregroup="trx_summary_features", featuregroup_version = 1)
 
     Args:
-        feature: the feature name to get
-        featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
-        featuregroup: (Optional) the featuregroup where the feature resides
-        featuregroup_version: (Optional) the version of the featuregroup
-        dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :feature: the feature name to get
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroup: (Optional) the featuregroup where the feature resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
         A spark dataframe with the feature
@@ -494,11 +496,11 @@ def _get_join_str(featuregroups, join_key):
     """
     Constructs the JOIN COl,... ON X string from a list of tables (featuregroups) and join column
     Args:
-        featuregroups: the featuregroups to join
-        join_key: the key to join on
+        :featuregroups: the featuregroups to join
+        :join_key: the key to join on
 
     Returns:
-
+        SQL join string to join a set of feature groups together
     """
     join_str = ""
     for idx, fg in enumerate(featuregroups):
@@ -528,8 +530,8 @@ def _get_col_that_is_primary(common_cols, featuregroups):
     'primary' in the hive schema.
 
     Args:
-        common_cols: the list of columns shared between all featuregroups
-        featuregroups: the list of featuregroups
+        :common_cols: the list of columns shared between all featuregroups
+        :featuregroups: the list of featuregroups
 
     Returns:
         the column among a shared column between featuregroups that is most often marked as 'primary' in the hive schema
@@ -558,10 +560,10 @@ def _validate_metadata(name, dtypes, dependencies, description):
     Raises and assertion exception if there is some error in the metadata.
 
     Args:
-        name: the name of the feature group/training dataset
-        dtypes: the dtypes in the provided spark dataframe
-        dependencies: the list of data dependencies
-        description: the description
+        :name: the name of the feature group/training dataset
+        :dtypes: the dtypes in the provided spark dataframe
+        :dependencies: the list of data dependencies
+        :description: the description
 
     Returns:
         None
@@ -595,7 +597,7 @@ def _get_join_col(featuregroups):
     Finds a common JOIN column among featuregroups (hive tables)
 
     Args:
-        featuregroups: a list of featuregroups with version and features
+        :featuregroups: a list of featuregroups with version and features
 
     Returns:
         name of the join column
@@ -622,8 +624,9 @@ def _get_join_col(featuregroups):
 def _convert_featuregroup_version_dict(featuregroups_version_dict):
     """
     Converts a featuregroup->version dict into a list of {name: name, version: version}
+
     Args:
-        featuregroups_version_dict:
+        :featuregroups_version_dict:
 
     Returns:
         a list of {featuregroup_name: name, version: version}
@@ -651,12 +654,12 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     >>> features = featurestore.get_features(["pagerank", "triangle_count", "avg_trx"], featurestore=featurestore.project_featurestore(), featuregroups_version_dict={"trx_graph_summary_features": 1, "trx_summary_features": 1}, join_key="cust_id")
 
     Args:
-        features: a list of features to get from the featurestore
-        featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
-        featuregroups: (Optional) a dict with (fg --> version) for all the featuregroups where the features resides
-        featuregroup_version: (Optional) the version of the featuregroup
-        join_key: (Optional) column name to join on
-        dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :features: a list of features to get from the featurestore
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroups: (Optional) a dict with (fg --> version) for all the featuregroups where the features resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :join_key: (Optional) column name to join on
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
         A spark dataframe with all the features
@@ -739,10 +742,11 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
 def _check_if_list_of_featuregroups_contains_featuregroup(featuregroups, featuregroupname, version):
     """
     Check if a list of featuregroup contains a featuregroup with a particular name and version
+
     Args:
-        featuregroups: the list of featuregroups to search through
-        featuregroupname: the name of the featuregroup
-        version: the featuregroup version
+        :featuregroups: the list of featuregroups to search through
+        :featuregroupname: the name of the featuregroup
+        :version: the featuregroup version
 
     Returns:
         boolean indicating whether the featuregroup name and version exists in the list
@@ -760,15 +764,16 @@ def sql(query, featurestore=None, dataframe_type="spark"):
     Executes a generic SQL query on the featurestore
 
     Example usage:
+
     >>> # The API will default to the project's feature store
     >>> featurestore.sql("SELECT * FROM trx_graph_summary_features_1 WHERE triangle_count > 5").show(5)
     >>> # You can also explicitly define the feature store
     >>> featurestore.sql("SELECT * FROM trx_graph_summary_features_1 WHERE triangle_count > 5", featurestore=featurestore.project_featurestore()).show(5)
 
     Args:
-        query: SQL query
-        featurestore: the featurestore to query, defaults to the project's featurestore
-        dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :query: SQL query
+        :featurestore: the featurestore to query, defaults to the project's featurestore
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
         A dataframe with the query results
@@ -791,9 +796,9 @@ def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
     the same metadata.
 
     Args:
-        featurestore: the featurestore where the featuregroup resides
-        featuregroup: the featuregroup to clear
-        featuregroup_version: the version of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup: the featuregroup to clear
+        :featuregroup_version: the version of the featuregroup
 
     Returns:
         The JSON response
@@ -864,14 +869,14 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
     """
     Writes the contents of a spark dataframe to a feature group Hive table
     Args:
-        spark_df: the data to write
-        featuregroup: the featuregroup to write to
-        featurestore: the featurestore where the featuregroup resides
-        featuregroup_version: the version of the featuregroup
-        mode: the write mode (append or overwrite)
+        :spark_df: the data to write
+        :featuregroup: the featuregroup to write to
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :mode: the write mode (append or overwrite)
 
     Returns:
-
+        None
     """
     spark = util._find_spark()
     spark.sparkContext.setJobGroup("Inserting dataframe into featuregroup",
@@ -907,25 +912,27 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
     from the UI and append to that table.
 
     Example usage:
+
     >>> # The API will default to the project's feature store, featuegroup version 1, and write mode 'append'
     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features")
     >>> # You can also explicitly define the feature store, the featuregroup version, and the write mode (only append and overwrite are supported)
     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append",     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append", descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=None))
 
     Args:
-        df: the dataframe containing the data to insert into the featuregroup
-        featuregroup: the name of the featuregroup (hive table name)
-        featurestore: the featurestore to save the featuregroup to (hive database)
-        featuregroup_version: the version of the featuregroup (defaults to 1)
-        mode: the write mode, only 'overwrite' and 'append' are supported
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: number of clusters to use for cluster analysis
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :df: the dataframe containing the data to insert into the featuregroup
+        :featuregroup: the name of the featuregroup (hive table name)
+        :featurestore: the featurestore to save the featuregroup to (hive database)
+        :featuregroup_version: the version of the featuregroup (defaults to 1)
+        :mode: the write mode, only 'overwrite' and 'append' are supported
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+
     Returns:
         None
     """
@@ -953,7 +960,7 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     Helper function to convert a spark data type into a hive datatype
 
     Args:
-        spark_dtype: the spark datatype to convert
+        :spark_dtype: the spark datatype to convert
 
     Returns:
         the hive datatype or None
@@ -977,8 +984,8 @@ def _convert_field_to_feature(field_dict, primary_key):
      featurestore API
 
     Args:
-        field_dict: the dict of spark field to convert
-        primary_key: name of the primary key feature
+        :field_dict: the dict of spark field to convert
+        :primary_key: name of the primary key feature
 
     Returns:
         a feature dict that is compatible with the featurestore API
@@ -1009,8 +1016,8 @@ def _parse_spark_features_schema(spark_schema, primary_key):
     Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
 
     Args:
-        spark_schema: the spark schema to parse
-        primary_key: the column in the dataframe that should be the primary key
+        :spark_schema: the spark schema to parse
+        :primary_key: the column in the dataframe that should be the primary key
 
     Returns:
         A list of the parsed features
@@ -1033,8 +1040,8 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
     The correlation matrix is computed with Spark.
 
     Args:
-        spark_df: the spark dataframe to compute the correlation matrix for
-        method: the correlation method, defaults to pearson (spearman supported as well)
+        :spark_df: the spark dataframe to compute the correlation matrix for
+        :method: the correlation method, defaults to pearson (spearman supported as well)
 
     Returns:
         a pandas dataframe with the correlation matrix
@@ -1096,7 +1103,7 @@ def _compute_descriptive_statistics(spark_df):
     A helper function that computes descriptive statistics for a featuregroup/training dataset using Spark
 
     Args:
-        spark_df: the featuregroup to compute descriptive statistics for
+        :spark_df: the featuregroup to compute descriptive statistics for
 
     Returns:
         A JSON representation of the descriptive statistics
@@ -1111,7 +1118,7 @@ def _filter_spark_df_numeric(spark_df):
     Helper function that selects only the numeric columns of a spark dataframe
 
     Args:
-        spark_df: the spark dataframe to filter
+        :spark_df: the spark dataframe to filter
 
     Returns:
         a spark dataframe with all the numeric columns in the input-dataframe
@@ -1144,8 +1151,8 @@ def _compute_feature_histograms(spark_df, num_bins=20):
     It will return an tuple of buckets and histogram.
 
     Args:
-        spark_df: the dataframe to compute the histograms for
-        num_bins: the number of bins to use in the histogram
+        :spark_df: the dataframe to compute the histograms for
+        :num_bins: the number of bins to use in the histogram
 
     Returns:
         A list of histogram JSONs for all columns
@@ -1170,18 +1177,18 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
     Helper function that computes statistics of a featuregroup or training dataset using spark
 
     Args:
-        name: the featuregroup or training dataset to update statistics for
-        spark_df: If a spark df is provided it will be used to compute statistics, otherwise the dataframe of the featuregroup will be fetched dynamically from the featurestore
-        version: the version of the featuregroup/training dataset (defaults to 1)
-        featurestore: the featurestore where the featuregroup or training dataset resides
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup/training dataset
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup/training dataset
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup/training dataset
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup/training dataset
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: the number of clusters to use for cluster analysis (k-means)
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :name: the featuregroup or training dataset to update statistics for
+        :spark_df: If a spark df is provided it will be used to compute statistics, otherwise the dataframe of the featuregroup will be fetched dynamically from the featurestore
+        :version: the version of the featuregroup/training dataset (defaults to 1)
+        :featurestore: the featurestore where the featuregroup or training dataset resides
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup/training dataset
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup/training dataset
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup/training dataset
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup/training dataset
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use for cluster analysis (k-means)
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
 
     Returns:
         feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis
@@ -1266,7 +1273,7 @@ def _structure_descriptive_stats_json(descriptive_stats_list):
     expects in the REST call
 
     Args:
-        descriptive_stats_list: raw data
+        :descriptive_stats_list: raw data
 
     Returns:
         the formatted data
@@ -1309,7 +1316,7 @@ def _structure_cluster_analysis_json(cluster_analysis_dict):
     expects in the REST call
 
     Args:
-        cluster_analysis_dict: the raw data
+        :cluster_analysis_dict: the raw data
 
     Returns:
         the formatted data
@@ -1359,7 +1366,7 @@ def _structure_feature_histograms_json(feature_histogram_list):
     expects in the REST call
 
     Args:
-        feature_histogram_list: the raw data
+        :feature_histogram_list: the raw data
 
     Returns:
         the formatted data
@@ -1397,7 +1404,7 @@ def _structure_feature_corr_json(feature_corr_dict):
     expects in the REST call
 
     Args:
-        feature_corr_dict: the raw data
+        :feature_corr_dict: the raw data
 
     Returns:
         the formatted data
@@ -1435,17 +1442,17 @@ def _create_featuregroup_rest(featuregroup, featurestore, description, featuregr
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
     Args:
-        featuregroup: the name of the featuregroup
-        featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
-        description:  a description of the featuregroup
-        featuregroup_version: the version of the featuregroup (defaults to 1)
-        job_id: the id of the job to compute the featuregroup
-        dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
-        features_schema: the schema of the featuregroup
-        feature_corr_data: json-string with the feature correlation matrix of the featuregroup
-        featuregroup_desc_stats_data: json-string with the descriptive statistics of the featurergroup
-        features_histogram_data: list of json-strings with histogram data for the features in the featuregroup
-        cluster_analysis_data: cluster analysis for the featuregroup
+        :featuregroup: the name of the featuregroup
+        :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
+        :description:  a description of the featuregroup
+        :featuregroup_version: the version of the featuregroup (defaults to 1)
+        :job_id: the id of the job to compute the featuregroup
+        :dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
+        :features_schema: the schema of the featuregroup
+        :feature_corr_data: json-string with the feature correlation matrix of the featuregroup
+        :featuregroup_desc_stats_data: json-string with the descriptive statistics of the featurergroup
+        :features_histogram_data: list of json-strings with histogram data for the features in the featuregroup
+        :cluster_analysis_data: cluster analysis for the featuregroup
 
     Returns:
         The HTTP response
@@ -1496,13 +1503,13 @@ def _update_featuregroup_stats_rest(featuregroup, featurestore, featuregroup_ver
     Makes a REST call to hopsworks appservice for updating the statistics of a particular featuregroup
 
     Args:
-        featuregroup: the featuregroup to update statistics for
-        featurestore: the featurestore where the featuregroup resides
-        featuregroup_version: the version of the featuregroup
-        feature_corr: the feature correlation matrix
-        featuregroup_desc_stats_data: the descriptive statistics of the featuregroup
-        features_histogram_data: the histograms of the features in the featuregroup
-        cluster_analysis_data: the clusters from cluster analysis on the featuregroup
+        :featuregroup: the featuregroup to update statistics for
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :feature_corr: the feature correlation matrix
+        :featuregroup_desc_stats_data: the descriptive statistics of the featuregroup
+        :features_histogram_data: the histograms of the features in the featuregroup
+        :cluster_analysis_data: the clusters from cluster analysis on the featuregroup
 
     Returns:
         The REST response
@@ -1563,17 +1570,17 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
     >>> featurestore.update_featuregroup_stats("trx_summary_features", featuregroup_version=1, featurestore=featurestore.project_featurestore(), descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=['avg_trx', 'count_trx', 'max_trx', 'min_trx'])
 
     Args:
-        featuregroup: the featuregroup to update the statistics for
-        featuregroup_version: the version of the featuregroup (defaults to 1)
-        featurestore: the featurestore where the featuregroup resides (defaults to the project's featurestore)
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: the number of clusters to use in clustering analysis (k-means)
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :featuregroup: the featuregroup to update the statistics for
+        :featuregroup_version: the version of the featuregroup (defaults to 1)
+        :featurestore: the featurestore where the featuregroup resides (defaults to the project's featurestore)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use in clustering analysis (k-means)
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
 
     Returns:
         None
@@ -1595,7 +1602,7 @@ def _get_default_primary_key(featuregroup_df):
     Gets the default primary key of a featuregroup (the first column)
 
     Args:
-        featuregroup_df: the featuregroup to get the primary key for
+        :featuregroup_df: the featuregroup to get the primary key for
 
     Returns:
         the name of the first column in the featuregroup
@@ -1609,8 +1616,8 @@ def _validate_primary_key(featuregroup_df, primary_key):
     Validates a user-supplied primary key
 
     Args:
-        featuregroup_df: the featuregroup_df that should contain the primary key
-        primary_key: the name of the primary key
+        :featuregroup_df: the featuregroup_df that should contain the primary key
+        :primary_key: the name of the primary key
 
     Returns:
         True if the validation succeeded, otherwise raises an error
@@ -1643,22 +1650,22 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2", description="trx_summary_features without the column count_trx",featurestore=featurestore.project_featurestore(),featuregroup_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
 
     Args:
-        df: the dataframe to create the featuregroup for (used to infer the schema)
-        featuregroup: the name of the new featuregroup
-        primary_key: the primary key of the new featuregroup, if not specified, the first column in the dataframe will be used as primary
-        description: a description of the featuregroup
-        featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
-        featuregroup_version: the version of the featuregroup (defaults to 1)
-        job_id: the id of the job to compute the featuregroup
-        dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: the number of clusters to use for cluster analysis
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :df: the dataframe to create the featuregroup for (used to infer the schema)
+        :featuregroup: the name of the new featuregroup
+        :primary_key: the primary key of the new featuregroup, if not specified, the first column in the dataframe will be used as primary
+        :description: a description of the featuregroup
+        :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
+        :featuregroup_version: the version of the featuregroup (defaults to 1)
+        :job_id: the id of the job to compute the featuregroup
+        :dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
 
     Returns:
         None
@@ -1703,7 +1710,7 @@ def get_featurestore_metadata(featurestore=None):
     >>> featurestore.get_featurestore_metadata(featurestore=featurestore.project_featurestore())
 
     Args:
-        featurestore: the featurestore to query metadata of
+        :featurestore: the featurestore to query metadata of
 
     Returns:
         A list of featuregroups and their metadata
@@ -1724,7 +1731,7 @@ def get_featuregroups(featurestore=None):
     >>> featurestore.get_featuregroups(featurestore=featurestore.project_featurestore())
 
     Args:
-        featurestore: the featurestore to list featuregroups for, defaults to the project-featurestore
+        :featurestore: the featurestore to list featuregroups for, defaults to the project-featurestore
 
     Returns:
         A list of names of the featuregroups in this featurestore
@@ -1747,7 +1754,7 @@ def get_features_list(featurestore=None):
     >>> featurestore.get_features_list(featurestore=featurestore.project_featurestore())
 
     Args:
-        featurestore: the featurestore to list features for, defaults to the project-featurestore
+        :featurestore: the featurestore to list features for, defaults to the project-featurestore
 
     Returns:
         A list of names of the features in this featurestore
@@ -1771,7 +1778,7 @@ def get_training_datasets(featurestore=None):
     >>> featurestore.get_training_datasets(featurestore=featurestore.project_featurestore())
 
     Args:
-        featurestore: the featurestore to list training datasets for, defaults to the project-featurestore
+        :featurestore: the featurestore to list training datasets for, defaults to the project-featurestore
 
     Returns:
         A list of names of the training datasets in this featurestore
@@ -1812,7 +1819,7 @@ def get_dataframe_tf_record_schema(spark_df):
     tf-example-schema manually.
 
     Args:
-        spark_df: the spark dataframe to infer the tensorflow example record from
+        :spark_df: the spark dataframe to infer the tensorflow example record from
 
     Returns:
         a dict with the tensorflow example
@@ -1828,7 +1835,7 @@ def _get_dataframe_tf_record_schema_json(spark_df):
     tf-example-schema manually.
 
     Args:
-        spark_df: the spark dataframe to infer the tensorflow example record from
+        :spark_df: the spark dataframe to infer the tensorflow example record from
 
     Returns:
         a dict with the tensorflow example as well as a json friendly version of the schema
@@ -1926,19 +1933,20 @@ def _create_training_dataset_rest(training_dataset, featurestore, description, t
                                   cluster_analysis_data):
     """
     Makes a REST request to hopsworks for creating a new training dataset
+
     Args:
-        training_dataset: the name of the training dataset
-        featurestore: the featurestore that the training dataset is linked to
-        description: a description of the training dataset
-        training_dataset_version: the version of the training dataset (defaults to 1)
-        data_format: the format of the training dataset
-        job_id: the id of the job to compute the training dataset
-        dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
-        features_schema_data: the schema of the training dataset
-        feature_corr_data: json-string with the feature correlation matrix of the training dataset
-        cluster_analysis_data: the clusters from cluster analysis on the dataset
-        training_dataset_desc_stats_data: json-string with the descriptive statistics of the training dataset
-        features_histogram_data: list of json-strings with histogram data for the features in the training dataset
+        :training_dataset: the name of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :description: a description of the training dataset
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :data_format: the format of the training dataset
+        :job_id: the id of the job to compute the training dataset
+        :dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
+        :features_schema_data: the schema of the training dataset
+        :feature_corr_data: json-string with the feature correlation matrix of the training dataset
+        :cluster_analysis_data: the clusters from cluster analysis on the dataset
+        :training_dataset_desc_stats_data: json-string with the descriptive statistics of the training dataset
+        :features_histogram_data: list of json-strings with histogram data for the features in the training dataset
 
     Returns:
         the HTTP response
@@ -1987,7 +1995,7 @@ def _convert_tf_record_schema_json_to_dict(tf_record_json_schema):
     Converts a JSON version of a tf record schema into a dict that is a valid tf example schema
 
     Args:
-        tf_record_json_schema: the json version to convert
+        :tf_record_json_schema: the json version to convert
 
     Returns:
         the converted schema
@@ -2032,8 +2040,8 @@ def _store_tf_record_schema_hdfs(tfrecord_schema, hdfs_path):
     Stores a tfrecord json schema to HDFS
 
     Args:
-        tfrecord_schema: the tfrecord schema to store
-        hdfs_path: the hdfs path to store it
+        :tfrecord_schema: the tfrecord schema to store
+        :hdfs_path: the hdfs path to store it
 
     Returns:
         None
@@ -2048,9 +2056,9 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
     Gets the tf record schema for a training dataset that is stored in tfrecords format
 
     Args:
-        training_dataset: the training dataset to get the tfrecords schema for
-        training_dataset_version: the version of the training dataset
-        featurestore: the feature store where the training dataset resides
+        :training_dataset: the training dataset to get the tfrecords schema for
+        :training_dataset_version: the version of the training dataset
+        :featurestore: the feature store where the training dataset resides
 
     Returns:
         the tf records schema
@@ -2076,10 +2084,10 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
     Reads a training dataset into a spark dataframe
 
     Args:
-        training_dataset: the name of the training dataset to read
-        featurestore: the featurestore where the training dataset resides
-        training_dataset_version: the version of the training dataset
-        dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :training_dataset: the name of the training dataset to read
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
         A spark dataframe with the given training dataset data
@@ -2215,11 +2223,11 @@ def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
     Materializes a spark dataframe to a training dataset on HDFS.
 
     Args:
-        df: the dataframe to materialize
-        path: the hdfs path where the dataframe will be materialized
-        data_format: the format to materialize to
-        write_mode: spark write mode, 'append' or 'overwrite'
-        name: the name of the training dataset
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :data_format: the format to materialize to
+        :write_mode: spark write mode, 'append' or 'overwrite'
+        :name: the name of the training dataset
 
     Returns:
         None
@@ -2311,22 +2319,22 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="", featurestore=featurestore.project_featurestore(), data_format="csv", training_dataset_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
 
     Args:
-        df: the dataframe to create the training dataset from
-        training_dataset: the name of the training dataset
-        description: a description of the training dataset
-        featurestore: the featurestore that the training dataset is linked to
-        data_format: the format of the materialized training dataset
-        training_dataset_version: the version of the training dataset (defaults to 1)
-        job_id: the id of the job to compute the training dataset
-        dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: number of clusters to use for cluster analysis
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :df: the dataframe to create the training dataset from
+        :training_dataset: the name of the training dataset
+        :description: a description of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :data_format: the format of the materialized training dataset
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :job_id: the id of the job to compute the training dataset
+        :dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
 
     Returns:
         None
@@ -2373,14 +2381,14 @@ def _update_training_dataset_stats_rest(
     A helper function that makes a REST call to hopsworks for updating the stats and schema metadata about a training dataset
 
     Args:
-        training_dataset: the name of the training dataset
-        featurestore: the featurestore that the training dataset is linked to
-        training_dataset_version: the version of the training dataset (defaults to 1)
-        features_schema: the schema of the training dataset
-        feature_corr_data:  json-string with the feature correlation matrix of the training dataset
-        featuregroup_desc_stats_data: json-string with the descriptive statistics of the training dataset
-        features_histogram_data: list of json-strings with histogram data for the features in the training dataset
-        cluster_analysis_data: the clusters from cluster analysis on the dataset
+        :training_dataset: the name of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :features_schema: the schema of the training dataset
+        :feature_corr_data:  json-string with the feature correlation matrix of the training dataset
+        :featuregroup_desc_stats_data: json-string with the descriptive statistics of the training dataset
+        :features_histogram_data: list of json-strings with histogram data for the features in the training dataset
+        :cluster_analysis_data: the clusters from cluster analysis on the dataset
 
     Returns:
         the HTTP response
@@ -2439,19 +2447,19 @@ def insert_into_training_dataset(
     >>> featurestore.insert_into_training_dataset(dataset_df,"TestDataset", featurestore=featurestore.project_featurestore(), training_dataset_version=1,descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=None)
 
     Args:
-        df: the dataframe to write
-        training_dataset: the name of the training dataset
-        featurestore: the featurestore that the training dataset is linked to
-        training_dataset_version: the version of the training dataset (defaults to 1)
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: number of clusters to use for cluster analysis
-        corr_method: the method to compute feature correlation with (pearson or spearman)
-        write_mode: spark write mode ('append' or 'overwrite'). Note: append is not supported for tfrecords datasets.
+        :df: the dataframe to write
+        :training_dataset: the name of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :write_mode: spark write mode ('append' or 'overwrite'). Note: append is not supported for tfrecords datasets.
 
     Returns:
         None
@@ -2498,9 +2506,9 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
     A helper function to look for a training dataset name and version in a list of training datasets
 
     Args:
-        training_datasets: a list of training datasets metadata
-        training_dataset: name of the training dataset
-        training_dataset_version: version of the training dataset
+        :training_datasets: a list of training datasets metadata
+        :training_dataset: name of the training dataset
+        :training_dataset_version: version of the training dataset
 
     Returns:
         The training dataset if it finds it, otherwise null
@@ -2529,9 +2537,9 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
     >>> featurestore.get_training_dataset_path("AML_dataset",  featurestore=featurestore.project_featurestore(), training_dataset_version=1)
 
     Args:
-        training_dataset: name of the training dataset
-        featurestore: featurestore that the training dataset is linked to
-        training_dataset_version: version of the training dataset
+        :training_dataset: name of the training dataset
+        :featurestore: featurestore that the training dataset is linked to
+        :training_dataset_version: version of the training dataset
 
     Returns:
         The HDFS path to the training dataset
@@ -2558,8 +2566,8 @@ def get_latest_training_datset_version(training_dataset, featurestore=None):
     Utility method to get the latest version of a particular training dataset
 
     Args:
-        training_dataset: the training dataset to get the latest version of
-        featurestore: the featurestore where the training dataset resides
+        :training_dataset: the training dataset to get the latest version of
+        :featurestore: the featurestore where the training dataset resides
 
     Returns:
         the latest version of the training dataset in the feature store
@@ -2582,8 +2590,8 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     Utility method to get the latest version of a particular featuregroup
 
     Args:
-        featuregroup: the featuregroup to get the latest version of
-        featurestore: the featurestore where the featuregroup resides
+        :featuregroup: the featuregroup to get the latest version of
+        :featurestore: the featurestore where the featuregroup resides
 
     Returns:
         the latest version of the featuregroup in the feature store
@@ -2619,17 +2627,17 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
     >>> featurestore.update_training_dataset_stats("teams_prediction", training_dataset_version=1, featurestore=featurestore.project_featurestore(), descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=['avg_trx', 'count_trx', 'max_trx', 'min_trx'])
 
     Args:
-        training_dataset: the training dataset to update the statistics for
-        training_dataset_version: the version of the training dataset (defaults to 1)
-        featurestore: the featurestore where the training dataset resides (defaults to the project's featurestore)
-        descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
-        feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
-        feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
-        stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        num_bins: number of bins to use for computing histograms
-        num_clusters: the number of clusters to use in clustering analysis (k-means)
-        corr_method: the method to compute feature correlation with (pearson or spearman)
+        :training_dataset: the training dataset to update the statistics for
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :featurestore: the featurestore where the training dataset resides (defaults to the project's featurestore)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use in clustering analysis (k-means)
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
 
     Returns:
         None
