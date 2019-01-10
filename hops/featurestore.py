@@ -105,7 +105,7 @@ and
     >>> # By default the new featuregroup will be created in the project's featurestore and the statistics for the new featuregroup will be computed based on the provided spark dataframe.
     >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2", description="trx_summary_features without the column count_trx")
     >>> # You can also be explicitly specify featuregroup details and what statistics to compute:
-    >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2", description="trx_summary_features without the column count_trx",featurestore=featurestore.project_featurestore(),featuregroup_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
+    >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2", description="trx_summary_features without the column count_trx",featurestore=featurestore.project_featurestore(),featuregroup_version=1, job_name=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
     >>>
     >>> # After you have found the features you need in the featurestore you can materialize the features into a training dataset
     >>> # so that you can train a machine learning model using the features. Just as for featuregroups,
@@ -119,7 +119,7 @@ and
     >>> # After the dataset have been created you can view and/or update the metadata about the training dataset from the Hopsworks featurestore UI
     >>> featurestore.create_training_dataset(dataset_df, "AML_dataset")
     >>> # You can override the default configuration if necessary:
-    >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="", featurestore=featurestore.project_featurestore(), data_format="csv", training_dataset_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
+    >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="", featurestore=featurestore.project_featurestore(), data_format="csv", training_dataset_version=1, job_name=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
     >>>
     >>> # Once a dataset have been created, its metadata is browsable in the featurestore registry in the Hopsworks UI.
     >>> # If you don't want to create a new training dataset but just overwrite or insert new data into an existing training dataset,
@@ -1435,7 +1435,7 @@ def _structure_feature_corr_json(feature_corr_dict):
     return correlation_matrix_dict
 
 
-def _create_featuregroup_rest(featuregroup, featurestore, description, featuregroup_version, job_id, dependencies,
+def _create_featuregroup_rest(featuregroup, featurestore, description, featuregroup_version, job_name, dependencies,
                               features_schema, feature_corr_data, featuregroup_desc_stats_data,
                               features_histogram_data, cluster_analysis_data):
     """
@@ -1446,7 +1446,7 @@ def _create_featuregroup_rest(featuregroup, featurestore, description, featuregr
         :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
         :description:  a description of the featuregroup
         :featuregroup_version: the version of the featuregroup (defaults to 1)
-        :job_id: the id of the job to compute the featuregroup
+        :job_name: the name of the job to compute the featuregroup
         :dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
         :features_schema: the schema of the featuregroup
         :feature_corr_data: json-string with the feature correlation matrix of the featuregroup
@@ -1463,7 +1463,7 @@ def _create_featuregroup_rest(featuregroup, featurestore, description, featuregr
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] = featuregroup
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION] = featuregroup_version
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION] = description
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBID] = job_id
+    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME] = job_name
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES] = dependencies
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES] = features_schema
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION] = feature_corr_data
@@ -1518,7 +1518,7 @@ def _update_featuregroup_stats_rest(featuregroup, featurestore, featuregroup_ver
     json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] = featuregroup
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION] = featuregroup_version
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBID] = None
+    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME] = None
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES] = []
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA] = False
     json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS] = True
@@ -1633,7 +1633,7 @@ def _validate_primary_key(featuregroup_df, primary_key):
 
 
 def create_featuregroup(df, featuregroup, primary_key=None, description="", featurestore=None,
-                        featuregroup_version=1, job_id=None,
+                        featuregroup_version=1, job_name=None,
                         dependencies=[], descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                         corr_method='pearson',
@@ -1647,7 +1647,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>> # By default the new featuregroup will be created in the project's featurestore and the statistics for the new featuregroup will be computed based on the provided spark dataframe.
     >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2", description="trx_summary_features without the column count_trx")
     >>> # You can also be explicitly specify featuregroup details and what statistics to compute:
-    >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2", description="trx_summary_features without the column count_trx",featurestore=featurestore.project_featurestore(),featuregroup_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
+    >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2", description="trx_summary_features without the column count_trx",featurestore=featurestore.project_featurestore(),featuregroup_version=1, job_name=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
 
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
@@ -1656,7 +1656,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         :description: a description of the featuregroup
         :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
-        :job_id: the id of the job to compute the featuregroup
+        :job_name: the name of the job to compute the featuregroup
         :dependencies: list of the datasets that this featuregroup depends on (e.g input datasets to the feature engineering job)
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
@@ -1677,10 +1677,14 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         raise AssertionError("Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(str(e)))
 
     _validate_metadata(featuregroup, spark_df.dtypes, dependencies, description)
+
     if featurestore is None:
         featurestore = project_featurestore()
     if primary_key is None:
         primary_key = _get_default_primary_key(spark_df)
+    if job_name is None:
+        job_name = util.get_job_name()
+
     _validate_primary_key(spark_df, primary_key)
     features_schema = _parse_spark_features_schema(spark_df.schema, primary_key)
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
@@ -1691,7 +1695,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
             num_bins=num_bins,
             corr_method=corr_method,
             num_clusters=num_clusters)
-    _create_featuregroup_rest(featuregroup, featurestore, description, featuregroup_version, job_id,
+    _create_featuregroup_rest(featuregroup, featurestore, description, featuregroup_version, job_name,
                               dependencies, features_schema,
                               feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
                               cluster_analysis_data)
@@ -1928,7 +1932,7 @@ def _get_dataframe_tf_record_schema_json(spark_df):
 
 
 def _create_training_dataset_rest(training_dataset, featurestore, description, training_dataset_version,
-                                  data_format, job_id, dependencies, features_schema_data,
+                                  data_format, job_name, dependencies, features_schema_data,
                                   feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
                                   cluster_analysis_data):
     """
@@ -1940,7 +1944,7 @@ def _create_training_dataset_rest(training_dataset, featurestore, description, t
         :description: a description of the training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :data_format: the format of the training dataset
-        :job_id: the id of the job to compute the training dataset
+        :job_name: the name of the job to compute the training dataset
         :dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
         :features_schema_data: the schema of the training dataset
         :feature_corr_data: json-string with the feature correlation matrix of the training dataset
@@ -1957,7 +1961,7 @@ def _create_training_dataset_rest(training_dataset, featurestore, description, t
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] = training_dataset
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION] = training_dataset_version
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION] = description
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBID] = job_id
+    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME] = job_name
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES] = dependencies
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA] = features_schema_data
     json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION] = feature_corr_data
@@ -2304,7 +2308,7 @@ def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
 
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
                             data_format="tfrecords", training_dataset_version=1,
-                            job_id=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
+                            job_name=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                             corr_method='pearson',
                             num_clusters=5):
@@ -2316,7 +2320,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
 
     >>> featurestore.create_training_dataset(dataset_df, "AML_dataset")
     >>> # You can override the default configuration if necessary:
-    >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="", featurestore=featurestore.project_featurestore(), data_format="csv", training_dataset_version=1, job_id=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
+    >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="", featurestore=featurestore.project_featurestore(), data_format="csv", training_dataset_version=1, job_name=None, dependencies=[], descriptive_statistics=False, feature_correlation=False, feature_histograms=False, cluster_analysis=False, stat_columns=None)
 
     Args:
         :df: the dataframe to create the training dataset from
@@ -2325,7 +2329,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         :featurestore: the featurestore that the training dataset is linked to
         :data_format: the format of the materialized training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
-        :job_id: the id of the job to compute the training dataset
+        :job_name: the name of the job to compute the training dataset
         :dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the feature engineering job)
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
@@ -2345,8 +2349,12 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         raise AssertionError("Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(str(e)))
 
     _validate_metadata(training_dataset, spark_df.dtypes, dependencies, description)
+
     if featurestore is None:
         featurestore = project_featurestore()
+    if job_name is None:
+        job_name = util.get_job_name()
+
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             training_dataset, spark_df=spark_df, version=training_dataset_version, featurestore=featurestore,
@@ -2358,7 +2366,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     features_schema = _parse_spark_features_schema(spark_df.schema, None)
     td_json = _create_training_dataset_rest(
         training_dataset, featurestore, description, training_dataset_version,
-        data_format, job_id, dependencies, features_schema,
+        data_format, job_name, dependencies, features_schema,
         feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data)
     hdfs_path = pydoop.path.abspath(td_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH])
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
@@ -2561,7 +2569,7 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
     return abspath
 
 
-def get_latest_training_datset_version(training_dataset, featurestore=None):
+def get_latest_training_dataset_version(training_dataset, featurestore=None):
     """
     Utility method to get the latest version of a particular training dataset
 
