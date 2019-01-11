@@ -98,7 +98,7 @@ def _expand_path(hdfs_path, project="", exists=True):
     if project == "":
         project = project_name()
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
-    if hdfs_path.startswith("/Projects/"):
+    if hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
         hdfs_path = "hdfs://" + hdfs_path
     elif not hdfs_path.startswith("hdfs://"):
         # if the file URL type is not HDFS, throw an error
@@ -570,8 +570,8 @@ def open_file(hdfs_path, project=None, flags='rw', buff_size=0):
     """
     if project == None:
         project = project_name()
-    hdfs_path = _expand_path(hdfs_path, project)
-    fs_handle = hdfs.get_fs()
+    hdfs_path = _expand_path(hdfs_path, project, exists=False)
+    fs_handle = get_fs()
     fd = fs_handle.open_file(hdfs_path, flags, buff_size=buff_size)
     return fd
 
