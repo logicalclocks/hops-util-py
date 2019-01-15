@@ -427,3 +427,16 @@ def _parse_rest_error(response_dict):
     if constants.REST_CONFIG.JSON_USR_MSG in response_dict:
         user_msg = response_dict[constants.REST_CONFIG.JSON_USR_MSG]
     return error_code, error_msg, user_msg
+
+def get_job_name():
+    """
+    If this method is called from inside a hopsworks job, it returns the name of the job.
+
+    Returns:
+        the name of the hopsworks job
+
+    """
+    if constants.ENV_VARIABLES.JOB_NAME_ENV_VAR in os.environ:
+        return os.environ[constants.ENV_VARIABLES.JOB_NAME_ENV_VAR]
+    else:
+        None
