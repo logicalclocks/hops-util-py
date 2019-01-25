@@ -729,12 +729,17 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
                                                                          featuregroup_matched[
                                                                              constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]):
                 feature_featuregroups.append(featuregroup_matched)
-        join_col = _get_join_col(feature_featuregroups)
-        join_str = _get_join_str(feature_featuregroups, join_col)
-        sql_str = "SELECT " + featuresStr + " FROM " + _get_table_name(
-            feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
-            feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]) + " " \
-                  + join_str
+        if len(feature_featuregroups) == 1:
+            sql_str = "SELECT " + featuresStr + " FROM " + _get_table_name(
+                feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
+                feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION])
+        else:
+            join_col = _get_join_col(feature_featuregroups)
+            join_str = _get_join_str(feature_featuregroups, join_col)
+            sql_str = "SELECT " + featuresStr + " FROM " + _get_table_name(
+                feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
+                feature_featuregroups[0][constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]) + " " \
+                      + join_str
         result = _run_and_log_sql(spark, sql_str)
         return _return_dataframe_type(result, dataframe_type)
 
