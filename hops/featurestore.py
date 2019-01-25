@@ -1858,6 +1858,11 @@ def _get_dataframe_tf_record_schema_json(spark_df):
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
+        if col[1] == constants.SPARK_CONFIG.SPARK_BIGINT_TYPE:
+            example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
+            example_json[str(col[0])] = {
+                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
+                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_LONG_TYPE:
             example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
             example_json[str(col[0])] = {
@@ -1889,6 +1894,11 @@ def _get_dataframe_tf_record_schema_json(spark_df):
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER:
+            example[str(col[0])] = tf.VarLenFeature([], tf.int64)
+            example_json[str(col[0])] = {
+                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
+                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
+        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT:
             example[str(col[0])] = tf.VarLenFeature([], tf.int64)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
@@ -1928,6 +1938,18 @@ def _get_dataframe_tf_record_schema_json(spark_df):
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
+        recognized_tf_record_types = [constants.SPARK_CONFIG.SPARK_VECTOR, constants.SPARK_CONFIG.SPARK_ARRAY_BINARY,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_STRING, constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE, constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_LONG, constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER,
+                            constants.SPARK_CONFIG.SPARK_BINARY_TYPE, constants.SPARK_CONFIG.SPARK_STRING_TYPE,
+                            constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE, constants.SPARK_CONFIG.SPARK_DOUBLE_TYPE,
+                            constants.SPARK_CONFIG.SPARK_FLOAT_TYPE, constants.SPARK_CONFIG.SPARK_LONG_TYPE,
+                            constants.SPARK_CONFIG.SPARK_INT_TYPE, constants.SPARK_CONFIG.SPARK_INTEGER_TYPE,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT, constants.SPARK_CONFIG.SPARK_BIGINT_TYPE]
+        if col[1] not in recognized_tf_record_types:
+            raise AssertionError("Could not recognize the spark type: {} for inferring the tf-records schema."
+                                 "Recognized types are: {}".format(col[1], recognized_tf_record_types))
     return example, example_json
 
 

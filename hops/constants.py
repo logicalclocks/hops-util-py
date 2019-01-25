@@ -130,6 +130,7 @@ class SPARK_CONFIG:
                            SPARK_SHORT_TYPE]
     SPARK_ARRAY_DOUBLE = "array<double>"
     SPARK_ARRAY_INTEGER = "array<integer>"
+    SPARK_ARRAY_BIGINT = "array<bigint>"
     SPARK_ARRAY_FLOAT = "array<float>"
     SPARK_ARRAY_DECIMAL = "array<decimal>"
     SPARK_ARRAY_STRING = "array<string>"
