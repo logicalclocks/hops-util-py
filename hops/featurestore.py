@@ -182,7 +182,7 @@ def project_featurestore():
 
     """
     project_name = hdfs.project_name()
-    featurestore_name = project_name + constants.FEATURE_STORE.FEATURESTORE_SUFFIX
+    featurestore_name = project_name.lower() + constants.FEATURE_STORE.FEATURESTORE_SUFFIX
     return featurestore_name
 
 
