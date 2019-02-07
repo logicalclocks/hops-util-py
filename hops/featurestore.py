@@ -2553,11 +2553,15 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
                           td[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION] == training_dataset_version,
                training_datasets))
     if len(matches) == 0:
+        training_dataset_names = list(map(lambda td: _get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
+                                                                     td[
+                                                                         constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]),
+                                          training_datasets))
         raise AssertionError("Could not find the requested training dataset with name: {} " \
                              "and version: {} among the list of available training datasets: {}".format(
             training_dataset,
             training_dataset_version,
-            training_datasets))
+            training_dataset_names))
     return matches[0]
 
 
