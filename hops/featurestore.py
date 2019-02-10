@@ -569,17 +569,17 @@ def _validate_metadata(name, dtypes, dependencies, description):
         None
     """
     name_pattern = re.compile("^[a-zA-Z0-9-_]+$")
-    if len(name) > 256 or name == "" or not name_pattern.match(name):
+    if len(name) > 256 or name == "" or not name_pattern.match(name) or "-" in name:
         raise AssertionError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters," \
-                             " and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided name: {} is not valid".format(
+                             ", cannot contain hyphens ('-') and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided name: {} is not valid".format(
             name))
     if len(dtypes) == 0:
         raise AssertionError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
+        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]) or "-" in dtype[0]:
             raise AssertionError("Name of feature column cannot be empty, cannot exceed 767 characters," \
-                                 " and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided feature name: {} is not valid".format(
+                                 "cannot contain hyphens ('-'), and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided feature name: {} is not valid".format(
                 dtype[0]))
 
     if not len(set(dependencies)) == len(dependencies):
