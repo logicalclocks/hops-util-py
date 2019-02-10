@@ -971,6 +971,8 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
         the hive datatype or None
 
     """
+    if type(spark_dtype) is dict:
+        return spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + _convert_spark_dtype_to_hive_dtype(spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_ELEMENT_TYPE]) + ">"
     if spark_dtype.upper() in constants.HIVE_CONFIG.HIVE_DATA_TYPES:
         return spark_dtype.upper()
     if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_LONG_TYPE:
@@ -1899,47 +1901,47 @@ def _get_dataframe_tf_record_schema_json(spark_df):
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER:
-            example[str(col[0])] = tf.VarLenFeature([], tf.int64)
+            example[str(col[0])] = tf.VarLenFeature(tf.int64)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT:
-            example[str(col[0])] = tf.VarLenFeature([], tf.int64)
+            example[str(col[0])] = tf.VarLenFeature(tf.int64)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_LONG:
-            example[str(col[0])] = tf.VarLenFeature([], tf.int64)
+            example[str(col[0])] = tf.VarLenFeature(tf.int64)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT:
-            example[str(col[0])] = tf.VarLenFeature([], tf.float32)
+            example[str(col[0])] = tf.VarLenFeature(tf.float32)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE:
-            example[str(col[0])] = tf.VarLenFeature([], tf.float32)
+            example[str(col[0])] = tf.VarLenFeature(tf.float32)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL:
-            example[str(col[0])] = tf.VarLenFeature([], tf.float32)
+            example[str(col[0])] = tf.VarLenFeature(tf.float32)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_STRING:
-            example[str(col[0])] = tf.VarLenFeature([], tf.string)
+            example[str(col[0])] = tf.VarLenFeature(tf.string)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_BINARY:
-            example[str(col[0])] = tf.VarLenFeature([], tf.string)
+            example[str(col[0])] = tf.VarLenFeature(tf.string)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
         if col[1] == constants.SPARK_CONFIG.SPARK_VECTOR:
-            example[str(col[0])] = tf.VarLenFeature([], tf.float32)
+            example[str(col[0])] = tf.VarLenFeature(tf.float32)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
@@ -2052,17 +2054,17 @@ def _convert_tf_record_schema_json_to_dict(tf_record_json_schema):
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR and \
                         value[
                             constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_INT_TYPE:
-            example[str(key)] = tf.VarLenFeature([], tf.int64)
+            example[str(key)] = tf.VarLenFeature(tf.int64)
         if value[
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR and \
                         value[
                             constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE:
-            example[str(key)] = tf.VarLenFeature([], tf.float32)
+            example[str(key)] = tf.VarLenFeature(tf.float32)
         if value[
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR and \
                         value[
                             constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_STRING_TYPE:
-            example[str(key)] = tf.VarLenFeature([], tf.string)
+            example[str(key)] = tf.VarLenFeature(tf.string)
     return example
 
 

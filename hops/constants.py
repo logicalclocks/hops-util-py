@@ -102,6 +102,7 @@ class SPARK_CONFIG:
     SPARK_SCHEMA_FIELDS = "fields"
     SPARK_SCHEMA_FIELD_NAME = "name"
     SPARK_SCHEMA_FIELD_TYPE = "type"
+    SPARK_SCHEMA_ELEMENT_TYPE = "elementType"
     SPARK_OVERWRITE_MODE = "overwrite"
     SPARK_APPEND_MODE = "append"
     SPARK_WRITE_DELIMITER = "delimiter"
