@@ -105,3 +105,13 @@ ENV/
 #intelliJ
 .idea
 workspace.xml
+
+.cache
+
+.pytest_cache
+
+spark-warehouse/
+
+training_datasets/
+
+metastore_db

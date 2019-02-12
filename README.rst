@@ -29,13 +29,14 @@ Sample usage:
 >>>                   description='A minimal mnist example with two hidden layers',
 >>>                   versioned_resources=[notebook]
 
-To build docs:
 
->>> pip install sphinx sphinx-autobuild recommonmark sphinx_rtd_theme jupyter_sphinx_theme hops
->>> cd docs; make html
+-------------
+Development Instructions
+-------------
 
+For development details such as how to test and build docs, see this reference: Development_.
 
-
+.. _Development: ./Development.rst
 
 -------------
 Documentation

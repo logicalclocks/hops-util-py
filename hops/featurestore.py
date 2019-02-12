@@ -204,11 +204,8 @@ import math
 from pyspark.sql.utils import AnalysisException
 import json
 from pyspark.mllib.stat import Statistics
-import pandas as pd
 from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.clustering import KMeans
 from pyspark.ml.feature import PCA
-from pyspark.ml.linalg import Vectors
 from pyspark.ml.clustering import KMeans
 import re
 import numpy as np
@@ -234,7 +231,6 @@ except:
 
 metadata_cache = None
 
-
 def project_featurestore():
     """
     Gets the project's featurestore name (project_featurestore)
@@ -246,7 +242,6 @@ def project_featurestore():
     project_name = hdfs.project_name()
     featurestore_name = project_name.lower() + constants.FEATURE_STORE.FEATURESTORE_SUFFIX
     return featurestore_name
-
 
 def _log(x):
     """
@@ -289,19 +284,15 @@ def _get_table_name(featuregroup, version):
     """
     return featuregroup + "_" + str(version)
 
-
 def _get_featurestore_metadata(featurestore=None, update_cache=False):
     """
     Makes a REST call to the appservice in hopsworks to get all metadata of a featurestore (featuregroups and
     training datasets) for the provided featurestore.
-
     Args:
         :featurestore: the name of the database, defaults to the project's featurestore
         :update_cache: if true the cache is updated
-
     Returns:
         JSON list of featuregroups
-
     """
     if featurestore is None:
         featurestore = project_featurestore()
@@ -403,13 +394,14 @@ def _use_featurestore(spark, featurestore=None):
         _run_and_log_sql(spark, sql_str)
     except AnalysisException as e:
         raise AssertionError((
-            "A hive database for the featurestore {} was not found, have you enabled the featurestore service in your project?".format(
+            "A hive database for the featurestore {} was not found, have you enabled the "
+            "featurestore service in your project?".format(
                 featurestore)))
 
 
 def _return_dataframe_type(dataframe, dataframe_type):
     """
-    Helper method for returning te dataframe in spark/pandas/numpy/python, depending on user preferences
+    Helper method for returning the dataframe in spark/pandas/numpy/python, depending on user preferences
 
     Args:
         :dataframe: the spark dataframe to convert
@@ -448,7 +440,7 @@ def _convert_dataframe_to_spark(dataframe):
         dataframe = np.array(dataframe)
     if isinstance(dataframe, np.ndarray):
         if dataframe.ndim != 2:
-            raise AssertionError(
+            raise ValueError(
                 "Cannot convert numpy array that do not have two dimensions to a dataframe. "
                 "The number of dimensions are: {}".format(dataframe.ndim))
         num_cols = dataframe.shape[1]
@@ -613,7 +605,7 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
         featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
-            raise AssertionError("Could not find any featuregroups in the metastore, " \
+            raise AssertionError("Could not find any featuregroups in the metastore that contains the given feature, " \
                                  "please explicitly supply featuregroups as an argument to the API call")
         featuregroup_matched = _find_feature(feature, featurestore, featuregroups_parsed)
         sql_str = "SELECT " + feature + " FROM " + _get_table_name(
@@ -706,27 +698,26 @@ def _validate_metadata(name, dtypes, dependencies, description):
     """
     name_pattern = re.compile("^[a-zA-Z0-9_]+$")
     if len(name) > 256 or name == "" or not name_pattern.match(name):
-        raise AssertionError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters," \
-                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} "
-                             "is not valid".format(name))
+        raise ValueError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters,"
+                          " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} "
+                         "is not valid".format(name))
     if len(dtypes) == 0:
-        raise AssertionError("Cannot create a feature group from an empty spark dataframe")
+        raise ValueError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
         if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
-            raise AssertionError("Name of feature column cannot be empty, cannot exceed 767 characters," \
-                                 " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
-                                 "feature name: {} is not valid".format(dtype[0]))
+            raise ValueError("Name of feature column cannot be empty, cannot exceed 767 characters,"
+                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
+                             "feature name: {} is not valid".format(dtype[0]))
 
     if not len(set(dependencies)) == len(dependencies):
         dependencies_str = ",".join(dependencies)
-        raise AssertionError("The list of data dependencies contains duplicates: {}".format(dependencies_str))
+        raise ValueError("The list of data dependencies contains duplicates: {}".format(dependencies_str))
 
     if len(description) > 2000:
-        raise AssertionError(
+        raise ValueError(
             "Feature group/Training dataset description should not exceed the maximum length of 2000 characters, "
-            "the provided description has length: {}".format(
-                len(description)))
+            "the provided description has length: {}".format(len(description)))
 
 
 def _get_join_col(featuregroups):
@@ -864,7 +855,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
             featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
             featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
             if (len(featuregroups_parsed) == 0):
-                raise AssertionError("Could not find any featuregroups in the metastore, " \
+                raise AssertionError("Could not find any featuregroups containing the features in the metastore, " \
                                      "please explicitly supply featuregroups as an argument to the API call")
             featuregroups_parsed_filtered = list(filter(
                 lambda fg: fg[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] in featuregroups_version_dict and
@@ -1045,7 +1036,6 @@ def _get_featurestores():
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
     return response_object
 
-
 def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, mode):
     """
     Writes the contents of a spark dataframe to a feature group Hive table
@@ -1071,7 +1061,7 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
 
     if not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE and not mode == \
             constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE:
-        raise AssertionError(
+        raise ValueError(
             "The provided write mode {} does not match "
             "the supported modes: ['{}', '{}']".format(mode,
                                                        constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE,
@@ -1084,7 +1074,6 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
     format = "hive"
     spark_df.write.format(format).mode(mode).saveAsTable(tbl_name)
     spark.sparkContext.setJobGroup("", "")
-
 
 def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append",
                              descriptive_statistics=True, feature_correlation=True, feature_histograms=True,
@@ -1163,7 +1152,8 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     if type(spark_dtype) is dict:
         if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].lower() == constants.SPARK_CONFIG.SPARK_ARRAY:
             return spark_dtype[
-                       constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + _convert_spark_dtype_to_hive_dtype(
+                       constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].upper() + "<" + \
+                   _convert_spark_dtype_to_hive_dtype(
                 spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_ELEMENT_TYPE]) + ">"
         if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].lower() == constants.SPARK_CONFIG.SPARK_STRUCT:
             struct_nested_fields = list(map(
@@ -1172,7 +1162,7 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
                     field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE]),
                 spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]))
             return spark_dtype[
-                       constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + \
+                       constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].upper() + "<" + \
                    constants.DELIMITERS.COMMA_DELIMITER.join(struct_nested_fields) + ">"
     if spark_dtype.upper() in constants.HIVE_CONFIG.HIVE_DATA_TYPES:
         return spark_dtype.upper()
@@ -1185,7 +1175,7 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_INTEGER_TYPE:
         return constants.HIVE_CONFIG.HIVE_INT_TYPE
     if constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE in spark_dtype.lower():
-        return spark_dtype
+        return spark_dtype.upper()
     raise AssertionError("Dataframe data type: {} not recognized.".format(spark_dtype))
 
 
@@ -1260,22 +1250,22 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
     """
     numeric_columns = spark_df.dtypes
     if (len(numeric_columns) == 0):
-        raise AssertionError("The provided spark dataframe does not contain any numeric columns. "
-                             "Cannot compute feature correlation on categorical columns. The numeric "
-                             "datatypes are: {}"
+        raise ValueError("The provided spark dataframe does not contain any numeric columns. "
+                             "Cannot compute feature correlation on categorical columns. The numeric datatypes are: {}"
                              " and the number of numeric datatypes in the dataframe is: {} ({})".format(
             constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, len(spark_df.dtypes), spark_df.dtypes))
     if (len(numeric_columns) == 1):
-        raise AssertionError("The provided spark dataframe only contains one numeric column. "
+        raise ValueError("The provided spark dataframe only contains one numeric column. "
                              "Cannot compute feature correlation on just one column. The numeric datatypes are: {}"
                              "and the number of numeric datatypes in the dataframe is: {} ({})".format(
             constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, len(spark_df.dtypes), spark_df.dtypes))
     if (len(numeric_columns) > constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS):
-        raise AssertionError(
-            "The provided dataframe contains  {} columns, feature correlation can only be computed for dataframes with "
-            "< {} columns due to scalability reasons (number of correlatons grows quadratically "
-            "with the number of columns)".format(
-                len(numeric_columns), constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS))
+        raise ValueError("The provided dataframe contains  {} columns, "
+                         "feature correlation can only be computed for "
+                         "dataframes with < {} columns due to scalability "
+                         "reasons (number of correlatons grows "
+                         "quadratically with the number of columns)" \
+                         .format(len(numeric_columns), constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS))
     spark_df_rdd = spark_df.rdd.map(lambda row: row[0:])
     corr_mat = Statistics.corr(spark_df_rdd, method=corr_method)
     pd_df_corr_mat = pd.DataFrame(corr_mat, columns=spark_df.columns, index=spark_df.columns)
@@ -1358,7 +1348,6 @@ def _filter_spark_df_numeric(spark_df):
         map(lambda y: y[0], filter(lambda x: _is_type_numeric(x), spark_df.dtypes)))
     filtered_spark_df = spark_df.select(numeric_columns)
     return filtered_spark_df
-
 
 def _is_type_numeric(type):
     """
@@ -1836,7 +1825,8 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
 
     Example usage:
 
-    >>> # The API will default to the project's featurestore, featuregroup version 1, and compute all statistics for all columns
+    >>> # The API will default to the project's featurestore, featuregroup version 1, and compute all statistics
+    >>> # for all columns
     >>> featurestore.update_featuregroup_stats("trx_summary_features")
     >>> # You can also be explicitly specify featuregroup details and what statistics to compute:
     >>> featurestore.update_featuregroup_stats("trx_summary_features", featuregroup_version=1,
@@ -1914,8 +1904,8 @@ def _validate_primary_key(featuregroup_df, primary_key):
         return True
     else:
         raise AssertionError(
-            "Invalid primary key: {}, the specified primary key does not exists among the available columns: {}".format(
-                cols))
+            "Invalid primary key: {}, the specified primary key does not exists among the available columns: {}" \
+                .format(primary_key,cols))
 
 
 def create_featuregroup(df, featuregroup, primary_key=None, description="", featurestore=None,
@@ -2097,7 +2087,6 @@ def get_features_list(featurestore=None):
     except:
         return _do_get_features_list(_get_featurestore_metadata(featurestore, update_cache=True))
 
-
 def _do_get_features_list(featurestore_metadata):
     """
     Gets a list of all features in a featurestore
@@ -2113,7 +2102,6 @@ def _do_get_features_list(featurestore_metadata):
         features.extend(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES])
     features = list(map(lambda f: f[constants.REST_CONFIG.JSON_FEATURE_NAME], features))
     return features
-
 
 def get_training_datasets(featurestore=None):
     """
@@ -2137,7 +2125,6 @@ def get_training_datasets(featurestore=None):
         return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=False))
     except:
         return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=True))
-
 
 def _do_get_training_datasets(featurestore_metadata):
     """
@@ -2174,7 +2161,7 @@ def get_project_featurestores():
     return featurestoreNames
 
 
-def get_dataframe_tf_record_schema(spark_df):
+def get_dataframe_tf_record_schema(spark_df, fixed=True):
     """
     Infers the tf-record schema from a spark dataframe
     Note: this method is just for convenience, it should work in 99% of cases but it is not guaranteed,
@@ -2183,12 +2170,12 @@ def get_dataframe_tf_record_schema(spark_df):
 
     Args:
         :spark_df: the spark dataframe to infer the tensorflow example record from
+        :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
 
     Returns:
         a dict with the tensorflow example
     """
-    return _get_dataframe_tf_record_schema_json(spark_df)[0]
-
+    return _get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[0]
 
 def _get_spark_array_size(spark_df, array_col_name):
     """
@@ -2277,20 +2264,16 @@ def _get_dataframe_tf_record_schema_json(spark_df, fixed=True):
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
 
         recognized_tf_record_types = [constants.SPARK_CONFIG.SPARK_VECTOR, constants.SPARK_CONFIG.SPARK_ARRAY_BINARY,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_STRING,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_LONG,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER,
-                                      constants.SPARK_CONFIG.SPARK_BINARY_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_STRING_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_DOUBLE_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_FLOAT_TYPE, constants.SPARK_CONFIG.SPARK_LONG_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_INT_TYPE, constants.SPARK_CONFIG.SPARK_INTEGER_TYPE,
-                                      constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT,
-                                      constants.SPARK_CONFIG.SPARK_BIGINT_TYPE]
+                            constants.SPARK_CONFIG.SPARK_ARRAY_STRING, constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE, constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_LONG, constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER,
+                            constants.SPARK_CONFIG.SPARK_BINARY_TYPE, constants.SPARK_CONFIG.SPARK_STRING_TYPE,
+                            constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE, constants.SPARK_CONFIG.SPARK_DOUBLE_TYPE,
+                            constants.SPARK_CONFIG.SPARK_FLOAT_TYPE, constants.SPARK_CONFIG.SPARK_LONG_TYPE,
+                            constants.SPARK_CONFIG.SPARK_INT_TYPE, constants.SPARK_CONFIG.SPARK_INTEGER_TYPE,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT, constants.SPARK_CONFIG.SPARK_BIGINT_TYPE,
+                            constants.SPARK_CONFIG.SPARK_ARRAY_INT
+                            ]
         if col[1] not in recognized_tf_record_types:
             raise AssertionError("Could not recognize the spark type: {} for inferring the tf-records schema."
                                  "Recognized types are: {}".format(col[1], recognized_tf_record_types))
@@ -2558,7 +2541,6 @@ def _do_get_training_dataset_csv(abspath, dataframe_type):
                                                                   constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
 
-
 def _do_get_training_dataset_tsv(abspath, dataframe_type):
     """
     Reads a training dataset in TSV format from HopsFS
@@ -2588,7 +2570,6 @@ def _do_get_training_dataset_tsv(abspath, dataframe_type):
                                                  abspath +
                                                  constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
-
 
 def _do_get_training_dataset_parquet(abspath, dataframe_type):
     """
@@ -2642,7 +2623,6 @@ def _do_get_training_dataset_avro(abspath, dataframe_type):
                                                   constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
 
-
 def _do_get_training_dataset_orc(abspath, dataframe_type):
     """
     Reads a training dataset in orc format from HopsFS
@@ -2669,7 +2649,6 @@ def _do_get_training_dataset_orc(abspath, dataframe_type):
                                                  constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
 
-
 def _do_get_training_dataset_image(abspath, dataframe_type):
     """
     Reads a training dataset in image format from HopsFS
@@ -2694,7 +2673,6 @@ def _do_get_training_dataset_image(abspath, dataframe_type):
                              " in file {}".format(abspath,
                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
-
 
 def _do_get_training_dataset_tfrecords(abspath, dataframe_type):
     """
@@ -2726,7 +2704,6 @@ def _do_get_training_dataset_tfrecords(abspath, dataframe_type):
                                                  constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
     return _return_dataframe_type(spark_df, dataframe_type)
 
-
 def _do_get_training_dataset_npy(abspath, dataframe_type):
     """
     Reads a training dataset in numpy format from HopsFS
@@ -2755,7 +2732,7 @@ def _do_get_training_dataset_npy(abspath, dataframe_type):
     if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or \
                     dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
         if np_array.ndim != 2:
-            raise AssertionError(
+            raise ValueError(
                 "Cannot convert numpy array that do not have two dimensions to a dataframe. "
                 "The number of dimensions are: {}".format(np_array.ndim))
         num_cols = np_array.shape[1]
@@ -2813,10 +2790,9 @@ def _do_get_training_dataset_hdf5(abspath, dataframe_type, training_dataset):
         sql_context = SQLContext(sc)
         return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
 
-
 def _do_get_training_dataset_petastorm(abspath, dataframe_type):
     """
-    Reads a training dataset in petastor format from HopsFS
+    Reads a training dataset in petastorm format from HopsFS
 
     Args:
         :abspath: the path to the dataset
@@ -2890,7 +2866,6 @@ def _do_get_training_dataset(training_dataset, featurestore_metadata, training_d
             "is not in the list of supported formats: {}".format(
                 data_format, ",".join(constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS)))
 
-
 def _write_training_dataset_hdfs_csv(df, write_mode, path):
     """
     Writes a dataframe of data as a training dataset on HDFS in the CSV format
@@ -2907,7 +2882,6 @@ def _write_training_dataset_hdfs_csv(df, write_mode, path):
     df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER).mode(
         write_mode).option(
         constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
-
 
 def _write_training_dataset_hdfs_tsv(df, write_mode, path):
     """
@@ -2926,7 +2900,6 @@ def _write_training_dataset_hdfs_tsv(df, write_mode, path):
         write_mode).option(
         constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
 
-
 def _write_training_dataset_hdfs_parquet(df, write_mode, path):
     """
     Writes a dataframe of data as a training dataset on HDFS in the Parquet format
@@ -2941,7 +2914,6 @@ def _write_training_dataset_hdfs_parquet(df, write_mode, path):
 
     """
     df.write.mode(write_mode).parquet(path)
-
 
 def _write_training_dataset_hdfs_avro(df, write_mode, path):
     """
@@ -2958,7 +2930,6 @@ def _write_training_dataset_hdfs_avro(df, write_mode, path):
     """
     df.write.mode(write_mode).format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).save(path)
 
-
 def _write_training_dataset_hdfs_orc(df, write_mode, path):
     """
     Writes a dataframe of data as a training dataset on HDFS in the orc format
@@ -2973,7 +2944,6 @@ def _write_training_dataset_hdfs_orc(df, write_mode, path):
 
     """
     df.write.mode(write_mode).format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).save(path)
-
 
 def _write_training_dataset_hdfs_tfrecords(df, write_mode, path):
     """
@@ -2996,7 +2966,6 @@ def _write_training_dataset_hdfs_tfrecords(df, write_mode, path):
         constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
         constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(
         write_mode).save(path)
-
 
 def _write_training_dataset_hdfs_npy(df, write_mode, path):
     """
@@ -3027,7 +2996,6 @@ def _write_training_dataset_hdfs_npy(df, write_mode, path):
     np.save(tf, df)
     tf.seek(0)
     hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
-
 
 def _write_training_dataset_hdfs_hdf5(df, write_mode, path, training_dataset):
     """
@@ -3064,7 +3032,6 @@ def _write_training_dataset_hdfs_hdf5(df, write_mode, path, training_dataset):
     tf.seek(0)
     hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
 
-
 def _write_training_dataset_hdfs_petastorm(df, write_mode, path, petastorm_args):
     """
     Writes a dataframe of data as a training dataset on HDFS in the petastorm format
@@ -3092,7 +3059,6 @@ def _write_training_dataset_hdfs_petastorm(df, write_mode, path, petastorm_args)
         filesystem_factory = lambda: pa.hdfs.connect(driver=constants.PETASTORM_CONFIG.LIBHDFS)
     with materialize_dataset(spark, path, schema, filesystem_factory=filesystem_factory, **petastorm_args):
         df.write.mode(write_mode).parquet(path)
-
 
 def _write_training_dataset_hdfs(df, path, data_format, write_mode, name, petastorm_args={}):
     """
@@ -3148,7 +3114,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                             data_format="tfrecords", training_dataset_version=1,
                             job_name=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                            corr_method='pearson', num_clusters=5, petastorm_args={}):
+                            corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -3184,8 +3150,9 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         :num_bins: number of bins to use for computing histograms
         :num_clusters: number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
-        :petastorm_args: a dict containing petastorm parameters for serializing a dataset in the petastorm format.
-                         Required parameters are: 'schema'
+        :petastorm_args: a dict containing petastorm parameters for serializing a dataset in the
+                         petastorm format. Required parameters are: 'schema'
+        :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
 
     Returns:
         None
@@ -3221,7 +3188,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     hdfs_path = pydoop.path.abspath(td_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH])
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
         try:
-            tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df)[1]
+            tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
             _store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
         except Exception as e:
             _log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
@@ -3370,7 +3337,7 @@ def _do_insert_into_training_dataset(
         df, training_dataset, featurestore_metadata, featurestore=None, training_dataset_version=1,
         descriptive_statistics=True, feature_correlation=True,
         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
-        num_clusters=5, write_mode="overwrite", ):
+        num_clusters=5, write_mode="overwrite", fixed=True):
     """
     Inserts the data in a training dataset from a spark dataframe (append or overwrite)
 
@@ -3385,12 +3352,14 @@ def _do_insert_into_training_dataset(
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
                               in the featuregroup
         :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in
+                           the featuregroup
         :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
         :num_bins: number of bins to use for computing histograms
         :num_clusters: number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
         :write_mode: spark write mode ('append' or 'overwrite'). Note: append is not supported for tfrecords datasets.
+        :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
 
     Returns:
         None
@@ -3423,7 +3392,7 @@ def _do_insert_into_training_dataset(
     data_format = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT]
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
         try:
-            tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df)[1]
+            tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df, fixed)[1]
             _store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
         except Exception as e:
             _log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
@@ -3635,7 +3604,7 @@ def _get_featurestore_id(featurestore):
         the id of the feature store
 
     """
-    if featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
+    if metadata_cache is None or featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
         _get_featurestore_metadata(featurestore, update_cache=True)
     return metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE][constants.REST_CONFIG.JSON_FEATURESTORE_ID]
 
@@ -3653,7 +3622,7 @@ def _get_featuregroup_id(featurestore, featuregroup, featuregroup_version):
         the id of the featuregroup
 
     """
-    if featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
+    if metadata_cache is None or featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
         _get_featurestore_metadata(featurestore, update_cache=True)
     for fg in metadata_cache[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
         if fg[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] == featuregroup \
@@ -3674,7 +3643,7 @@ def _get_training_dataset_id(featurestore, training_dataset):
         the id of the training dataset
 
     """
-    if featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
+    if metadata_cache is None or featurestore != metadata_cache[constants.REST_CONFIG.JSON_FEATURESTORE]:
         _get_featurestore_metadata(featurestore, update_cache=True)
     for td in metadata_cache[constants.REST_CONFIG.JSON_TRAINING_DATASETS]:
         if td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset:
@@ -3745,7 +3714,6 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         training_dataset, featurestore, training_dataset_version,
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
-
 
 try:
     metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())

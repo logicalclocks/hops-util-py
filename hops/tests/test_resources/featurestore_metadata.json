@@ -1,0 +1,968 @@
+{
+  "featuregroups": [
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-12T17:16:27Z",
+      "creator": "admin@kth.se",
+      "dependencies": [
+        {
+          "path": "/Projects/demo_featurestore_admin000/TestJob/data/games.csv",
+          "modification": "2019-02-12T17:14:34.243Z",
+          "inodeId": 100296,
+          "dir": false
+        }
+      ],
+      "description": "Features of average season scores for football teams",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "away_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "home_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true
+        },
+        {
+          "name": "score",
+          "type": "int",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 1,
+      "inodeId": 100401,
+      "jobId": 1,
+      "jobName": "featurestore_tour_job",
+      "jobStatus": "Succeeded",
+      "lastComputed": "2019-02-12T17:14:53Z",
+      "name": "games_features",
+      "version": 1,
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
+      ]
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-12T17:19:12Z",
+      "creator": "admin@kth.se",
+      "dependencies": [
+        {
+          "path": "/Projects/demo_featurestore_admin000/TestJob/data/season_scores.csv",
+          "modification": "2019-02-12T17:14:34.805Z",
+          "inodeId": 100298,
+          "dir": false
+        }
+      ],
+      "description": "Features of average season scores for football teams",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "average_position",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 2,
+      "inodeId": 100416,
+      "jobId": 1,
+      "jobName": "featurestore_tour_job",
+      "jobStatus": "Succeeded",
+      "lastComputed": "2019-02-12T17:14:53Z",
+      "name": "season_scores_features",
+      "version": 1,
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/season_scores_features_1"
+      ]
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-12T17:21:45Z",
+      "creator": "admin@kth.se",
+      "dependencies": [
+        {
+          "path": "/Projects/demo_featurestore_admin000/TestJob/data/attendances.csv",
+          "modification": "2019-02-12T17:14:33.124Z",
+          "inodeId": 100295,
+          "dir": false
+        }
+      ],
+      "description": "Features of average attendance of games of football teams",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "average_attendance",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 3,
+      "inodeId": 100515,
+      "jobId": 1,
+      "jobName": "featurestore_tour_job",
+      "jobStatus": "Succeeded",
+      "lastComputed": "2019-02-12T17:14:53Z",
+      "name": "attendances_features",
+      "version": 1,
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_1"
+      ]
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-12T17:25:05Z",
+      "creator": "admin@kth.se",
+      "dependencies": [
+        {
+          "path": "/Projects/demo_featurestore_admin000/TestJob/data/players.csv",
+          "modification": "2019-02-12T17:14:34.762Z",
+          "inodeId": 100297,
+          "dir": false
+        }
+      ],
+      "description": "Aggregate features of players football teams",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "average_player_age",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 4,
+      "inodeId": 100614,
+      "jobId": 1,
+      "jobName": "featurestore_tour_job",
+      "jobStatus": "Succeeded",
+      "lastComputed": "2019-02-12T17:14:53Z",
+      "name": "players_features",
+      "version": 1,
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/players_features_1"
+      ]
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-12T17:25:45Z",
+      "creator": "admin@kth.se",
+      "dependencies": [
+        {
+          "path": "/Projects/demo_featurestore_admin000/TestJob/data/teams.csv",
+          "modification": "2019-02-12T17:14:34.847Z",
+          "inodeId": 100299,
+          "dir": false
+        }
+      ],
+      "description": "Features of football teams",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "float",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true
+        },
+        {
+          "name": "team_position",
+          "type": "int",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 5,
+      "inodeId": 100713,
+      "jobId": 1,
+      "jobName": "featurestore_tour_job",
+      "jobStatus": "Succeeded",
+      "lastComputed": "2019-02-12T17:14:53Z",
+      "name": "teams_features",
+      "version": 1,
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_1"
+      ]
+    }
+  ],
+  "trainingDatasets": [
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:11:50Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 1,
+      "inodeId": 101473,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction",
+      "version": 1,
+      "dataFormat": "tfrecords",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:06Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 2,
+      "inodeId": 101484,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction_csv",
+      "version": 1,
+      "dataFormat": "csv",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_csv_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:17Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 3,
+      "inodeId": 101494,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction_tsv",
+      "version": 1,
+      "dataFormat": "tsv",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_tsv_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:28Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 4,
+      "inodeId": 101504,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction_parquet",
+      "version": 1,
+      "dataFormat": "parquet",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_parquet_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:40Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 5,
+      "inodeId": 101514,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction_hdf5",
+      "version": 1,
+      "dataFormat": "hdf5",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_hdf5_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:45Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 6,
+      "inodeId": 101516,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction_npy",
+      "version": 1,
+      "dataFormat": "npy",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_npy_1",
+      "size": 0
+    },
+    {
+      "clusterAnalysis": null,
+      "created": "2019-02-14T15:12:51Z",
+      "creator": "admin@kth.se",
+      "dependencies": [],
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 1,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 7,
+      "inodeId": 101518,
+      "jobId": null,
+      "jobName": null,
+      "jobStatus": null,
+      "lastComputed": null,
+      "name": "team_position_prediction",
+      "version": 2,
+      "dataFormat": "tfrecords",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_2",
+      "size": 0
+    }
+  ],
+  "featurestore": {
+    "featurestoreId": 1,
+    "featurestoreName": "demo_featurestore_admin000_featurestore",
+    "featurestoreDescription": "Featurestore database for project: demo_featurestore_admin000",
+    "hdfsStorePath": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db",
+    "projectName": "demo_featurestore_admin000",
+    "projectId": 1,
+    "inodeId": 107809
+  }
+}
