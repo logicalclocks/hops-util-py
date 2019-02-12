@@ -983,6 +983,9 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
         return constants.HIVE_CONFIG.HIVE_CHAR_TYPE
     if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_INTEGER_TYPE:
         return constants.HIVE_CONFIG.HIVE_INT_TYPE
+    if "decimal" in spark_dtype.lower():
+        return spark_dtype
+    raise AssertionError("Dataframe data type: {} not recognized.".format(spark_dtype))
 
 
 def _convert_field_to_feature(field_dict, primary_key):
@@ -1132,9 +1135,26 @@ def _filter_spark_df_numeric(spark_df):
 
     """
     numeric_columns = list(
-        map(lambda y: y[0], filter(lambda x: x[1] in constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, spark_df.dtypes)))
+        map(lambda y: y[0], filter(lambda x: _is_type_numeric(x), spark_df.dtypes)))
     filtered_spark_df = spark_df.select(numeric_columns)
     return filtered_spark_df
+
+def _is_type_numeric(type):
+    """
+    Checks whether a given type in a spark dataframe is numeric. Matches on part of string to deal with variable types
+    like decimal(x,y)
+
+    Args:
+        :type: the type to check
+
+    Returns:
+        True if the type is numeric otherwise False
+
+    """
+    for spark_numeric_type in constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES:
+        if spark_numeric_type in type[1]:
+            return True
+    return False
 
 
 def _compute_feature_histograms(spark_df, num_bins=20):
@@ -1214,7 +1234,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
     spark = util._find_spark()
 
     if spark_df.rdd.isEmpty():
-        raise AssertionError("Cannot compute statistics on an empty dataframe, the provided dataframe is empty")
+        print("Cannot compute statistics on an empty dataframe, the provided dataframe is empty")
 
     if descriptive_statistics:
         try:
@@ -1225,9 +1245,10 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             desc_stats_data = _structure_descriptive_stats_json(desc_stats_json)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            raise AssertionError(
+            print(
                 "Could not compute descriptive statistics for: {}, set the optional argument descriptive_statistics=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            desc_stats_data = None
 
     if feature_correlation:
         try:
@@ -1239,9 +1260,10 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             feature_corr_data = _structure_feature_corr_json(pd_corr_matrix.to_dict())
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            raise AssertionError(
+            print(
                 "Could not compute feature correlation for: {}, set the optional argument feature_correlation=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            feature_corr_data = None
 
     if feature_histograms:
         try:
@@ -1253,9 +1275,10 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             features_histograms_data = _structure_feature_histograms_json(features_histogram_list)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            raise AssertionError(
+            print(
                 "Could not compute feature histograms for: {}, set the optional argument feature_histograms=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            features_histograms_data = None
 
     if cluster_analysis:
         try:
@@ -1267,9 +1290,10 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             cluster_analysis_data = _structure_cluster_analysis_json(cluster_analysis_raw)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            raise AssertionError(
+            print(
                 "Could not compute cluster analysis for: {}, set the optional argument cluster_analysis=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            cluster_analysis_data = None
 
     return feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis_data
 
