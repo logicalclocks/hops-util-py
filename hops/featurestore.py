@@ -172,6 +172,7 @@ try:
 except:
     pass
 
+metadata_cache = None
 
 def project_featurestore():
     """
@@ -215,13 +216,14 @@ def _get_table_name(featuregroup, version):
     return featuregroup + "_" + str(version)
 
 
-def _get_feature_store_metadata(featurestore=None):
+def _get_featurestore_metadata(featurestore=None, update_cache=False):
     """
     Makes a REST call to the appservice in hopsworks to get all featuregroups and training datasets for
     the provided featurestore, authenticating with keystore and password.
 
     Args:
         :featurestore: the name of the database, defaults to the project's featurestore
+        :update_cache: if true the cache is updated
 
     Returns:
         JSON list of featuregroups
@@ -229,19 +231,22 @@ def _get_feature_store_metadata(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_embeddable = json.dumps(json_contents)
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    method = constants.HTTP_CONFIG.HTTP_POST
-    connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    return response_object
+    global metadata_cache
+    if metadata_cache is None or update_cache:
+        json_contents = tls._prepare_rest_appservice_json_request()
+        json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
+        json_embeddable = json.dumps(json_contents)
+        headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+        method = constants.HTTP_CONFIG.HTTP_POST
+        connection = util._get_http_connection(https=True)
+        resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE
+        resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
+        connection.request(method, resource_url, json_embeddable, headers)
+        response = connection.getresponse()
+        resp_body = response.read()
+        response_object = json.loads(resp_body)
+        metadata_cache = response_object
+    return metadata_cache
 
 
 def _parse_featuregroups_json(featuregroups):
@@ -444,7 +449,8 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     """
     Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries hopsworks metastore
     to see if the feature exists in any of the featuregroups in the featurestore. If the user knows which featuregroup
-    contain the feature, it should be specified as it will improve performance of the query.
+    contain the feature, it should be specified as it will improve performance of the query. Will first try to construct the query
+    from the cached metadata, if that fails, it retries after updating the cache
 
     Example usage:
 
@@ -464,6 +470,29 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         A spark dataframe with the feature
 
     """
+    try: # try with cached metadata
+        return _do_get_feature(feature, _get_featurestore_metadata(featurestore, update_cache=False), featurestore=featurestore, featuregroup=featuregroup, featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+    except: # Try again after updating cache
+        return _do_get_feature(feature, _get_featurestore_metadata(featurestore, update_cache=True), featurestore=featurestore, featuregroup=featuregroup, featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+
+def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregroup=None, featuregroup_version=1, dataframe_type="spark"):
+    """
+    Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries hopsworks metastore
+    to see if the feature exists in any of the featuregroups in the featurestore. If the user knows which featuregroup
+    contain the feature, it should be specified as it will improve performance of the query.
+
+    Args:
+        :feature: the feature name to get
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroup: (Optional) the featuregroup where the feature resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: the metadata of the featurestore to query
+
+    Returns:
+        A spark dataframe with the feature
+
+    """
     if featurestore is None:
         featurestore = project_featurestore()
     spark = util._find_spark()
@@ -477,7 +506,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     else:
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_feature_store_metadata(featurestore)["featuregroups"]
+        featuregroups_json = featurestore_metadata["featuregroups"]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -490,6 +519,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         spark.sparkContext.setJobGroup("Fetching Feature",
                                        "Getting feature: {} from the featurestore {}".format(feature, featurestore))
         return _return_dataframe_type(result, dataframe_type)
+
 
 
 def _get_join_str(featuregroups, join_key):
@@ -568,18 +598,18 @@ def _validate_metadata(name, dtypes, dependencies, description):
     Returns:
         None
     """
-    name_pattern = re.compile("^[a-zA-Z0-9-_]+$")
-    if len(name) > 256 or name == "" or not name_pattern.match(name) or "-" in name:
+    name_pattern = re.compile("^[a-zA-Z0-9_]+$")
+    if len(name) > 256 or name == "" or not name_pattern.match(name):
         raise AssertionError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters," \
-                             ", cannot contain hyphens ('-') and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided name: {} is not valid".format(
+                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} is not valid".format(
             name))
     if len(dtypes) == 0:
         raise AssertionError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]) or "-" in dtype[0]:
+        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
             raise AssertionError("Name of feature column cannot be empty, cannot exceed 767 characters," \
-                                 "cannot contain hyphens ('-'), and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided feature name: {} is not valid".format(
+                                 " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided feature name: {} is not valid".format(
                 dtype[0]))
 
     if not len(set(dependencies)) == len(dependencies):
@@ -644,7 +674,8 @@ def _convert_featuregroup_version_dict(featuregroups_version_dict):
 def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
     """
     Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
-    metastore to find where the features are stored.
+    metastore to find where the features are stored. It will try to construct the query first from the cached metadata,
+    if that fails it will re-try after reloading the cache
 
     Example usage:
 
@@ -660,6 +691,32 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
         :featuregroup_version: (Optional) the version of the featuregroup
         :join_key: (Optional) column name to join on
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+
+    Returns:
+        A spark dataframe with all the features
+
+    """
+    # try with cached metadata
+    try:
+        return _do_get_features(features, _get_featurestore_metadata(featurestore, update_cache=False), featurestore=featurestore, featuregroups_version_dict=featuregroups_version_dict, join_key=join_key, dataframe_type=dataframe_type)
+        # Try again after updating cache
+    except:
+        return _do_get_features(features, _get_featurestore_metadata(featurestore, update_cache=True), featurestore=featurestore, featuregroups_version_dict=featuregroups_version_dict, join_key=join_key, dataframe_type=dataframe_type)
+
+
+def _do_get_features(features, featurestore_metadata, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
+    """
+    Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
+    metastore to find where the features are stored.
+
+    Args:
+        :features: a list of features to get from the featurestore
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroups: (Optional) a dict with (fg --> version) for all the featuregroups where the features resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :join_key: (Optional) column name to join on
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: the metadata of the featurestore
 
     Returns:
         A spark dataframe with all the features
@@ -688,7 +745,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
             featuregroups_parsed_filtered = _convert_featuregroup_version_dict(featuregroups_version_dict)
             join_str = _get_join_str(featuregroups_parsed_filtered, join_key)
         else:
-            featuregroups_json = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+            featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
             featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
             if (len(featuregroups_parsed) == 0):
                 raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -713,7 +770,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     if (len(featuregroups_version_dict) == 0):
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+        featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -1707,9 +1764,11 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
                               feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
                               cluster_analysis_data)
     _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
+    #update metadata cache
+    _get_featurestore_metadata(featurestore, update_cache=True)
 
 
-def get_featurestore_metadata(featurestore=None):
+def get_featurestore_metadata(featurestore=None, update_cache=False):
     """
     Sends a REST call to Hopsworks to get the list of featuregroups and their features for the given featurestore.
 
@@ -1722,6 +1781,7 @@ def get_featurestore_metadata(featurestore=None):
 
     Args:
         :featurestore: the featurestore to query metadata of
+        :update_cache: if true the cache is updated
 
     Returns:
         A list of featuregroups and their metadata
@@ -1729,12 +1789,12 @@ def get_featurestore_metadata(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    return _get_feature_store_metadata(featurestore)
+    return _get_featurestore_metadata(featurestore=featurestore, update_cache=update_cache)
 
 
 def get_featuregroups(featurestore=None):
     """
-    Gets a list of all featuregroups in a featurestore
+    Gets a list of all featuregroups in a featurestore, uses the cached metadata.
 
     >>> # List all Feature Groups in a Feature Store
     >>> featurestore.get_featuregroups()
@@ -1749,15 +1809,34 @@ def get_featuregroups(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+
+    # Try with the cache first
+    try:
+        return _do_get_featuregroups(_get_featurestore_metadata(featurestore, update_cache=False))
+    # If it fails, update cache
+    except:
+        return _do_get_featuregroups(_get_featurestore_metadata(featurestore, update_cache=True))
+
+
+def _do_get_featuregroups(featurestore_metadata):
+    """
+    Gets a list of all featuregroups in a featurestore
+
+    Args:
+        :featurestore_metadata: the metadata of the featurestore
+
+    Returns:
+        A list of names of the featuregroups in this featurestore
+    """
     featuregroup_names = list(map(lambda fg: _get_table_name(fg[constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
                                                              fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]),
                                   featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]))
     return featuregroup_names
 
+
 def get_features_list(featurestore=None):
     """
-    Gets a list of all features in a featurestore
+    Gets a list of all features in a featurestore, will use the cached featurestore metadata
 
     >>> # List all Features in a Feature Store
     >>> featurestore.get_features_list()
@@ -1772,7 +1851,21 @@ def get_features_list(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+    try:
+        return _do_get_features_list(_get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_features_list(_get_featurestore_metadata(featurestore, update_cache=True))
+
+def _do_get_features_list(featurestore_metadata):
+    """
+    Gets a list of all features in a featurestore
+
+    Args:
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A list of names of the features in this featurestore
+    """
     features = []
     for fg in featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
         features.extend(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES])
@@ -1781,7 +1874,7 @@ def get_features_list(featurestore=None):
 
 def get_training_datasets(featurestore=None):
     """
-    Gets a list of all training datasets in a featurestore
+    Gets a list of all training datasets in a featurestore, will use the cached metadata
 
     >>> # List all Training Datasets in a Feature Store
     >>> featurestore.get_training_datasets()
@@ -1796,7 +1889,21 @@ def get_training_datasets(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+    try:
+        return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=True))
+
+def _do_get_training_datasets(featurestore_metadata):
+    """
+    Gets a list of all training datasets in a featurestore
+
+    Args:
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A list of names of the training datasets in this featurestore
+    """
     training_dataset_names = list(map(lambda td: _get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
                                                                  td[
                                                                      constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]),
@@ -2088,6 +2195,11 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
     """
     Gets the tf record schema for a training dataset that is stored in tfrecords format
 
+    Example usage:
+
+    >>> # get tf record schema for a tfrecords dataset
+    >>> featurestore.get_training_dataset_tf_record_schema("team_position_prediction", training_dataset_version=1,featurestore = featurestore.project_featurestore())
+
     Args:
         :training_dataset: the training dataset to get the tfrecords schema for
         :training_dataset_version: the version of the training dataset
@@ -2099,7 +2211,26 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    try:
+        return _do_get_training_dataset_tf_record_schema(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version, featurestore=featurestore)
+    except:
+        return _do_get_training_dataset_tf_record_schema(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version, featurestore=featurestore)
+
+
+def _do_get_training_dataset_tf_record_schema(training_dataset, featurestore_metadata, training_dataset_version=1, featurestore=None):
+    """
+    Gets the tf record schema for a training dataset that is stored in tfrecords format
+
+    Args:
+        :training_dataset: the training dataset to get the tfrecords schema for
+        :training_dataset_version: the version of the training dataset
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the tf records schema
+
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     if training_dataset_json[
         constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT] != constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
@@ -2114,7 +2245,11 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
 
 def get_training_dataset(training_dataset, featurestore=None, training_dataset_version=1, dataframe_type="spark"):
     """
-    Reads a training dataset into a spark dataframe
+    Reads a training dataset into a spark dataframe, will first look for the training dataset using the cached metadata
+    of the featurestore, if it fails it will reload the metadata and try again.
+
+    Example usage:
+    >>> featurestore.get_training_dataset("team_position_prediction_csv").show(5)
 
     Args:
         :training_dataset: the name of the training dataset to read
@@ -2127,8 +2262,27 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
     """
     if featurestore is None:
         featurestore = project_featurestore()
+    try:
+        return _do_get_training_dataset(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version, dataframe_type=dataframe_type)
+    except:
+        return _do_get_training_dataset(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version, dataframe_type=dataframe_type)
+
+
+def _do_get_training_dataset(training_dataset, featurestore_metadata, training_dataset_version=1, dataframe_type="spark"):
+    """
+    Reads a training dataset into a spark dataframe
+
+    Args:
+        :training_dataset: the name of the training dataset to read
+        :training_dataset_version: the version of the training dataset
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A spark dataframe with the given training dataset data
+    """
     spark = util._find_spark()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
@@ -2409,6 +2563,8 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                  data_format,
                                  constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
                                  training_dataset)
+    #update metadata cache
+    _get_featurestore_metadata(featurestore, update_cache=True)
 
 
 def _update_training_dataset_stats_rest(
@@ -2502,6 +2658,49 @@ def insert_into_training_dataset(
         None
 
     """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        return _do_insert_into_training_dataset(df, training_dataset, _get_featurestore_metadata(featurestore, update_cache=False),
+                                         featurestore, training_dataset_version=training_dataset_version, descriptive_statistics=descriptive_statistics,
+                                         feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                         corr_method=corr_method, num_clusters=num_clusters, write_mode=write_mode)
+    except:
+        return _do_insert_into_training_dataset(df, training_dataset, _get_featurestore_metadata(featurestore, update_cache=True),
+                                         featurestore, training_dataset_version=training_dataset_version, descriptive_statistics=descriptive_statistics,
+                                         feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                         corr_method=corr_method, num_clusters=num_clusters, write_mode=write_mode)
+
+def _do_insert_into_training_dataset(
+        df, training_dataset, featurestore_metadata, featurestore=None, training_dataset_version=1,
+        descriptive_statistics=True, feature_correlation=True,
+        feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
+        num_clusters=5, write_mode="overwrite", ):
+    """
+    Inserts the data in a training dataset from a spark dataframe (append or overwrite)
+
+    Args:
+        :df: the dataframe to write
+        :training_dataset: the name of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :featurestore_metadata: metadata of the featurestore
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :write_mode: spark write mode ('append' or 'overwrite'). Note: append is not supported for tfrecords datasets.
+
+    Returns:
+        None
+
+    """
     try:
         spark_df = _convert_dataframe_to_spark(df)
     except Exception as e:
@@ -2509,7 +2708,7 @@ def insert_into_training_dataset(
 
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = _compute_dataframe_stats(
         training_dataset, spark_df=spark_df, version=training_dataset_version, featurestore=featurestore,
@@ -2548,7 +2747,7 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
         :training_dataset_version: version of the training dataset
 
     Returns:
-        The training dataset if it finds it, otherwise null
+        The training dataset if it finds it, otherwise exception
     """
     matches = list(
         filter(lambda td: td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset and
@@ -2587,7 +2786,30 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    try:
+        return _do_get_training_dataset_path(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version)
+    except:
+        return _do_get_training_dataset_path(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version)
+
+def _do_get_training_dataset_path(training_dataset, featurestore_metadata, training_dataset_version=1):
+    """
+    Gets the HDFS path to a training dataset with a specific name and version in a featurestore
+
+    Example usage:
+
+    >>> featurestore.get_training_dataset_path("AML_dataset")
+    >>> # By default the library will look for the training dataset in the project's featurestore and use version 1, but this can be overriden if required:
+    >>> featurestore.get_training_dataset_path("AML_dataset",  featurestore=featurestore.project_featurestore(), training_dataset_version=1)
+
+    Args:
+        :training_dataset: name of the training dataset
+        :featurestore_metadata: metadata of the featurestore
+        :training_dataset_version: version of the training dataset
+
+    Returns:
+        The HDFS path to the training dataset
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
@@ -2606,6 +2828,9 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     """
     Utility method to get the latest version of a particular training dataset
 
+    Example usage:
+    >>> featurestore.get_latest_training_dataset_version("team_position_prediction")
+
     Args:
         :training_dataset: the training dataset to get the latest version of
         :featurestore: the featurestore where the training dataset resides
@@ -2615,8 +2840,23 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
+    try:
+        return _do_get_latest_training_dataset_version(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_latest_training_dataset_version(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True))
 
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+def _do_get_latest_training_dataset_version(training_dataset, featurestore_metadata):
+    """
+    Utility method to get the latest version of a particular training dataset
+
+    Args:
+        :training_dataset: the training dataset to get the latest version of
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the latest version of the training dataset in the feature store
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     matches = list(
         filter(lambda x: x[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset, training_datasets))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]), matches))
@@ -2630,6 +2870,9 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     """
     Utility method to get the latest version of a particular featuregroup
 
+    Example usage:
+    >>> featurestore.get_latest_featuregroup_version("teams_features_spanish")
+
     Args:
         :featuregroup: the featuregroup to get the latest version of
         :featurestore: the featurestore where the featuregroup resides
@@ -2640,7 +2883,24 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     if featurestore is None:
         featurestore = project_featurestore()
 
-    featuregroups = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+    try:
+        return _do_get_latest_featuregroup_version(featuregroup, _get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_latest_featuregroup_version(featuregroup, _get_featurestore_metadata(featurestore, update_cache=False))
+
+
+def _do_get_latest_featuregroup_version(featuregroup, featurestore_metadata):
+    """
+    Utility method to get the latest version of a particular featuregroup
+
+    Args:
+        :featuregroup: the featuregroup to get the latest version of
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the latest version of the featuregroup in the feature store
+    """
+    featuregroups = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
     matches = list(filter(lambda x: x[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] == featuregroup, featuregroups))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]), matches))
     if (len(versions) > 0):
@@ -2698,3 +2958,5 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         training_dataset, featurestore, training_dataset_version,
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
+
+metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())
