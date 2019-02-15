@@ -162,7 +162,7 @@ def num_executors():
         Number of configured executors for Jupyter
     """
     sc = _find_spark().sparkContext
-    return int(sc._conf.get("spark.executor.instances"))
+    return int(sc._conf.get("spark.dynamicAllocation.maxExecutors"))
 
 def num_param_servers():
     """
@@ -303,7 +303,7 @@ def _populate_experiment(sc, model_name, module, function, logdir, hyperparamete
                        'start': datetime.now().isoformat(),
                        'memory_per_executor': str(sc._conf.get("spark.executor.memory")),
                        'gpus_per_executor': str(sc._conf.get("spark.executor.gpus")),
-                       'executors': str(sc._conf.get("spark.executor.instances")),
+                       'executors': str(num_executors()),
                        'logdir': logdir,
                        'hyperparameter_space': hyperparameter_space,
                        'versioned_resources': versioned_resources,
@@ -402,7 +402,7 @@ def _convert_to_dict(best_param):
 def _find_spark():
     """
 
-    Returns:
+    Returns: SparkSession
 
     """
     return SparkSession.builder.getOrCreate()
