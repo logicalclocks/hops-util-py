@@ -739,3 +739,23 @@ def localize(hdfs_path):
 
     return copy_to_local(hdfs_path, "", overwrite=True)
 
+def pandas_csv(hdfs_path, **kwds):
+    """
+      Reads a comma-separated values (csv) file from HopsFS into a Pandas DataFrame.
+
+      Args:
+         :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+
+      Returns:
+        A pandas dataframe
+
+      Raises:
+        IOError: If the file does not exist.
+    """
+    import pandas as pd
+    hdfs_path = _expand_path(hdfs_path)    
+    h = get_fs()
+    with h.open_file(hdfs_path, "r") as f:
+      data = pd.read_csv(f, **kwds)
+    return data
+
