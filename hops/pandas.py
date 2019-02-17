@@ -8,6 +8,7 @@ def read_csv(hdfs_filename, **kwds):
 
       Args:
          :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+         :**kwds: You can add any additional args found in pandas.read_csv(...) 
 
       Returns:
         A pandas dataframe
