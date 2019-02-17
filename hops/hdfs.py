@@ -98,7 +98,7 @@ def _expand_path(hdfs_path, project="", exists=True):
     if project == "":
         project = project_name()
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
-    if hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
+    If hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
         hdfs_path = "hdfs://" + hdfs_path
     elif not hdfs_path.startswith("hdfs://"):
         # if the file URL type is not HDFS, throw an error
@@ -755,7 +755,7 @@ def pandas_csv(hdfs_path, **kwds):
     import pandas as pd
     hdfs_path = _expand_path(hdfs_path)    
     h = get_fs()
-    with h.open_file(hdfs_path, "r") as f:
+    with h.open_file(hdfs_path, "rt") as f:
       data = pd.read_csv(f, **kwds)
     return data
 
