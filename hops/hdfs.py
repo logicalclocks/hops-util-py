@@ -98,7 +98,7 @@ def _expand_path(hdfs_path, project="", exists=True):
     if project == "":
         project = project_name()
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
-    If hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
+    if hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
         hdfs_path = "hdfs://" + hdfs_path
     elif not hdfs_path.startswith("hdfs://"):
         # if the file URL type is not HDFS, throw an error
@@ -738,24 +738,4 @@ def localize(hdfs_path):
     """
 
     return copy_to_local(hdfs_path, "", overwrite=True)
-
-def pandas_csv(hdfs_path, **kwds):
-    """
-      Reads a comma-separated values (csv) file from HopsFS into a Pandas DataFrame.
-
-      Args:
-         :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-
-      Returns:
-        A pandas dataframe
-
-      Raises:
-        IOError: If the file does not exist.
-    """
-    import pandas as pd
-    hdfs_path = _expand_path(hdfs_path)    
-    h = get_fs()
-    with h.open_file(hdfs_path, "rt") as f:
-      data = pd.read_csv(f, **kwds)
-    return data
 
