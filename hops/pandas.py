@@ -26,7 +26,7 @@ def read_csv(hdfs_filename, **kwds):
 
 def write_csv(hdfs_filename, dataframe, **kwds):
     """
-      Writes a pandas dataframe to a comma-separated values (csv) file in HopsFS.
+      Writes a pandas dataframe to a comma-separated values (csv) text file in HopsFS. Overwrites the file if it already exists.
 
       Args:
          :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
@@ -41,6 +41,6 @@ def write_csv(hdfs_filename, dataframe, **kwds):
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)    
     h = hdfs.get_fs()
     with h.open_file(hdfs_path, "wt") as f:
-      dataframe.write_csv(f, **kwds)
+      dataframe.to_csv(f, **kwds)
 
 
