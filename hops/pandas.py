@@ -16,31 +16,31 @@ def read_csv(hdfs_filename, **kwds):
       Raises:
         IOError: If the file does not exist.
     """
-  import hops.hdfs as hdfs
-  import pandas as pd
-  hdfs_path = hdfs._expand_path(hdfs_filename)    
-  h = hdfs.get_fs()
-  with h.open_file(hdfs_path, "rt") as f:
-    data = pd.read_csv(f, **kwds)
-  return data
+    import hops.hdfs as hdfs
+    import pandas as pd
+    hdfs_path = hdfs._expand_path(hdfs_filename)    
+    h = hdfs.get_fs()
+    with h.open_file(hdfs_path, "rt") as f:
+      data = pd.read_csv(f, **kwds)
+    return data
 
 def write_csv(hdfs_filename, dataframe, **kwds):
     """
       Writes a pandas dataframe to a comma-separated values (csv) file in HopsFS.
 
       Args:
-         :dataframe: a Pandas dataframe
          :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+         :dataframe: a Pandas dataframe
          :**kwds: You can add any additional args found in pandas.read_csv(...) 
 
       Raises:
         IOError: If the file does not exist.
     """
-  import hops.hdfs as hdfs
-  import pandas as pd
-  hdfs_path = hdfs._expand_path(hdfs_filename)    
-  h = hdfs.get_fs()
-  with h.open_file(hdfs_path, "wt") as f:
-    dataframe.write_csv(f, **kwds)
+    import hops.hdfs as hdfs
+    import pandas as pd
+    hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)    
+    h = hdfs.get_fs()
+    with h.open_file(hdfs_path, "wt") as f:
+      dataframe.write_csv(f, **kwds)
 
 
