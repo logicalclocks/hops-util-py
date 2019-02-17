@@ -276,17 +276,18 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     if project == None:
         project = project_name()
 
+    full_local = os.getcwd() + '/' + local_path
+    base_dir = os.getcwd()
     if "PDIR" in os.environ:
-        full_local = os.environ['PDIR'] + '/' + local_path
-    else:
-        full_local = os.getcwd() + '/' + local_path
+        base_dir = os.environ['PDIR']
+        full_local = base_dir + '/' + local_path
         
     project_hdfs_path = _expand_path(hdfs_path, project=project)
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
     # Get the amount of free space on the local drive
-    stat = os.statvfs(full_local)
+    stat = os.statvfs(base_dir)
     free_space_bytes = stat.f_bsize * stat.f_bavail    
 
     hdfs_size = path.getsize(project_hdfs_path)
