@@ -34,7 +34,10 @@ def savenp(hdfs_filename, data):
       IOError: If the local file does not exist.
     """
     import hops.hdfs as hdfs
+    import numpy as np
+    import os
+    local_file = os.path.basename(hdfs_filename)
+    np.save(local_file, data)
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)
-    with hdfs.get_fs().open_file(hdfs_path, 'w') as data_file:
-      data_file.write(data)
+    hdfs.copy_to_hdfs(local_file, hdfs_path, overwrite=True)
 
