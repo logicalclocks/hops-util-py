@@ -2,7 +2,7 @@
 API for reading/writing numpy arrays to/from HopsFS.
 """
 
-def loadnp(hdfs_filename, **kwds):
+def load(hdfs_filename, **kwds):
     """
     Reads a file from HopsFS into a Numpy Array
 
@@ -22,7 +22,7 @@ def loadnp(hdfs_filename, **kwds):
     local_path = hdfs.localize(hdfs_path)
     return np.load(local_path, **kwds)
 
-def savenp(hdfs_filename, data):
+def save(hdfs_filename, data):
     """
     Saves a numpy array to a file in HopsFS 
 
