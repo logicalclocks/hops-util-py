@@ -741,7 +741,6 @@ def localize(hdfs_path):
         Return an absolute path for local file/directory.
     """
 
-    import os
     filename = os.path.basename(hdfs_path)
     return copy_to_local(hdfs_path, filename)
 
