@@ -239,12 +239,16 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 
     if overwrite:
         hdfs_handle = get()
-        full_project_path = _expand_path(relative_hdfs_path, project=project)
+        split = local_path.split('/')
+        filename = split[len(split) - 1]
+        if filename == '/':
+            filename = split[len(split) - 2]
+        full_project_path = hdfs_path + '/' + filename
+
         # check if project path exist, if so delete it (since overwrite flag was set to true)
         if hdfs_handle.exists(full_project_path):
             hdfs_handle.delete(full_project_path, recursive=True)
-                                                        
-            
+
     # copy directories from local path to HDFS project path
     hdfs.put(full_local, hdfs_path)
 
@@ -252,15 +256,14 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     """
     Copies a path from HDFS project to local filesystem. If there is not enough space on the local scratch directory, an exception is thrown.
-    If the file exists, and the hdfs file and the local file are the same size in bytes, return immediately.
 
     Raises:
       IOError if there is not enough space to localize the file/directory in HDFS to the scratch directory ($PDIR)
 
     Args:
-        :local_path: the relative or full path on the local filesystem to copy (relative to a scratch directory $PDIR)
+        :local_path: the path on the local filesystem to copy
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :overwrite: a boolean flag whether to overwrite if the path already exists in the local scratch directory.
+        :overwrite: a boolean flag whether to overwrite if the path already exists in HDFS
         :project: name of the project, defaults to the current HDFS user's project
 
     Returns:
@@ -272,30 +275,23 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     if project == None:
         project = project_name()
 
-    full_local = os.getcwd() + '/' + local_path
-    base_dir = os.getcwd()
     if "PDIR" in os.environ:
-        base_dir = os.environ['PDIR']
-        full_local = base_dir + '/' + local_path
+        full_local = os.environ['PDIR'] + '/' + local_path
+    else:
+        full_local = os.getcwd() + '/' + local_path
         
     project_hdfs_path = _expand_path(hdfs_path, project=project)
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
     # Get the amount of free space on the local drive
-    stat = os.statvfs(base_dir)
+    stat = os.statvfs(full_local)
     free_space_bytes = stat.f_bsize * stat.f_bavail    
 
     hdfs_size = path.getsize(project_hdfs_path)
 
     if (hdfs_size > free_space_bytes):
         raise IOError("Not enough local free space available on scratch directory: %s" % path)        
-
-    if os.path.isfile(full_local):
-        sz = os.path.getsize(full_local)
-        if (hdfs_size == sz):
-            return full_local
-            
     
     if overwrite:
         split = rel_path.split('/')
@@ -741,6 +737,5 @@ def localize(hdfs_path):
         Return an absolute path for local file/directory.
     """
 
-    filename = os.path.basename(hdfs_path)
-    return copy_to_local(hdfs_path, filename)
+    return copy_to_local(hdfs_path, "", overwrite=True)
 
