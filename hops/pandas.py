@@ -1,6 +1,8 @@
 """
 API for opening csv files into Pandas from HopsFS.
 """
+import hops.hdfs as hdfs
+import pandas as pd
 
 def read_csv(hdfs_filename, **kwds):
     """
@@ -16,8 +18,6 @@ def read_csv(hdfs_filename, **kwds):
       Raises:
         IOError: If the file does not exist.
     """
-    import hops.hdfs as hdfs
-    import pandas as pd
     hdfs_path = hdfs._expand_path(hdfs_filename)    
     h = hdfs.get_fs()
     with h.open_file(hdfs_path, "rt") as f:
@@ -36,8 +36,6 @@ def write_csv(hdfs_filename, dataframe, **kwds):
       Raises:
         IOError: If the file does not exist.
     """
-    import hops.hdfs as hdfs
-    import pandas as pd
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)    
     h = hdfs.get_fs()
     with h.open_file(hdfs_path, "wt") as f:

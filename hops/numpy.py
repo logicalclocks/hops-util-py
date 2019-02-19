@@ -1,6 +1,9 @@
 """
 API for reading/writing numpy arrays to/from HopsFS.
 """
+import hops.hdfs as hdfs
+import numpy as np
+import os
 
 def load(hdfs_filename, **kwds):
     """
@@ -16,8 +19,6 @@ def load(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist.
     """
-    import hops.hdfs as hdfs
-    import numpy as np
     hdfs_path = hdfs._expand_path(hdfs_filename)
     local_path = hdfs.localize(hdfs_path)
     return np.load(local_path, **kwds)
@@ -33,9 +34,6 @@ def save(hdfs_filename, data):
     Raises:
       IOError: If the local file does not exist.
     """
-    import hops.hdfs as hdfs
-    import numpy as np
-    import os
     local_file = os.path.basename(hdfs_filename)
     np.save(local_file, data)
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)
