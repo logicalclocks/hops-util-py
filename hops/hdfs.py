@@ -1,4 +1,4 @@
-\"""
+"""
 API for interacting with the file system on Hops (HopsFS).
 
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
