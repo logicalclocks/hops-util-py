@@ -1,4 +1,4 @@
-"""
+\"""
 API for interacting with the file system on Hops (HopsFS).
 
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
@@ -303,14 +303,15 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 
 def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     """
-    Copies a path from HDFS project to local filesystem. If there is not enough space on the local scratch directory, an exception is thrown.
-    If the file exists, and the hdfs file and the local file are the same size in bytes, return immediately.
+    Copies a directory or file from a HDFS project to a local private scratch directory. If there is not enough space on the local scratch directory, an exception is thrown.
+    If the local file exists, and the hdfs file and the local file are the same size in bytes, return 'ok' immediately.
+    If the local directory tree exists, and the hdfs subdirectory and the local subdirectory have the same files and directories, and the files are the same size in bytes, return 'ok' immediately.
 
     Raises:
       IOError if there is not enough space to localize the file/directory in HDFS to the scratch directory ($PDIR)
 
     Args:
-        :local_path: the relative or full path on the local filesystem to copy (relative to a scratch directory $PDIR)
+        :local_path: the relative or full path to a directory on the local filesystem to copy to (relative to a scratch directory $PDIR)
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :overwrite: a boolean flag whether to overwrite if the path already exists in the local scratch directory.
         :project: name of the project, defaults to the current HDFS user's project
@@ -318,22 +319,27 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     Returns:
         the full local pathname of the file/dir
     """
-    
+
     if project == None:
         project = project_name()
 
-    full_local = os.getcwd() + '/' + local_path
-    base_dir = os.getcwd()
     if "PDIR" in os.environ:
-        base_dir = os.environ['PDIR']
-        full_local = base_dir + '/' + local_path
-        
+        local_dir = os.environ['PDIR'] + '/' + local_path
+    else:
+        local_dir = os.getcwd() + '/' + local_path
+
+    if os.path.isdir(local_dir) == False:
+        raise IOError("You need to supply the path to a local directory. This is not a local dir: %s" % local_dir)
+
+    filename = path.basename(hdfs_path)
+    full_local = local_dir + "/" + filename
+
     project_hdfs_path = _expand_path(hdfs_path, project=project)
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
     # Get the amount of free space on the local drive
-    stat = os.statvfs(base_dir)
+    stat = os.statvfs(local_dir)
     free_space_bytes = stat.f_bsize * stat.f_bavail    
 
     hdfs_size = path.getsize(project_hdfs_path)
@@ -352,18 +358,12 @@ def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
         raise IOError("Not enough local free space available on scratch directory: %s" % path)        
     
     if overwrite:
-        split = rel_path.split('/')
-        filename = split[len(split) - 1]
-        full_local_path = full_local + '/' + filename
-        if os.path.isdir(full_local_path):
-            shutil.rmtree(full_local_path)
-        elif os.path.isfile(full_local_path):
-            os.remove(full_local_path)
-
-    
-
+        if os.path.isdir(full_local):
+            shutil.rmtree(full_local)
+        elif os.path.isfile(full_local):
+            os.remove(full_local)
             
-    hdfs.get(project_hdfs_path, full_local)
+    hdfs.get(project_hdfs_path, local_dir)
 
     return full_local
 
@@ -725,9 +725,6 @@ def dump(data, hdfs_path):
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
     """
 
-    #split = hdfs_path.split('/')
-    #filename = split[len(split) - 1]
-    #directory = "/".join(split[0:len(split)-1])
     hdfs_path = _expand_path(hdfs_path, exists=False)
     return hdfs.dump(data, hdfs_path)
 
@@ -797,7 +794,7 @@ def localize(hdfs_path):
      Returns:
         Return an absolute path for local file/directory.
     """
-
-    filename = os.path.basename(hdfs_path)
-    return copy_to_local(hdfs_path, filename)
+    #filename = path.basename(hdfs_path)
+    #return copy_to_local(hdfs_path, filename, overwrite = True)
+    return copy_to_local(hdfs_path, "", overwrite = True)
 
