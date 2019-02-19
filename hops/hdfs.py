@@ -287,14 +287,13 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     else:
         full_local = os.getcwd() + '/' + local_path
 
-    hdfs_path = _expand_path(relative_hdfs_path, project)
+    hdfs_path = _expand_path(relative_hdfs_path, project, exists=False)
 
     if overwrite:
         hdfs_handle = get()
-        full_project_path = _expand_path(relative_hdfs_path, project=project)
         # check if project path exist, if so delete it (since overwrite flag was set to true)
-        if hdfs_handle.exists(full_project_path):
-            hdfs_handle.delete(full_project_path, recursive=True)
+        if hdfs_handle.exists(hdfs__path):
+            hdfs_handle.delete(hdfs_path, recursive=True)
                                                         
             
     # copy directories from local path to HDFS project path
