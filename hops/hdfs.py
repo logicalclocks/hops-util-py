@@ -12,8 +12,60 @@ import stat as local_stat
 import fnmatch
 import os
 import errno
+import pydoop.hdfs.path as path
 
 fd = None
+
+
+class FsTree(object):
+
+    def walk(self, parent_path, file_list, hdfs_parent_path, hdfs_file_list):
+        print("%s %s" %(parent_path, hdfs_parent_path))
+        if len(file_list) == 0 and len(hdfs_file_list) == 0:
+            if os.path.basename(parent_path) == path.basename(hdfs_parent_path):
+                return True
+            return False
+        elif len(file_list) != len(hdfs_file_list):
+            print("No match: number of files in dirs")
+            return False
+        else:
+            file_list.sort(key=lambda f: os.path.isfile(os.path.join(parent_path, f)))
+            hdfs_file_list.sort(key=lambda f: path.isfile(path.join(hdfs_parent_path, f)))
+            hIdx=0
+            for idx, sub_path in enumerate(file_list):
+                full_path = os.path.join(parent_path, sub_path)
+                hdfs_sub_path = hdfs_file_list[idx]
+                hdfs_full_path = path.join(hdfs_parent_path, hdfs_sub_path)
+
+                if (os.path.basename(sub_path) != path.basename(hdfs_sub_path)):
+                    print("No match: %s and %s" %(sub_path, hdfs_sub_path))
+                    return False
+                
+                if os.path.isdir(full_path):
+                    if path.isdir(hdfs_full_path) == False:
+                        print("No match on directory: %s and %s" %(full_path, hdfs_full_path))
+                        return False
+                    return self.walk(full_path, os.listdir(full_path), hdfs_full_path, hdfs.ls(hdfs_full_path))
+                elif os.path.isfile(full_path):
+                   sz = os.path.getsize(full_path)
+                   hdfs_size = path.getsize(hdfs_full_path)
+                   if (hdfs_size != sz):
+                       return False
+
+        return True
+
+    def check(self, args):
+        self.root = args["root"]
+        self.hdfs_root = args["hdfs_root"]
+        print("checking: %s" % self.root)
+        print("checking hdfs: %s" % self.hdfs_root)
+        if path.isdir(self.hdfs_root) == False:
+            return False;
+        if os.path.isdir(self.root) == False:
+            return False;
+        return self.walk(self.root, os.listdir(self.root), self.hdfs_root, hdfs.ls(self.hdfs_root))
+
+
 
 def project_user():
     """
@@ -235,74 +287,82 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     else:
         full_local = os.getcwd() + '/' + local_path
 
-    hdfs_path = _expand_path(relative_hdfs_path, project)
+    hdfs_path = _expand_path(relative_hdfs_path, project, exists=False)
 
     if overwrite:
         hdfs_handle = get()
-        split = local_path.split('/')
-        filename = split[len(split) - 1]
-        if filename == '/':
-            filename = split[len(split) - 2]
-        full_project_path = hdfs_path + '/' + filename
-
         # check if project path exist, if so delete it (since overwrite flag was set to true)
-        if hdfs_handle.exists(full_project_path):
-            hdfs_handle.delete(full_project_path, recursive=True)
-
+        if hdfs_handle.exists(hdfs__path):
+            hdfs_handle.delete(hdfs_path, recursive=True)
+                                                        
+            
     # copy directories from local path to HDFS project path
     hdfs.put(full_local, hdfs_path)
 
 
 def copy_to_local(hdfs_path, local_path, overwrite=False, project=None):
     """
-    Copies a path from HDFS project to local filesystem. If there is not enough space on the local scratch directory, an exception is thrown.
+    Copies a directory or file from a HDFS project to a local private scratch directory. If there is not enough space on the local scratch directory, an exception is thrown.
+    If the local file exists, and the hdfs file and the local file are the same size in bytes, return 'ok' immediately.
+    If the local directory tree exists, and the hdfs subdirectory and the local subdirectory have the same files and directories, and the files are the same size in bytes, return 'ok' immediately.
 
     Raises:
       IOError if there is not enough space to localize the file/directory in HDFS to the scratch directory ($PDIR)
 
     Args:
-        :local_path: the path on the local filesystem to copy
+        :local_path: the relative or full path to a directory on the local filesystem to copy to (relative to a scratch directory $PDIR)
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-        :overwrite: a boolean flag whether to overwrite if the path already exists in HDFS
+        :overwrite: a boolean flag whether to overwrite if the path already exists in the local scratch directory.
         :project: name of the project, defaults to the current HDFS user's project
 
     Returns:
         the full local pathname of the file/dir
     """
-    import os
-    import pydoop.hdfs.path as path
-    
+
     if project == None:
         project = project_name()
 
     if "PDIR" in os.environ:
-        full_local = os.environ['PDIR'] + '/' + local_path
+        local_dir = os.environ['PDIR'] + '/' + local_path
     else:
-        full_local = os.getcwd() + '/' + local_path
-        
+        local_dir = os.getcwd() + '/' + local_path
+
+    if os.path.isdir(local_dir) == False:
+        raise IOError("You need to supply the path to a local directory. This is not a local dir: %s" % local_dir)
+
+    filename = path.basename(hdfs_path)
+    full_local = local_dir + "/" + filename
+
     project_hdfs_path = _expand_path(hdfs_path, project=project)
     sub_path = hdfs_path.find("hdfs:///Projects/" + project)
     rel_path = hdfs_path[sub_path + 1:]
 
     # Get the amount of free space on the local drive
-    stat = os.statvfs(full_local)
+    stat = os.statvfs(local_dir)
     free_space_bytes = stat.f_bsize * stat.f_bavail    
 
     hdfs_size = path.getsize(project_hdfs_path)
 
+    if os.path.isfile(full_local) and overwrite == False:
+        sz = os.path.getsize(full_local)
+        if (hdfs_size == sz):
+            return full_local
+
+    if os.path.isdir(full_local) and overwrite == False:
+        if FsTree().check(full_local, project_hdfs_path) == True:
+            print("Full directory subtree already on local disk and unchanged.")
+            return full_local
+        
     if (hdfs_size > free_space_bytes):
         raise IOError("Not enough local free space available on scratch directory: %s" % path)        
     
     if overwrite:
-        split = rel_path.split('/')
-        filename = split[len(split) - 1]
-        full_local_path = full_local + '/' + filename
-        if os.path.isdir(full_local_path):
-            shutil.rmtree(full_local_path)
-        elif os.path.isfile(full_local_path):
-            os.remove(full_local_path)
-
-    hdfs.get(project_hdfs_path, full_local)
+        if os.path.isdir(full_local):
+            shutil.rmtree(full_local)
+        elif os.path.isfile(full_local):
+            os.remove(full_local)
+            
+    hdfs.get(project_hdfs_path, local_dir)
 
     return full_local
 
@@ -664,9 +724,6 @@ def dump(data, hdfs_path):
         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
     """
 
-    #split = hdfs_path.split('/')
-    #filename = split[len(split) - 1]
-    #directory = "/".join(split[0:len(split)-1])
     hdfs_path = _expand_path(hdfs_path, exists=False)
     return hdfs.dump(data, hdfs_path)
 
@@ -736,6 +793,7 @@ def localize(hdfs_path):
      Returns:
         Return an absolute path for local file/directory.
     """
-
-    return copy_to_local(hdfs_path, "", overwrite=True)
+    #filename = path.basename(hdfs_path)
+    #return copy_to_local(hdfs_path, filename, overwrite = True)
+    return copy_to_local(hdfs_path, "", overwrite = True)
 
