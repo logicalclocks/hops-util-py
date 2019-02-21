@@ -292,7 +292,7 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     if overwrite:
         hdfs_handle = get()
         # check if project path exist, if so delete it (since overwrite flag was set to true)
-        if hdfs_handle.exists(hdfs__path):
+        if hdfs_handle.exists(hdfs_path):
             hdfs_handle.delete(hdfs_path, recursive=True)
                                                         
             
