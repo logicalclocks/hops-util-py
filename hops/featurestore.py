@@ -159,6 +159,8 @@ from pyspark.sql import DataFrame
 from pyspark.rdd import RDD
 from pyspark.sql import SQLContext
 from tempfile import TemporaryFile
+import pyarrow as pa
+from petastorm.etl.dataset_metadata import materialize_dataset
 
 # for backwards compatibility
 try:
@@ -2303,6 +2305,290 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
     except:
         return _do_get_training_dataset(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version, dataframe_type=dataframe_type)
 
+def _do_get_training_dataset_csv(abspath, dataframe_type):
+    """
+    Reads a training dataset in CSV format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.COMMA_DELIMITER).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.COMMA_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_tsv(abspath, dataframe_type):
+    """
+    Reads a training dataset in TSV format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.TAB_DELIMITER).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.TAB_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_parquet(abspath, dataframe_type):
+    """
+    Reads a training dataset in Parquet format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.parquet(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+        spark_df = spark.read.parquet(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+
+def _do_get_training_dataset_avro(abspath, dataframe_type):
+    """
+    Reads a training dataset in avro format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(
+            abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_orc(abspath, dataframe_type):
+    """
+    Reads a training dataset in orc format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(
+            abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_image(abspath, dataframe_type):
+    """
+    Reads a training dataset in image format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(
+            abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_tfrecords(abspath, dataframe_type):
+    """
+    Reads a training dataset in tfrecords format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
+            abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_npy(abspath, dataframe_type):
+    """
+    Reads a training dataset in numpy format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
+        raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
+    tf = TemporaryFile()
+    data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+    tf.write(data)
+    tf.seek(0)
+    np_array = np.load(tf)
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
+        return np_array
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
+        return np_array.tolist()
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
+        if np_array.ndim != 2:
+            raise AssertionError(
+                "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
+                    np_array.ndim))
+        num_cols = np_array.shape[1]
+        dataframe_dict = {}
+        for n_col in list(range(num_cols)):
+            col_name = "col_" + str(n_col)
+            dataframe_dict[col_name] = np_array[:, n_col]
+        pandas_df = pd.DataFrame(dataframe_dict)
+        sc = spark.sparkContext
+        sql_context = SQLContext(sc)
+        return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+
+
+def _do_get_training_dataset_hdf5(abspath, dataframe_type, training_dataset):
+    """
+    Reads a training dataset in hdf5 format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+        :training_dataset: name of the hdf5 dataset
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
+        raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
+    tf = TemporaryFile()
+    data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
+    tf.write(data)
+    tf.seek(0)
+    hdf5_file = h5py.File(tf)
+    np_array = hdf5_file[training_dataset][()]
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
+        return np_array
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
+        return np_array.tolist()
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
+        if np_array.ndim != 2:
+            raise AssertionError(
+                "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
+                    np_array.ndim))
+        num_cols = np_array.shape[1]
+        dataframe_dict = {}
+        for n_col in list(range(num_cols)):
+            col_name = "col_" + str(n_col)
+            dataframe_dict[col_name] = np_array[:, n_col]
+        pandas_df = pd.DataFrame(dataframe_dict)
+        sc = spark.sparkContext
+        sql_context = SQLContext(sc)
+        return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+
+def _do_get_training_dataset_petastorm(abspath, dataframe_type):
+    """
+    Reads a training dataset in petastor format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.parquet(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
+        spark_df = spark.read.parquet(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+
 
 def _do_get_training_dataset(training_dataset, featurestore_metadata, training_dataset_version=1, dataframe_type="spark"):
     """
@@ -2317,7 +2603,6 @@ def _do_get_training_dataset(training_dataset, featurestore_metadata, training_d
     Returns:
         A spark dataframe with the given training dataset data
     """
-    spark = util._find_spark()
     training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
@@ -2329,155 +2614,222 @@ def _do_get_training_dataset(training_dataset, featurestore_metadata, training_d
     # abspath means "hdfs://namenode:port/ is preprended
     abspath = pydoop.path.abspath(hdfs_path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_csv(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_tsv(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.parquet(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            spark_df = spark.read.parquet(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
-
+        return _do_get_training_dataset_parquet(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(data_format).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
-            spark_df = spark.read.format(data_format).load(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_avro(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(data_format).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
-            spark_df = spark.read.format(data_format).load(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_orc(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(data_format).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
-            spark_df = spark.read.format(data_format).load(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_image(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_tfrecords(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
-        if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
-            raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
-        tf = TemporaryFile()
-        data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
-        tf.write(data)
-        tf.seek(0)
-        np_array = np.load(tf)
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
-            return np_array
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
-            return np_array.tolist()
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
-            if np_array.ndim != 2:
-                raise AssertionError(
-                    "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
-                        np_array.ndim))
-            num_cols = np_array.shape[1]
-            dataframe_dict = {}
-            for n_col in list(range(num_cols)):
-                col_name = "col_" + str(n_col)
-                dataframe_dict[col_name] = np_array[:, n_col]
-            pandas_df = pd.DataFrame(dataframe_dict)
-            sc = spark.sparkContext
-            sql_context = SQLContext(sc)
-            return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+        return _do_get_training_dataset_npy(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
-        if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
-            raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
-        tf = TemporaryFile()
-        data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
-        tf.write(data)
-        tf.seek(0)
-        hdf5_file = h5py.File(tf)
-        np_array = hdf5_file[training_dataset][()]
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
-            return np_array
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
-            return np_array.tolist()
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
-            if np_array.ndim != 2:
-                raise AssertionError(
-                    "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
-                        np_array.ndim))
-            num_cols = np_array.shape[1]
-            dataframe_dict = {}
-            for n_col in list(range(num_cols)):
-                col_name = "col_" + str(n_col)
-                dataframe_dict[col_name] = np_array[:, n_col]
-            pandas_df = pd.DataFrame(dataframe_dict)
-            sc = spark.sparkContext
-            sql_context = SQLContext(sc)
-            return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+        return _do_get_training_dataset_hdf5(abspath, dataframe_type, training_dataset)
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_FORMAT:
+        return _do_get_training_dataset_petastorm(abspath, dataframe_type)
 
     if data_format not in constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS:
         raise AssertionError(
             "invalid data format to materialize training dataset. The provided format: {} is not in the list of supported formats: {}".format(
                 data_format, ",".join(constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS)))
 
+def _write_training_dataset_hdfs_csv(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the CSV format
 
-def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER).mode(
+        write_mode).option(
+        constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+
+def _write_training_dataset_hdfs_tsv(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the TSV format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER).mode(
+        write_mode).option(
+        constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+
+def _write_training_dataset_hdfs_parquet(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the Parquet format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.mode(write_mode).parquet(path)
+
+def _write_training_dataset_hdfs_avro(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the avro format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.mode(write_mode).format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).save(path)
+
+def _write_training_dataset_hdfs_orc(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the orc format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.mode(write_mode).format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).save(path)
+
+def _write_training_dataset_hdfs_tfrecords(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the tfrecords format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in tf-records format, only overwrite, set the optional argument write_mode='overwrite'")
+    df.write.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+                                        constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(
+        write_mode).save(path)
+
+def _write_training_dataset_hdfs_npy(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the npy format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in .npy format, only overwrite, set the optional argument write_mode='overwrite'")
+    if not isinstance(df, np.ndarray):
+        if isinstance(df, DataFrame) or isinstance(df, RDD):
+            df = np.array(df.collect())
+        if isinstance(df, pd.DataFrame):
+            df = df.values
+        if isinstance(df, list):
+            df = np.array(df)
+    tf = TemporaryFile()
+    tf.seek(0)
+    np.save(tf, df)
+    tf.seek(0)
+    hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+
+def _write_training_dataset_hdfs_hdf5(df, write_mode, path, training_dataset):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the hdf5 format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+        :training_dataset: name of the hdf5 dataset to write
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in .hdf5 format, only overwrite, set the optional argument write_mode='overwrite'")
+    if not isinstance(df, np.ndarray):
+        if isinstance(df, DataFrame) or isinstance(df, RDD):
+            df = np.array(df.collect())
+        if isinstance(df, pd.DataFrame):
+            df = df.values
+        if isinstance(df, list):
+            df = np.array(df)
+    tf = TemporaryFile()
+    tf.seek(0)
+    hdf5_file = h5py.File(tf)
+    tf.seek(0)
+    hdf5_file.create_dataset(training_dataset, data=df)
+    tf.seek(0)
+    hdf5_file.close()
+    tf.seek(0)
+    hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
+
+def _write_training_dataset_hdfs_petastorm(df, write_mode, path, petastorm_args):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the petastorm format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+        :petastorm_args: petastorm arguments
+
+    Returns:
+        None
+
+    """
+    spark = util._find_spark()
+    if constants.PETASTORM_CONFIG.SCHEMA in petastorm_args:
+        schema = petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
+        del petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
+    else:
+        raise AssertionError("Required petastorm argument 'schema' is not defined in petastorm_args dict")
+    if constants.PETASTORM_CONFIG.FILESYSTEM_FACTORY in petastorm_args:
+        filesystem_factory = petastorm_args[constants.PETASTORM_CONFIG.FILESYSTEM_FACTORY]
+        del petastorm_args[constants.PETASTORM_CONFIG.FILESYSTEM_FACTORY]
+    else:
+        filesystem_factory=lambda: pa.hdfs.connect(driver=constants.PETASTORM_CONFIG.LIBHDFS)
+    with materialize_dataset(spark, path, schema, filesystem_factory=filesystem_factory, **petastorm_args):
+        df.write.mode(write_mode).parquet(path)
+
+def _write_training_dataset_hdfs(df, path, data_format, write_mode, name, petastorm_args={}):
     """
     Materializes a spark dataframe to a training dataset on HDFS.
 
@@ -2487,6 +2839,7 @@ def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
         :data_format: the format to materialize to
         :write_mode: spark write mode, 'append' or 'overwrite'
         :name: the name of the training dataset
+        :petastorm_args: petastorm arguments
 
     Returns:
         None
@@ -2495,74 +2848,32 @@ def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
                                    "Saving training dataset in path: {} in format {}".format(path, data_format))
 
-    # some spark versions cannot handle overwrite, so then this is necessary
-    # if(hdfs.exists(path)):
-    #   hdfs.rmr(path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT:
-        df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER).mode(
-            write_mode).option(
-            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+        _write_training_dataset_hdfs_csv(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT:
-        df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER).mode(
-            write_mode).option(
-            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+        _write_training_dataset_hdfs_tsv(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT:
-        df.write.mode(write_mode).parquet(path)
-    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT or data_format == constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT:
-        df.write.mode(write_mode).format(data_format).save(path)
+        _write_training_dataset_hdfs_parquet(df, write_mode, path)
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT:
+        _write_training_dataset_hdfs_avro(df, write_mode, path)
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT:
+        _write_training_dataset_hdfs_orc(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
         raise AssertionError("Can not write dataframe in image format. "
                              "To create a training dataset in image format you should manually upload the images to the training dataset folder"
                              " in your project.")
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in tf-records format, only overwrite, set the optional argument write_mode='overwrite'")
-        df.write.format(data_format).option(constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                                            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(
-            write_mode).save(path)
+        _write_training_dataset_hdfs_tfrecords(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in .npy format, only overwrite, set the optional argument write_mode='overwrite'")
-        if not isinstance(df, np.ndarray):
-            if isinstance(df, DataFrame) or isinstance(df, RDD):
-                df = np.array(df.collect())
-            if isinstance(df, pd.DataFrame):
-                df = df.values
-            if isinstance(df, list):
-                df = np.array(df)
-        tf = TemporaryFile()
-        tf.seek(0)
-        np.save(tf, df)
-        tf.seek(0)
-        hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+        _write_training_dataset_hdfs_npy(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in .hdf5 format, only overwrite, set the optional argument write_mode='overwrite'")
-        if not isinstance(df, np.ndarray):
-            if isinstance(df, DataFrame) or isinstance(df, RDD):
-                df = np.array(df.collect())
-            if isinstance(df, pd.DataFrame):
-                df = df.values
-            if isinstance(df, list):
-                df = np.array(df)
-        tf = TemporaryFile()
-        tf.seek(0)
-        hdf5_file = h5py.File(tf)
-        tf.seek(0)
-        hdf5_file.create_dataset(name, data=df)
-        tf.seek(0)
-        hdf5_file.close()
-        tf.seek(0)
-        hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
-
+        _write_training_dataset_hdfs_hdf5(df, write_mode, path, name)
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_FORMAT:
+        _write_training_dataset_hdfs_petastorm(df, write_mode, path, petastorm_args)
     if data_format not in constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS:
         raise AssertionError(
             "invalid data format to materialize training dataset. The provided format: {} is not in the list of supported formats: {}".format(
                 data_format, ",".join(constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS)))
-
     spark.sparkContext.setJobGroup("", "")
 
 
@@ -2570,8 +2881,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                             data_format="tfrecords", training_dataset_version=1,
                             job_name=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                            corr_method='pearson',
-                            num_clusters=5):
+                            corr_method='pearson', num_clusters=5, petastorm_args={}):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -2599,6 +2909,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         :num_bins: number of bins to use for computing histograms
         :num_clusters: number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :petastorm_args: a dict containing petastorm parameters for serializing a dataset in the petastorm format. Required parameters are: 'schema'
 
     Returns:
         None
@@ -2639,7 +2950,8 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                  hdfs_path + constants.DELIMITERS.SLASH_DELIMITER + training_dataset,
                                  data_format,
                                  constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                 training_dataset)
+                                 training_dataset,
+                                 petastorm_args)
     #update metadata cache
     _get_featurestore_metadata(featurestore, update_cache=True)
 
@@ -3040,4 +3352,7 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
 
-metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())
+try:
+    metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())
+except:
+    pass
