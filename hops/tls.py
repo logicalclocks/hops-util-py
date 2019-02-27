@@ -180,11 +180,11 @@ def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key
     """
     keystore_key_cert, keystore_key, keystore_ca_cert = _convert_jks_to_pem(jks_key_store_path, keystore_pw)
     truststore_key_cert, truststore_key, truststore_ca_cert = _convert_jks_to_pem(jks_trust_store_path, keystore_pw)
-    with open(client_key_cert_path, "w") as f:
+    with client_key_cert_path.open("w") as f:
         f.write(keystore_key_cert)
-    with open(client_key_path, "w") as f:
+    with client_key_path.open("w") as f:
         f.write(keystore_key)
-    with open(ca_cert_path, "w") as f:
+    with ca_cert_path.open("w") as f:
         f.write(keystore_ca_cert + truststore_ca_cert)
 
 
