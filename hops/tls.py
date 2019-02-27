@@ -7,30 +7,52 @@ import base64
 import textwrap
 from hops import constants
 import os
+from pathlib import Path
 
 try:
     import jks
 except:
     pass
 
-def get_key_store():
+
+def _get_key_store_path():
     """
-    Get keystore location
+    Get keystore path 
 
     Returns:
-        keystore filename
+        keystore path  
     """
-    return constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
+    k_certificate = Path(constants.SSL_CONFIG.K_CERTIFICATE_CONFIG)
+    if k_certificate.exists():
+        return k_certificate
+    else: 
+        username = os.environ['HADOOP_USER_NAME']
+        material_directory = Path(os.environ['MATERIAL_DIRECTORY'])
+        return material_directory.joinpath(username + constants.SSL_CONFIG.KEYSTORE_SUFFIX)
 
 
-def get_trust_store():
+def get_key_store():
+    return str(_get_key_store_path())
+
+
+def _get_trust_store_path():
     """
     Get truststore location
 
     Returns:
-         truststore filename
+         truststore location 
     """
-    return constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
+    t_certificate = Path(constants.SSL_CONFIG.T_CERTIFICATE_CONFIG)
+    if t_certificate.exists():
+        return str(t_certificate)
+    else: 
+        username = os.environ['HADOOP_USER_NAME']
+        material_directory = Path(os.environ['MATERIAL_DIRECTORY'])
+        return str(material_directory.joinpath(username + constants.SSL_CONFIG.TRUSTSTORE_SUFFIX))
+
+
+def get_trust_store():
+    return str(_get_trust_store_path())
 
 
 def _get_cert_pw():
@@ -40,17 +62,14 @@ def _get_cert_pw():
     Returns:
         Certificate password
     """
-    pwd_path = os.getcwd() + "/" + constants.SSL_CONFIG.CRYPTO_MATERIAL_PASSWORD
+    pwd_path = Path(constants.SSL_CONFIG.CRYPTO_MATERIAL_PASSWORD)
+    if not pwd_path.exists():
+        username = os.environ['HADOOP_USER_NAME']
+        material_directory = Path(os.environ['MATERIAL_DIRECTORY'])
+        pwd_path = material_directory.joinpath(username + constants.SSL_CONFIG.PASSWORD_SUFFIX)
 
-    if not os.path.exists(pwd_path):
-        raise AssertionError('material_passwd is not present in directory: {}'.format(pwd_path))
-
-    with open(pwd_path) as f:
-        key_store_pwd = f.read()
-
-    # remove special characters (due to bug in password materialized, should not be necessary when the bug is fixed)
-    key_store_pwd = "".join(list(filter(lambda x: x in string.printable and not x == "@", key_store_pwd)))
-    return key_store_pwd
+    with pwd_path.open() as f:
+        return f.read()
 
 
 def get_key_store_cert():
@@ -60,13 +79,13 @@ def get_key_store_cert():
     Returns:
         Certificate password
     """
-    cert_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
+    cert_path = _get_key_store_path() 
 
-    if not os.path.exists(cert_path):
-        raise AssertionError('k_certificate is not present in directory: {}'.format(cert_path))
+    if not cert_path.exists():
+        raise AssertionError('k_certificate is not present in directory: {}'.format(str(cert_path)))
 
     # read as bytes, don't try to use utf-8 encoding
-    with open(cert_path, "rb") as f:
+    with cert_path.open("rb") as f:
         key_store_cert = f.read()
         key_store_cert = base64.b64encode(key_store_cert)
 
@@ -145,6 +164,7 @@ def _convert_jks_to_pem(jks_path, keystore_pw):
         ca_certs = ca_certs + _bytes_to_pem_str(c.cert, "CERTIFICATE")
     return private_keys_certs, private_keys, ca_certs
 
+
 def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path, ca_cert_path):
     """
     Converts the JKS keystore, JKS truststore, and the root ca.pem
@@ -167,6 +187,7 @@ def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key
     with open(ca_cert_path, "w") as f:
         f.write(keystore_ca_cert + truststore_ca_cert)
 
+
 def get_client_certificate_location():
     """
     Get location of client certificate (PEM format) for the private key signed by trusted CA
@@ -175,9 +196,11 @@ def get_client_certificate_location():
     Returns:
         string path to client certificate in PEM format
     """
-    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG):
+    certificate_path = Path(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
+    if not certificate_path.exists(): 
         _write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
+    return str(certificate_path)
+
 
 def get_client_key_location():
     """
@@ -188,9 +211,11 @@ def get_client_key_location():
         string path to client private key in PEM format
     """
     # Convert JKS to PEMs if they don't exists already
-    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG):
+    key_path = Path(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
+    if not key_path.exists():
         _write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
+    return str(key_path)
+
 
 def get_ca_chain_location():
     """
@@ -201,20 +226,25 @@ def get_ca_chain_location():
     Returns:
          string path to ca chain of certificate
     """
-    if not os.path.exists(os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG):
+    ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG) 
+    if not ca_chain_path.exists():
         _write_pems()
-    return os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
+    return str(ca_chain_path)
+
 
 def _write_pems():
     """
     Converts JKS keystore file into PEM to be compatible with Python libraries
     """
-    t_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.T_CERTIFICATE_CONFIG
-    k_jks_path = os.getcwd() + "/" + constants.SSL_CONFIG.K_CERTIFICATE_CONFIG
-    client_certificate_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG
-    client_key_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG
-    ca_chain_path = os.getcwd() + "/" + constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG
+    t_jks_path = get_trust_store() 
+    k_jks_path = get_key_store() 
+
+    client_certificate_path = Path(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
+    client_key_path = Path(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
+    ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
+
     _write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path)
+
 
 def _prepare_rest_appservice_json_request():
     """

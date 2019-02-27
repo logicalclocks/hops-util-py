@@ -59,6 +59,10 @@ class SSL_CONFIG:
     """
     General SSL configuration constants for Hops-TLS
     """
+    KEYSTORE_SUFFIX = "__kstore.jks"
+    TRUSTSTORE_SUFFIX = "__tstore.jks"
+    PASSWORD_SUFFIX = "__cert.key"
+
     K_CERTIFICATE_CONFIG = "k_certificate"
     T_CERTIFICATE_CONFIG = "t_certificate"
     PEM_CLIENT_CERTIFICATE_CONFIG = "client.pem"
