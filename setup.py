@@ -25,5 +25,5 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
     ],
-    install_requires=['hopsfacets', 'pathlib']
+    install_requires=['hopsfacets', 'pathlib', 'pyhopshive']
 )
