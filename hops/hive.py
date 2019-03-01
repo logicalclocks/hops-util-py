@@ -8,6 +8,10 @@ def setup_hive_connection():
         so it can be used by ipython-sql and PyHive to establish a connection with Hive
     """
 
+    if not ('HIVE_ENDPOINT' in os.environ and 'PROJECT_NAME' in os.environ) : 
+        raise EnvironmentError("HIVE_ENDPOINT or PROJECT_NAME is not exported." + 
+            "The Hive module is meant to be run only in the context of a Python kernel") 
+
     connection_conf = {
         'auth' : 'CERTIFICATES',
         'keystore' : tls.get_key_store(),
