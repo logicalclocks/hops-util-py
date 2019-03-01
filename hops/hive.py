@@ -1,6 +1,6 @@
 from pyhive import hive
 import os
-import tls
+from . import tls
 
 def setup_hive_connection():
     """
