@@ -9,8 +9,11 @@ class HTTP_CONFIG:
     """
     HTTP_CONTENT_TYPE = "Content-type"
     HTTP_APPLICATION_JSON = "application/json"
+    HTTP_AUTHORIZATION = "Authorization"
     HTTP_POST = "POST"
     HTTP_PUT = "PUT"
+    HTTP_GET = "GET"
+    HTTP_UNATHORIZED = 401
 
 
 class ENV_VARIABLES:
@@ -251,7 +254,6 @@ class REST_CONFIG:
     """
     JSON_KEYSTOREPWD = "keyStorePwd"
     JSON_SCHEMA_CONTENTS = "contents"
-    JSON_SCHEMA_TOPICNAME = "topicName"
 
     JSON_FEATURESTORENAME = "featurestoreName"
 
@@ -294,7 +296,6 @@ class REST_CONFIG:
     JSON_KEYSTORE = "keyStore"
 
     HOPSWORKS_REST_RESOURCE = "hopsworks-api/api"
-    HOPSWORKS_REST_APPSERVICE = "appservice"
     HOPSWORKS_SCHEMA_RESOURCE = "schema"
     HOPSWORKS_FEATURESTORE_RESOURCE = "featurestore"
     HOPSWORKS_FEATURESTORES_RESOURCE = "featurestores"
@@ -303,6 +304,8 @@ class REST_CONFIG:
     HOPSWORKS_UPDATE_FEATUREGROUP_METADATA = "featurestore/featuregroup"
     HOPSWORKS_CREATE_TRAINING_DATASET_RESOURCE = "featurestore/trainingdatasets"
     HOPSWORKS_UPDATE_TRAINING_DATASET_METADATA = "featurestore/trainingdataset"
+    HOPSWORKS_KAFKA_RESOURCE = "kafka"
+    HOPSWORKS_PROJECT_RESOURCE = "project"
 
     JSON_DESCRIPTIVE_STATS_FEATURE_NAME= "featureName"
     JSON_DESCRIPTIVE_STATS_METRIC_VALUES= "metricValues"
@@ -330,6 +333,8 @@ class REST_CONFIG:
     JSON_ERROR_CODE = "errorCode"
     JSON_ERROR_MSG = "errorMsg"
     JSON_USR_MSG = "usrMsg"
+
+    JWT_TOKEN = "token.jwt"
 
 class DELIMITERS:
     """

@@ -154,6 +154,30 @@ def _get_http_connection(https=False):
         connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     return connection
 
+
+def send_request(connection, method, resource, body=None, headers=None):
+    """
+    Sends a request to Hopsworks. In case of Unauthorized response, submit the request once more as jwt might not
+    have been read properly from local container.
+    :param connection: HTTP connection instance to Hopsworks
+    :param method: HTTP(S) method
+    :param resource: Hopsworks resource
+    :param body: HTTP(S) body
+    :param headers: HTTP(S) headers
+    :return: HTTP(S) response
+    """
+    if headers is None:
+        headers = {}
+    headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
+    connection.request(method, resource, body, headers)
+    response = connection.getresponse()
+    if response.status == constants.HTTP_CONFIG.HTTP_UNATHORIZED:
+        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
+        connection.request(method, resource, body, headers)
+        response = connection.getresponse()
+    return response
+
+
 def num_executors():
     """
     Get the number of executors configured for Jupyter
@@ -440,3 +464,14 @@ def get_job_name():
         return os.environ[constants.ENV_VARIABLES.JOB_NAME_ENV_VAR]
     else:
         None
+
+
+def get_jwt():
+    """
+    Retrieves jwt from local container
+
+    Returns:
+        Content of jwt.token file in local container.
+    """
+    with open(constants.REST_CONFIG.JWT_TOKEN, "r") as jwt:
+        return jwt.read()

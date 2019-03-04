@@ -66,6 +66,13 @@ class FsTree(object):
         return self.walk(self.root, os.listdir(self.root), self.hdfs_root, hdfs.ls(self.hdfs_root))
 
 
+def project_id():
+    """
+    Get the Hopsworks project id from environment variables
+    :return: the Hopsworks project id
+    """
+    return os.environ["HOPSWORKS_PROJECT_ID"]
+
 
 def project_user():
     """
