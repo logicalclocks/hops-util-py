@@ -159,19 +159,23 @@ def send_request(connection, method, resource, body=None, headers=None):
     """
     Sends a request to Hopsworks. In case of Unauthorized response, submit the request once more as jwt might not
     have been read properly from local container.
-    :param connection: HTTP connection instance to Hopsworks
-    :param method: HTTP(S) method
-    :param resource: Hopsworks resource
-    :param body: HTTP(S) body
-    :param headers: HTTP(S) headers
-    :return: HTTP(S) response
+
+    Args:
+        connection: HTTP connection instance to Hopsworks
+        method: HTTP(S) method
+        resource: Hopsworks resource
+        body: HTTP(S) body
+        headers: HTTP(S) headers
+
+    Returns:
+        HTTP(S) response
     """
     if headers is None:
         headers = {}
     headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
     connection.request(method, resource, body, headers)
     response = connection.getresponse()
-    if response.status == constants.HTTP_CONFIG.HTTP_UNATHORIZED:
+    if response.status == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
         connection.request(method, resource, body, headers)
         response = connection.getresponse()

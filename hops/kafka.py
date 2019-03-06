@@ -104,11 +104,10 @@ def get_kafka_default_config():
 
 def get_schema(topic):
     """
-    Gets the Avro schema for a particular Kafka topic and its version.
+    Gets the Avro schema for a particular Kafka topic.
 
     Args:
         :topic: Kafka topic name
-        :version_id: Schema version ID
 
     Returns:
         Avro schema as a string object in JSON format
