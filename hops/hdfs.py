@@ -69,6 +69,7 @@ class FsTree(object):
 def project_id():
     """
     Get the Hopsworks project id from environment variables
+
     Returns: the Hopsworks project id
 
     """
