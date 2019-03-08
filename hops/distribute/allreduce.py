@@ -35,7 +35,7 @@ def _launch(sc, map_fun, local_logdir=False, name="no-name"):
     global run_id
     app_id = str(sc.applicationId)
 
-    num_executions = int(sc._conf.get("spark.executor.instances"))
+    num_executions = util.num_executors()
 
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(num_executions), num_executions)
