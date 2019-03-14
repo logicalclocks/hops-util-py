@@ -188,6 +188,18 @@ def project_featurestore():
     featurestore_name = project_name.lower() + constants.FEATURE_STORE.FEATURESTORE_SUFFIX
     return featurestore_name
 
+def _log(x):
+    """
+    Generic log function (in case logging is changed from stdout later)
+
+    Args:
+        :x: the argument to log
+
+    Returns:
+        None
+    """
+    print(x)
+
 
 def _run_and_log_sql(spark, sql_str):
     """
@@ -200,7 +212,7 @@ def _run_and_log_sql(spark, sql_str):
     Returns:
         the result of the SQL query
     """
-    print("Running sql: {}".format(sql_str))
+    _log("Running sql: {}".format(sql_str))
     return spark.sql(sql_str)
 
 
@@ -1032,14 +1044,14 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
 
     """
     if type(spark_dtype) is dict:
-        if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] == "array" or spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] == "ARRAY":
+        if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].lower() == constants.SPARK_CONFIG.SPARK_ARRAY:
             return spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + _convert_spark_dtype_to_hive_dtype(spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_ELEMENT_TYPE]) + ">"
-        if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] == "struct" or spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] == "STRUCT":
+        if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].lower() == constants.SPARK_CONFIG.SPARK_STRUCT:
             struct_nested_fields = list(map(
                 lambda field: field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_NAME] +
-                              ":" +  _convert_spark_dtype_to_hive_dtype(field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE]),
+                              constants.DELIMITERS.COLON_DELIMITER +  _convert_spark_dtype_to_hive_dtype(field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE]),
                 spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]))
-            return spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + ",".join(struct_nested_fields) + ">"
+            return spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE] + "<" + constants.DELIMITERS.COMMA_DELIMITER.join(struct_nested_fields) + ">"
     if spark_dtype.upper() in constants.HIVE_CONFIG.HIVE_DATA_TYPES:
         return spark_dtype.upper()
     if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_LONG_TYPE:
@@ -1050,7 +1062,7 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
         return constants.HIVE_CONFIG.HIVE_CHAR_TYPE
     if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_INTEGER_TYPE:
         return constants.HIVE_CONFIG.HIVE_INT_TYPE
-    if "decimal" in spark_dtype.lower():
+    if constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE in spark_dtype.lower():
         return spark_dtype
     raise AssertionError("Dataframe data type: {} not recognized.".format(spark_dtype))
 
@@ -1147,6 +1159,20 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
 
 def _compute_cluster_analysis(spark_df, clusters=5):
     numeric_columns = list(map(lambda col_dtype: col_dtype[0], spark_df.dtypes))
+    if (len(numeric_columns) == 0):
+        raise AssertionError("The provided spark dataframe does not contain any numeric columns. " \
+                             "Cannot compute cluster analysis with k-means on categorical columns. "
+                             "The numeric datatypes are: {}" \
+                             " and the number of numeric datatypes in the dataframe is: {} ({})".format(
+            constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, len(spark_df.dtypes), spark_df.dtypes))
+    if (len(numeric_columns) == 1):
+        raise AssertionError("The provided spark dataframe does contains only one numeric column. " \
+                             "Cluster analysis will filter out numeric columns and then "
+                             "use pca to reduce dataset dimension to 2 dimensions and "
+                             "then apply KMeans, this is not possible when the input data have only one numeric column."
+                             "The numeric datatypes are: {}" \
+                             " and the number of numeric datatypes in the dataframe is: {} ({})".format(
+            constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, len(spark_df.dtypes), spark_df.dtypes))
     vecAssembler = VectorAssembler(inputCols=numeric_columns,
                                    outputCol=constants.FEATURE_STORE.CLUSTERING_ANALYSIS_INPUT_COLUMN)
     spark_df_1 = vecAssembler.transform(spark_df)
@@ -1221,7 +1247,10 @@ def _is_type_numeric(type):
 
     """
     for spark_numeric_type in constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES:
-        if spark_numeric_type in type[1]:
+        if constants.SPARK_CONFIG.SPARK_ARRAY.lower() in type[1].lower() or \
+                        constants.SPARK_CONFIG.SPARK_STRUCT.lower() in type[1].lower():
+            return False
+        if spark_numeric_type.lower() in type[1].lower():
             return True
     return False
 
@@ -1303,25 +1332,25 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
     spark = util._find_spark()
 
     if spark_df.rdd.isEmpty():
-        print("Cannot compute statistics on an empty dataframe, the provided dataframe is empty")
+        _log("Cannot compute statistics on an empty dataframe, the provided dataframe is empty")
 
     if descriptive_statistics:
         try:
-            print("computing descriptive statistics for : {}".format(name))
+            _log("computing descriptive statistics for : {}".format(name))
             spark.sparkContext.setJobGroup("Descriptive Statistics Computation",
                                            "Analyzing Dataframe Statistics for : {}".format(name))
             desc_stats_json = _compute_descriptive_statistics(spark_df)
             desc_stats_data = _structure_descriptive_stats_json(desc_stats_json)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            print(
+            _log(
                 "Could not compute descriptive statistics for: {}, set the optional argument descriptive_statistics=False to skip this step,\n error: {}".format(
                     name, str(e)))
             desc_stats_data = None
 
     if feature_correlation:
         try:
-            print("computing feature correlation for: {}".format(name))
+            _log("computing feature correlation for: {}".format(name))
             spark.sparkContext.setJobGroup("Feature Correlation Computation",
                                            "Analyzing Feature Correlations for: {}".format(name))
             spark_df_filtered = _filter_spark_df_numeric(spark_df)
@@ -1329,14 +1358,14 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             feature_corr_data = _structure_feature_corr_json(pd_corr_matrix.to_dict())
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            print(
+            _log(
                 "Could not compute feature correlation for: {}, set the optional argument feature_correlation=False to skip this step,\n error: {}".format(
                     name, str(e)))
             feature_corr_data = None
 
     if feature_histograms:
         try:
-            print("computing feature histograms for: {}".format(name))
+            _log("computing feature histograms for: {}".format(name))
             spark.sparkContext.setJobGroup("Feature Histogram Computation",
                                            "Analyzing Feature Distributions for: {}".format(name))
             spark_df_filtered = _filter_spark_df_numeric(spark_df)
@@ -1344,14 +1373,14 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             features_histograms_data = _structure_feature_histograms_json(features_histogram_list)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            print(
+            _log(
                 "Could not compute feature histograms for: {}, set the optional argument feature_histograms=False to skip this step,\n error: {}".format(
                     name, str(e)))
             features_histograms_data = None
 
     if cluster_analysis:
         try:
-            print("computing cluster analysis for: {}".format(name))
+            _log("computing cluster analysis for: {}".format(name))
             spark.sparkContext.setJobGroup("Feature Cluster Analysis",
                                            "Analyzing Feature Clusters for: {}".format(name))
             spark_df_filtered = _filter_spark_df_numeric(spark_df)
@@ -1359,7 +1388,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             cluster_analysis_data = _structure_cluster_analysis_json(cluster_analysis_raw)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
-            print(
+            _log(
                 "Could not compute cluster analysis for: {}, set the optional argument cluster_analysis=False to skip this step,\n error: {}".format(
                     name, str(e)))
             cluster_analysis_data = None
@@ -1804,6 +1833,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
     #update metadata cache
     _get_featurestore_metadata(featurestore, update_cache=True)
+    _log("Feature group created successfully")
 
 
 def get_featurestore_metadata(featurestore=None, update_cache=False):
@@ -1982,16 +2012,33 @@ def get_dataframe_tf_record_schema(spark_df):
     """
     return _get_dataframe_tf_record_schema_json(spark_df)[0]
 
+def _get_spark_array_size(spark_df, array_col_name):
+    """
+    Gets the size of an array column in the dataframe
 
-def _get_dataframe_tf_record_schema_json(spark_df):
+    Args:
+        :spark_df: the spark dataframe that contains the array column
+        :array_col_name: the name of the array column in the spark dataframe
+
+    Returns:
+        The length of the the array column (assuming fixed size)
+    """
+    return len(getattr(spark_df.select(array_col_name).first(), array_col_name))
+
+
+def _get_dataframe_tf_record_schema_json(spark_df, fixed=True):
     """
     Infers the tf-record schema from a spark dataframe
     Note: this method is just for convenience, it should work in 99% of cases but it is not guaranteed,
-    if spark or tensorflow introduces new datatypes this will break. The user can allways fallback to encoding the
+    if spark or tensorflow introduces new datatypes this will break. The user can always fallback to encoding the
     tf-example-schema manually.
+
+    Can only handle one level of nesting, e.g arrays inside the dataframe is okay but having a schema of
+     array<array<float>> will not work.
 
     Args:
         :spark_df: the spark dataframe to infer the tensorflow example record from
+        :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
 
     Returns:
         a dict with the tensorflow example as well as a json friendly version of the schema
@@ -1999,97 +2046,51 @@ def _get_dataframe_tf_record_schema_json(spark_df):
     example = {}
     example_json = {}
     for col in spark_df.dtypes:
-        if col[1] == constants.SPARK_CONFIG.SPARK_INTEGER_TYPE:
+        if col[1] in constants.FEATURE_STORE.TF_RECORD_INT_SPARK_TYPES:
             example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
             tf.FixedLenFeature([], tf.int64)
-        if col[1] == constants.SPARK_CONFIG.SPARK_INT_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_BIGINT_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_LONG_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_FLOAT_TYPE:
+        if col[1] in constants.FEATURE_STORE.TF_RECORD_FLOAT_SPARK_TYPES:
             example[str(col[0])] = tf.FixedLenFeature([], tf.float32)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_DOUBLE_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_STRING_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.string)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_BINARY_TYPE:
-            example[str(col[0])] = tf.FixedLenFeature([], tf.string)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_INTEGER:
-            example[str(col[0])] = tf.VarLenFeature(tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_BIGINT:
-            example[str(col[0])] = tf.VarLenFeature(tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_LONG:
-            example[str(col[0])] = tf.VarLenFeature(tf.int64)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT:
-            example[str(col[0])] = tf.VarLenFeature(tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE:
-            example[str(col[0])] = tf.VarLenFeature(tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL:
-            example[str(col[0])] = tf.VarLenFeature(tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_STRING:
+        if col[1] in constants.FEATURE_STORE.TF_RECORD_INT_ARRAY_SPARK_TYPES:
+            if fixed:
+                array_len = _get_spark_array_size(spark_df, str(col[0]))
+                example[str(col[0])] = tf.FixedLenFeature(shape=[array_len], dtype=tf.int64)
+                example_json[str(col[0])] = {
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE: [array_len]
+                }
+            else:
+                example[str(col[0])] = tf.VarLenFeature(tf.int64)
+                example_json[str(col[0])] = {
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_INT_TYPE}
+        if col[1] in constants.FEATURE_STORE.TF_RECORD_FLOAT_ARRAY_SPARK_TYPES:
+            if fixed:
+                array_len = _get_spark_array_size(spark_df, str(col[0]))
+                example[str(col[0])] = tf.FixedLenFeature(shape=[array_len], dtype=tf.float32)
+                example_json[str(col[0])] = {
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE: [array_len]
+                }
+            else:
+                example[str(col[0])] = tf.VarLenFeature(tf.float32)
+                example_json[str(col[0])] = {
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
+                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
+        if col[1] in constants.FEATURE_STORE.TF_RECORD_STRING_ARRAY_SPARK_TYPES or col[1] in constants.FEATURE_STORE.TF_RECORD_STRING_SPARK_TYPES:
             example[str(col[0])] = tf.VarLenFeature(tf.string)
             example_json[str(col[0])] = {
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
                 constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_ARRAY_BINARY:
-            example[str(col[0])] = tf.VarLenFeature(tf.string)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_STRING_TYPE}
-        if col[1] == constants.SPARK_CONFIG.SPARK_VECTOR:
-            example[str(col[0])] = tf.VarLenFeature(tf.float32)
-            example_json[str(col[0])] = {
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE: constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR,
-                constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE: constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE}
+
         recognized_tf_record_types = [constants.SPARK_CONFIG.SPARK_VECTOR, constants.SPARK_CONFIG.SPARK_ARRAY_BINARY,
                             constants.SPARK_CONFIG.SPARK_ARRAY_STRING, constants.SPARK_CONFIG.SPARK_ARRAY_DECIMAL,
                             constants.SPARK_CONFIG.SPARK_ARRAY_DOUBLE, constants.SPARK_CONFIG.SPARK_ARRAY_FLOAT,
@@ -2184,17 +2185,20 @@ def _convert_tf_record_schema_json_to_dict(tf_record_json_schema):
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED and \
                 value[
                     constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_INT_TYPE:
-            example[str(key)] = tf.FixedLenFeature([], tf.int64)
+            if constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE in value:
+                example[str(key)] = tf.FixedLenFeature(shape=value[constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE],
+                                                       dtype=tf.int64)
+            else:
+                example[str(key)] = tf.FixedLenFeature([], tf.int64)
         if value[
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED and \
                 value[
                     constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE:
-            example[str(key)] = tf.FixedLenFeature([], tf.float32)
-        if value[
-            constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED and \
-                value[
-                    constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE] == constants.FEATURE_STORE.TF_RECORD_STRING_TYPE:
-            example[str(key)] = tf.FixedLenFeature([], tf.float32)
+            if constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE in value:
+                example[str(key)] = tf.FixedLenFeature(shape=value[constants.FEATURE_STORE.TF_RECORD_SCHEMA_SHAPE],
+                                                       dtype=tf.float32)
+            else:
+                example[str(key)] = tf.FixedLenFeature([], tf.float32)
         if value[
             constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE] == constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_VAR and \
                         value[
@@ -2253,7 +2257,6 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
         return _do_get_training_dataset_tf_record_schema(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version, featurestore=featurestore)
     except:
         return _do_get_training_dataset_tf_record_schema(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version, featurestore=featurestore)
-
 
 def _do_get_training_dataset_tf_record_schema(training_dataset, featurestore_metadata, training_dataset_version=1, featurestore=None):
     """
@@ -2945,7 +2948,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
             tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df)[1]
             _store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
         except Exception as e:
-            print("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+            _log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
     _write_training_dataset_hdfs(spark_df,
                                  hdfs_path + constants.DELIMITERS.SLASH_DELIMITER + training_dataset,
                                  data_format,
@@ -2954,6 +2957,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                  petastorm_args)
     #update metadata cache
     _get_featurestore_metadata(featurestore, update_cache=True)
+    _log("Training Dataset created successfully")
 
 
 def _update_training_dataset_stats_rest(
@@ -3119,7 +3123,7 @@ def _do_insert_into_training_dataset(
             tf_record_schema_json = _get_dataframe_tf_record_schema_json(spark_df)[1]
             _store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
         except Exception as e:
-            print("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+            _log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
     _write_training_dataset_hdfs(spark_df,
                                  hdfs_path + constants.DELIMITERS.SLASH_DELIMITER + training_dataset,
                                  data_format,
