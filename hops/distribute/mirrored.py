@@ -121,24 +121,17 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
             print('-------------------------------------------------------')
             hopshdfs.log(time_str)
         except:
-            #Always do cleanup
-            _cleanup(tb_hdfs_path)
+            raise
+        finally:
+            if local_logdir:
+                local_tb = tensorboard.local_logdir_path
+                util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
+
             if devices.get_num_gpus() > 0:
                 t.do_run = False
                 t.join()
-            raise
-        finally:
-            try:
-                if local_logdir:
-                    local_tb = tensorboard.local_logdir_path
-                    util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
-            except:
-                pass
 
-        _cleanup(tb_hdfs_path)
-        if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join()
+            _cleanup(tb_hdfs_path)
 
     return _wrapper_fun
 

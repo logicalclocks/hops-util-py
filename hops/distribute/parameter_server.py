@@ -183,27 +183,21 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
             if role == "chief":
                 hopshdfs.log(time_str)
         except:
-            _cleanup(tb_hdfs_path)
-            if devices.get_num_gpus() > 0:
-                t.do_run = False
-                t.join()
             raise
         finally:
+            if role == "worker" or role == "chief":
+                client.register_worker_finished()
+            client.close()
             if role == "chief":
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
-            try:
-                if role == "worker" or role == "chief":
-                    client.register_worker_finished()
-                client.close()
-            except:
-                pass
 
-        _cleanup(tb_hdfs_path)
-        if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join()
+            if devices.get_num_gpus() > 0:
+                t.do_run = False
+                t.join()
+
+            _cleanup(tb_hdfs_path)
 
     return _wrapper_fun
 
