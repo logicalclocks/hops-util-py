@@ -247,16 +247,16 @@ def _get_featurestore_metadata(featurestore=None, update_cache=False):
         featurestore = project_featurestore()
     global metadata_cache
     if metadata_cache is None or update_cache:
-        json_contents = tls._prepare_rest_appservice_json_request()
-        json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-        json_embeddable = json.dumps(json_contents)
-        headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-        method = constants.HTTP_CONFIG.HTTP_POST
+        method = constants.HTTP_CONFIG.HTTP_GET
         connection = util._get_http_connection(https=True)
-        resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE
-        resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-        connection.request(method, resource_url, json_embeddable, headers)
-        response = connection.getresponse()
+        resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                        constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                        constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                        hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                        constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                        constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                        featurestore)
+        response = util.send_request(connection, method, resource_url)
         resp_body = response.read()
         response_object = json.loads(resp_body)
         metadata_cache = response_object
@@ -451,9 +451,9 @@ def _find_feature(feature, featurestore, featuregroups_parsed):
                                                                             constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]),
                                              featuregroups_matched)
         featuregroups_matched_str = ",".join(featuregroups_matched_str_list)
-        raise AssertionError("Found the feature with name '{}' " \
-                             "in more than one of the featuregroups of the featurestore: '{}', " \
-                             "please specify the optional argument 'featuregroup=', " \
+        raise AssertionError("Found the feature with name '{}' "
+                             "in more than one of the featuregroups of the featurestore: '{}', "
+                             "please specify the optional argument 'featuregroup=', "
                              "the matched featuregroups were: {}".format(feature, featurestore,
                                                                          featuregroups_matched_str))
     return featuregroups_matched[0]
@@ -880,28 +880,31 @@ def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
         The JSON response
 
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] = featuregroup
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION] = featuregroup_version
+    json_contents = {constants.REST_CONFIG.JSON_FEATURESTORENAME: featurestore,
+                     constants.REST_CONFIG.JSON_FEATUREGROUPNAME: featuregroup,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version}
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_CLEAR_FEATUREGROUP_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_CLEAR_FEATUREGROUP_RESOURCE)
+
+    response = util.send_request(connection, method, resource_url, json_embeddable, headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3
-        if (response.code != 200):
+        if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise AssertionError("Could not clear featuregroup contents, server response: \n " \
+            raise AssertionError("Could not clear featuregroup contents, server response: \n " 
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 response.code, response.reason, error_code, error_msg, user_msg))
     except:  # for python 2
-        if (response.status != 200):
+        if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise AssertionError("Could not clear featuregroup contents, server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
@@ -916,25 +919,24 @@ def _get_featurestores():
     Returns:
         a list of Featurestore JSON DTOs
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_embeddable = json.dumps(json_contents)
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    method = constants.HTTP_CONFIG.HTTP_POST
+    method = constants.HTTP_CONFIG.HTTP_GET
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE)
+    response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3
-        if (response.code != 200):
+        if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise AssertionError("Could not fetch feature stores, server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 response.code, response.reason, error_code, error_msg, user_msg))
     except:  # for python 2
-        if (response.status != 200):
+        if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise AssertionError("Could not fetch feature stores, server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
@@ -1587,28 +1589,30 @@ def _create_featuregroup_rest(featuregroup, featurestore, description, featuregr
         The HTTP response
 
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] = featuregroup
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION] = featuregroup_version
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION] = description
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME] = job_name
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES] = dependencies
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES] = features_schema
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION] = feature_corr_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS] = featuregroup_desc_stats_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM] = features_histogram_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS] = cluster_analysis_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA] = False
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS] = False
+    json_contents = {constants.REST_CONFIG.JSON_FEATURESTORENAME: featurestore,
+                     constants.REST_CONFIG.JSON_FEATUREGROUPNAME: featuregroup,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION: description,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME: job_name,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES: dependencies,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: features_schema,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA: False,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS: False}
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_CREATE_FEATUREGROUP_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_CREATE_FEATUREGROUP_RESOURCE)
+    response = util.send_request(connection, method, resource_url, json_embeddable, headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3
@@ -1643,27 +1647,29 @@ def _update_featuregroup_stats_rest(featuregroup, featurestore, featuregroup_ver
     Returns:
         The REST response
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] = featuregroup
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION] = featuregroup_version
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME] = None
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES] = []
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA] = False
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS] = True
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION] = feature_corr
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS] = featuregroup_desc_stats_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM] = features_histogram_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS] = cluster_analysis_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES] = []
+    json_contents = {constants.REST_CONFIG.JSON_FEATURESTORENAME: featurestore,
+                     constants.REST_CONFIG.JSON_FEATUREGROUPNAME: featuregroup,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME: None,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DEPENDENCIES: [],
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA: False,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS: True,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: []}
     json_embeddable = json.dumps(json_contents, allow_nan=False)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_UPDATE_FEATUREGROUP_METADATA
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_UPDATE_FEATUREGROUP_METADATA)
+    response = util.send_request(connection, method, resource_url, json_embeddable, headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3
@@ -2131,27 +2137,29 @@ def _create_training_dataset_rest(training_dataset, featurestore, description, t
         the HTTP response
 
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] = training_dataset
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION] = training_dataset_version
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION] = description
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME] = job_name
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES] = dependencies
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA] = features_schema_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION] = feature_corr_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DESC_STATS] = training_dataset_desc_stats_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES_HISTOGRAM] = features_histogram_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS] = cluster_analysis_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT] = data_format
+    json_contents = {constants.REST_CONFIG.JSON_FEATURESTORENAME: featurestore,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME: training_dataset,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION: training_dataset_version,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION: description,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME: job_name,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES: dependencies,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA: features_schema_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION: feature_corr_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_DESC_STATS: training_dataset_desc_stats_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES_HISTOGRAM: features_histogram_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT: data_format}
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_CREATE_TRAINING_DATASET_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_CREATE_TRAINING_DATASET_RESOURCE)
+    response = util.send_request(connection, method, resource_url, json_embeddable, headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3
@@ -2980,26 +2988,28 @@ def _update_training_dataset_stats_rest(
         the HTTP response
 
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] = training_dataset
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION] = training_dataset_version
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION] = feature_corr_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS] = featuregroup_desc_stats_data
-    json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM] = features_histogram_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS] = cluster_analysis_data
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA] = features_schema
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES] = []
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_METADATA] = False
-    json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_STATS] = True
+    json_contents = {constants.REST_CONFIG.JSON_FEATURESTORENAME: featurestore,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME: training_dataset,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION: training_dataset_version,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA: features_schema,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES: [],
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_METADATA: False,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_STATS: True}
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_UPDATE_TRAINING_DATASET_METADATA
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_UPDATE_TRAINING_DATASET_METADATA)
+    response = util.send_request(connection, method, resource_url, json_embeddable, headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     try:  # for python 3

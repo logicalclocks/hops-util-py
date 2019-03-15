@@ -53,6 +53,7 @@ import os
 from hops import constants
 from hops import tls
 from hops import util
+from hops import hdfs
 import json
 
 def get_broker_endpoints():
@@ -100,28 +101,27 @@ def get_kafka_default_config():
     }
     return default_config
 
-def get_schema(topic, version_id=1):
+
+def get_schema(topic):
     """
-    Gets the Avro schema for a particular Kafka topic and its version.
+    Gets the Avro schema for a particular Kafka topic.
 
     Args:
         :topic: Kafka topic name
-        :version_id: Schema version ID
 
     Returns:
         Avro schema as a string object in JSON format
     """
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_SCHEMA_TOPICNAME] = topic
-    json_contents[constants.REST_CONFIG.JSON_SCHEMA_VERSION] = version_id
-    json_embeddable = json.dumps(json_contents)
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    method = constants.HTTP_CONFIG.HTTP_POST
+    method = constants.HTTP_CONFIG.HTTP_GET
     connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_KAFKA_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   topic + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
+    response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
     return response_object

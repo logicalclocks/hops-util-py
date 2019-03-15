@@ -4,7 +4,6 @@ API for interacting with the file system on Hops (HopsFS).
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
 """
 import pydoop.hdfs as hdfs
-import os
 import datetime
 from six import string_types
 import shutil
@@ -13,6 +12,7 @@ import fnmatch
 import os
 import errno
 import pydoop.hdfs.path as path
+from hops import constants
 
 fd = None
 
@@ -66,6 +66,15 @@ class FsTree(object):
         return self.walk(self.root, os.listdir(self.root), self.hdfs_root, hdfs.ls(self.hdfs_root))
 
 
+def project_id():
+    """
+    Get the Hopsworks project id from environment variables
+
+    Returns: the Hopsworks project id
+
+    """
+    return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
+
 
 def project_user():
     """
@@ -76,9 +85,9 @@ def project_user():
     """
 
     try:
-        hops_user = os.environ["HADOOP_USER_NAME"]
+        hops_user = os.environ[constants.ENV_VARIABLES.HADOOP_USER_NAME_ENV_VAR]
     except:
-        hops_user = os.environ["HDFS_USER"]
+        hops_user = os.environ[constants.ENV_VARIABLES.HDFS_USER_ENV_VAR]
     return hops_user
 
 def project_name():

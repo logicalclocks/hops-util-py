@@ -244,18 +244,3 @@ def _write_pems():
     ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
 
     _write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path)
-
-
-def _prepare_rest_appservice_json_request():
-    """
-    Prepares a REST JSON Request to Hopsworks APP-service
-
-    Returns:
-        a dict with keystore cert bytes and password string
-    """
-    key_store_pwd = get_key_store_pwd()
-    key_store_cert = get_key_store_cert()
-    json_contents = {}
-    json_contents[constants.REST_CONFIG.JSON_KEYSTOREPWD] = key_store_pwd
-    json_contents[constants.REST_CONFIG.JSON_KEYSTORE] = key_store_cert.decode("latin-1") # raw bytes is not serializable by JSON -_-
-    return json_contents
