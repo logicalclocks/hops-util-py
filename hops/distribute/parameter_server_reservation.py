@@ -116,7 +116,7 @@ class WorkerFinished:
     self.finished = 0
     self.check_done = False
 
-  def add(self, meta):
+  def add(self):
     """Add a reservation.
 
     Args:
@@ -245,7 +245,7 @@ class Server(MessageSocket):
       self.reservations.add(msg['data'])
       MessageSocket.send(self, sock, 'OK')
     elif msg_type == 'REG_DONE':
-      self.worker_finished.add(msg['data'])
+      self.worker_finished.add()
       MessageSocket.send(self, sock, 'OK')
     elif msg_type == 'QUERY':
       MessageSocket.send(self, sock, self.reservations.done())

@@ -237,11 +237,13 @@ def _get_ip_address():
     Simple utility to get host IP address
 
     Returns:
-        x
+        ip address of current host
     """
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    return s.getsockname()[0]
+    try:
+        _, _, _, _, addr = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET, socket.SOCK_STREAM)[0]
+        return addr[0]
+    except:
+        return socket.gethostbyname(socket.getfqdn())
 
 def _time_diff(task_start, task_end):
     """
