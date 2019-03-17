@@ -645,7 +645,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
 def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
     """
-    *Distributed Training* single machine - multiple GPUs
+    *Distributed Training*
 
     Example usage:
 
@@ -656,7 +656,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=No
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
     >>>    ...MirroredStrategy()...
-    >>> experiment.mirrored(mirrored_training)
+    >>> experiment.mirrored(mirrored_training, local_logdir=True)
 
     Args:
         :map_fun: contains the code where you are using MirroredStrategy.

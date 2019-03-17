@@ -200,7 +200,7 @@ def _handle_return(val, hdfs_exec_logdir):
     try:
         test = int(val)
     except:
-        raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
+        raise ValueError('Your function should return a metric (number).')
 
     metric_file = hdfs_exec_logdir + '/metric'
     fs_handle = hopshdfs.get_fs()
