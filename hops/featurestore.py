@@ -227,7 +227,7 @@ def _get_table_name(featuregroup, version):
     return featuregroup + "_" + str(version)
 
 
-def _get_feature_store_metadata(featurestore=None):
+def _get_featurestore_metadata(featurestore=None):
     """
     Makes a REST call to the appservice in hopsworks to get all featuregroups and training datasets for
     the provided featurestore, authenticating with keystore and password.
@@ -489,7 +489,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     else:
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_feature_store_metadata(featurestore)["featuregroups"]
+        featuregroups_json = _get_featurestore_metadata(featurestore)["featuregroups"]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -700,7 +700,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
             featuregroups_parsed_filtered = _convert_featuregroup_version_dict(featuregroups_version_dict)
             join_str = _get_join_str(featuregroups_parsed_filtered, join_key)
         else:
-            featuregroups_json = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+            featuregroups_json = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
             featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
             if (len(featuregroups_parsed) == 0):
                 raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -725,7 +725,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     if (len(featuregroups_version_dict) == 0):
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+        featuregroups_json = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -1788,7 +1788,7 @@ def get_featurestore_metadata(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    return _get_feature_store_metadata(featurestore)
+    return _get_featurestore_metadata(featurestore)
 
 
 def get_featuregroups(featurestore=None):
@@ -1808,7 +1808,7 @@ def get_featuregroups(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+    featurestore_metadata = _get_featurestore_metadata(featurestore)
     featuregroup_names = list(map(lambda fg: _get_table_name(fg[constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
                                                              fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]),
                                   featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]))
@@ -1831,7 +1831,7 @@ def get_features_list(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+    featurestore_metadata = _get_featurestore_metadata(featurestore)
     features = []
     for fg in featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
         features.extend(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES])
@@ -1855,7 +1855,7 @@ def get_training_datasets(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_feature_store_metadata(featurestore)
+    featurestore_metadata = _get_featurestore_metadata(featurestore)
     training_dataset_names = list(map(lambda td: _get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
                                                                  td[
                                                                      constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]),
@@ -2179,7 +2179,7 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
     if featurestore is None:
         featurestore = project_featurestore()
     spark = util._find_spark()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
@@ -2564,7 +2564,7 @@ def insert_into_training_dataset(
 
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = _compute_dataframe_stats(
         training_dataset, spark_df=spark_df, version=training_dataset_version, featurestore=featurestore,
@@ -2638,7 +2638,7 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
@@ -2667,7 +2667,7 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     if featurestore is None:
         featurestore = project_featurestore()
 
-    training_datasets = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     matches = list(
         filter(lambda x: x[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset, training_datasets))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]), matches))
@@ -2691,7 +2691,7 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     if featurestore is None:
         featurestore = project_featurestore()
 
-    featuregroups = _get_feature_store_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+    featuregroups = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
     matches = list(filter(lambda x: x[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] == featuregroup, featuregroups))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]), matches))
     if (len(versions) > 0):
