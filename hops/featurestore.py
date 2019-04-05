@@ -172,6 +172,19 @@ try:
 except:
     pass
 
+# for backwards compatibility
+try:
+    import pyarrow as pa
+except:
+    pass
+
+# for backwards compatibility
+try:
+    from petastorm.etl.dataset_metadata import materialize_dataset
+except:
+    pass
+
+metadata_cache = None
 
 def project_featurestore():
     """
@@ -227,13 +240,14 @@ def _get_table_name(featuregroup, version):
     return featuregroup + "_" + str(version)
 
 
-def _get_featurestore_metadata(featurestore=None):
+def _get_featurestore_metadata(featurestore=None, update_cache=False):
     """
     Makes a REST call to the appservice in hopsworks to get all featuregroups and training datasets for
     the provided featurestore, authenticating with keystore and password.
 
     Args:
         :featurestore: the name of the database, defaults to the project's featurestore
+        :update_cache: if true the cache is updated
 
     Returns:
         JSON list of featuregroups
@@ -241,19 +255,22 @@ def _get_featurestore_metadata(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    json_contents = tls._prepare_rest_appservice_json_request()
-    json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
-    json_embeddable = json.dumps(json_contents)
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    method = constants.HTTP_CONFIG.HTTP_POST
-    connection = util._get_http_connection(https=True)
-    resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
-    connection.request(method, resource_url, json_embeddable, headers)
-    response = connection.getresponse()
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    return response_object
+    global metadata_cache
+    if metadata_cache is None or update_cache:
+        json_contents = tls._prepare_rest_appservice_json_request()
+        json_contents[constants.REST_CONFIG.JSON_FEATURESTORENAME] = featurestore
+        json_embeddable = json.dumps(json_contents)
+        headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+        method = constants.HTTP_CONFIG.HTTP_POST
+        connection = util._get_http_connection(https=True)
+        resource = constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_RESOURCE
+        resource_url = constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + constants.REST_CONFIG.HOPSWORKS_REST_APPSERVICE + constants.DELIMITERS.SLASH_DELIMITER + resource
+        connection.request(method, resource_url, json_embeddable, headers)
+        response = connection.getresponse()
+        resp_body = response.read()
+        response_object = json.loads(resp_body)
+        metadata_cache = response_object
+    return metadata_cache
 
 
 def _parse_featuregroups_json(featuregroups):
@@ -456,7 +473,8 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     """
     Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries hopsworks metastore
     to see if the feature exists in any of the featuregroups in the featurestore. If the user knows which featuregroup
-    contain the feature, it should be specified as it will improve performance of the query.
+    contain the feature, it should be specified as it will improve performance of the query. Will first try to construct the query
+    from the cached metadata, if that fails, it retries after updating the cache
 
     Example usage:
 
@@ -476,6 +494,29 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         A spark dataframe with the feature
 
     """
+    try: # try with cached metadata
+        return _do_get_feature(feature, _get_featurestore_metadata(featurestore, update_cache=False), featurestore=featurestore, featuregroup=featuregroup, featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+    except: # Try again after updating cache
+        return _do_get_feature(feature, _get_featurestore_metadata(featurestore, update_cache=True), featurestore=featurestore, featuregroup=featuregroup, featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+
+def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregroup=None, featuregroup_version=1, dataframe_type="spark"):
+    """
+    Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries hopsworks metastore
+    to see if the feature exists in any of the featuregroups in the featurestore. If the user knows which featuregroup
+    contain the feature, it should be specified as it will improve performance of the query.
+
+    Args:
+        :feature: the feature name to get
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroup: (Optional) the featuregroup where the feature resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: the metadata of the featurestore to query
+
+    Returns:
+        A spark dataframe with the feature
+
+    """
     if featurestore is None:
         featurestore = project_featurestore()
     spark = util._find_spark()
@@ -489,7 +530,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     else:
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_featurestore_metadata(featurestore)["featuregroups"]
+        featuregroups_json = featurestore_metadata["featuregroups"]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -502,6 +543,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         spark.sparkContext.setJobGroup("Fetching Feature",
                                        "Getting feature: {} from the featurestore {}".format(feature, featurestore))
         return _return_dataframe_type(result, dataframe_type)
+
 
 
 def _get_join_str(featuregroups, join_key):
@@ -580,18 +622,18 @@ def _validate_metadata(name, dtypes, dependencies, description):
     Returns:
         None
     """
-    name_pattern = re.compile("^[a-zA-Z0-9-_]+$")
-    if len(name) > 256 or name == "" or not name_pattern.match(name) or "-" in name:
+    name_pattern = re.compile("^[a-zA-Z0-9_]+$")
+    if len(name) > 256 or name == "" or not name_pattern.match(name):
         raise AssertionError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters," \
-                             ", cannot contain hyphens ('-') and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided name: {} is not valid".format(
+                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} is not valid".format(
             name))
     if len(dtypes) == 0:
         raise AssertionError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]) or "-" in dtype[0]:
+        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
             raise AssertionError("Name of feature column cannot be empty, cannot exceed 767 characters," \
-                                 "cannot contain hyphens ('-'), and must match the regular expression: ^[a-zA-Z0-9-_]+$, the provided feature name: {} is not valid".format(
+                                 " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided feature name: {} is not valid".format(
                 dtype[0]))
 
     if not len(set(dependencies)) == len(dependencies):
@@ -656,7 +698,8 @@ def _convert_featuregroup_version_dict(featuregroups_version_dict):
 def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
     """
     Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
-    metastore to find where the features are stored.
+    metastore to find where the features are stored. It will try to construct the query first from the cached metadata,
+    if that fails it will re-try after reloading the cache
 
     Example usage:
 
@@ -672,6 +715,32 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
         :featuregroup_version: (Optional) the version of the featuregroup
         :join_key: (Optional) column name to join on
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+
+    Returns:
+        A spark dataframe with all the features
+
+    """
+    # try with cached metadata
+    try:
+        return _do_get_features(features, _get_featurestore_metadata(featurestore, update_cache=False), featurestore=featurestore, featuregroups_version_dict=featuregroups_version_dict, join_key=join_key, dataframe_type=dataframe_type)
+        # Try again after updating cache
+    except:
+        return _do_get_features(features, _get_featurestore_metadata(featurestore, update_cache=True), featurestore=featurestore, featuregroups_version_dict=featuregroups_version_dict, join_key=join_key, dataframe_type=dataframe_type)
+
+
+def _do_get_features(features, featurestore_metadata, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
+    """
+    Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
+    metastore to find where the features are stored.
+
+    Args:
+        :features: a list of features to get from the featurestore
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroups: (Optional) a dict with (fg --> version) for all the featuregroups where the features resides
+        :featuregroup_version: (Optional) the version of the featuregroup
+        :join_key: (Optional) column name to join on
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: the metadata of the featurestore
 
     Returns:
         A spark dataframe with all the features
@@ -700,7 +769,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
             featuregroups_parsed_filtered = _convert_featuregroup_version_dict(featuregroups_version_dict)
             join_str = _get_join_str(featuregroups_parsed_filtered, join_key)
         else:
-            featuregroups_json = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+            featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
             featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
             if (len(featuregroups_parsed) == 0):
                 raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -725,7 +794,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     if (len(featuregroups_version_dict) == 0):
         # make REST call to find out where the feature is located and return them
         # if the feature exists in multiple tables return an error message specifying this
-        featuregroups_json = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+        featuregroups_json = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
         featuregroups_parsed = _parse_featuregroups_json(featuregroups_json)
         if (len(featuregroups_parsed) == 0):
             raise AssertionError("Could not find any featuregroups in the metastore, " \
@@ -882,6 +951,7 @@ def _get_featurestores():
                 response.code, response.reason, error_code, error_msg, user_msg))
     return response_object
 
+
 def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, mode):
     """
     Writes the contents of a spark dataframe to a feature group Hive table
@@ -901,11 +971,11 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
                                                                                                    featurestore))
     _use_featurestore(spark, featurestore)
     tbl_name = _get_table_name(featuregroup, featuregroup_version)
-    if (mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE):
+
+    if mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE:
         _delete_table_contents(featurestore, featuregroup, featuregroup_version)
 
-    if (
-                not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE and not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE):
+    if not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE and not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE:
         raise AssertionError(
             "The provided write mode {} does not match the supported modes: ['{}', '{}']".format(mode,
                                                                                                  constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE,
@@ -933,7 +1003,7 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
     >>> # The API will default to the project's feature store, featuegroup version 1, and write mode 'append'
     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features")
     >>> # You can also explicitly define the feature store, the featuregroup version, and the write mode (only append and overwrite are supported)
-    >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append",     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append", descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=None))
+    >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features", featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append", descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True, stat_columns=None))
 
     Args:
         :df: the dataframe containing the data to insert into the featuregroup
@@ -1088,7 +1158,9 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
                              "and the number of numeric datatypes in the dataframe is: {} ({})".format(
             constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, len(spark_df.dtypes), spark_df.dtypes))
     if (len(numeric_columns) > constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS):
-        raise AssertionError("The provided dataframe contains  {} columns, feature correlation can only be computed for dataframes with < {} columns due to scalability reasons (number of correlatons grows quadratically with the number of columns)".format(len(numeric_columns), constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS))
+        raise AssertionError(
+            "The provided dataframe contains  {} columns, feature correlation can only be computed for dataframes with < {} columns due to scalability reasons (number of correlatons grows quadratically with the number of columns)".format(
+                len(numeric_columns), constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS))
     spark_df_rdd = spark_df.rdd.map(lambda row: row[0:])
     corr_mat = Statistics.corr(spark_df_rdd, method=corr_method)
     pd_df_corr_mat = pd.DataFrame(corr_mat, columns=spark_df.columns, index=spark_df.columns)
@@ -1168,7 +1240,7 @@ def _filter_spark_df_numeric(spark_df):
 
     """
     numeric_columns = list(
-        map(lambda y: y[0], filter(lambda x: x[1] in constants.SPARK_CONFIG.SPARK_NUMERIC_TYPES, spark_df.dtypes)))
+        map(lambda y: y[0], filter(lambda x: _is_type_numeric(x), spark_df.dtypes)))
     filtered_spark_df = spark_df.select(numeric_columns)
     return filtered_spark_df
 
@@ -1284,6 +1356,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             _log(
                 "Could not compute descriptive statistics for: {}, set the optional argument descriptive_statistics=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            desc_stats_data = None
 
     if feature_correlation:
         try:
@@ -1298,6 +1371,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             _log(
                 "Could not compute feature correlation for: {}, set the optional argument feature_correlation=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            feature_corr_data = None
 
     if feature_histograms:
         try:
@@ -1312,6 +1386,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             _log(
                 "Could not compute feature histograms for: {}, set the optional argument feature_histograms=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            features_histograms_data = None
 
     if cluster_analysis:
         try:
@@ -1326,6 +1401,7 @@ def _compute_dataframe_stats(name, spark_df=None, version=1, featurestore=None, 
             _log(
                 "Could not compute cluster analysis for: {}, set the optional argument cluster_analysis=False to skip this step,\n error: {}".format(
                     name, str(e)))
+            cluster_analysis_data = None
 
     return feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis_data
 
@@ -1737,7 +1813,9 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     try:
         spark_df = _convert_dataframe_to_spark(df)
     except Exception as e:
-        raise AssertionError("Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(str(e)))
+        raise AssertionError(
+            "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(
+                str(e)))
 
     _validate_metadata(featuregroup, spark_df.dtypes, dependencies, description)
 
@@ -1768,7 +1846,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     _log("Feature group created successfully")
 
 
-def get_featurestore_metadata(featurestore=None):
+def get_featurestore_metadata(featurestore=None, update_cache=False):
     """
     Sends a REST call to Hopsworks to get the list of featuregroups and their features for the given featurestore.
 
@@ -1781,6 +1859,7 @@ def get_featurestore_metadata(featurestore=None):
 
     Args:
         :featurestore: the featurestore to query metadata of
+        :update_cache: if true the cache is updated
 
     Returns:
         A list of featuregroups and their metadata
@@ -1788,12 +1867,12 @@ def get_featurestore_metadata(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    return _get_featurestore_metadata(featurestore)
+    return _get_featurestore_metadata(featurestore=featurestore, update_cache=update_cache)
 
 
 def get_featuregroups(featurestore=None):
     """
-    Gets a list of all featuregroups in a featurestore
+    Gets a list of all featuregroups in a featurestore, uses the cached metadata.
 
     >>> # List all Feature Groups in a Feature Store
     >>> featurestore.get_featuregroups()
@@ -1808,15 +1887,34 @@ def get_featuregroups(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_featurestore_metadata(featurestore)
+
+    # Try with the cache first
+    try:
+        return _do_get_featuregroups(_get_featurestore_metadata(featurestore, update_cache=False))
+    # If it fails, update cache
+    except:
+        return _do_get_featuregroups(_get_featurestore_metadata(featurestore, update_cache=True))
+
+
+def _do_get_featuregroups(featurestore_metadata):
+    """
+    Gets a list of all featuregroups in a featurestore
+
+    Args:
+        :featurestore_metadata: the metadata of the featurestore
+
+    Returns:
+        A list of names of the featuregroups in this featurestore
+    """
     featuregroup_names = list(map(lambda fg: _get_table_name(fg[constants.REST_CONFIG.JSON_FEATUREGROUPNAME],
                                                              fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]),
                                   featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]))
     return featuregroup_names
 
+
 def get_features_list(featurestore=None):
     """
-    Gets a list of all features in a featurestore
+    Gets a list of all features in a featurestore, will use the cached featurestore metadata
 
     >>> # List all Features in a Feature Store
     >>> featurestore.get_features_list()
@@ -1831,7 +1929,21 @@ def get_features_list(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_featurestore_metadata(featurestore)
+    try:
+        return _do_get_features_list(_get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_features_list(_get_featurestore_metadata(featurestore, update_cache=True))
+
+def _do_get_features_list(featurestore_metadata):
+    """
+    Gets a list of all features in a featurestore
+
+    Args:
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A list of names of the features in this featurestore
+    """
     features = []
     for fg in featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
         features.extend(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES])
@@ -1840,7 +1952,7 @@ def get_features_list(featurestore=None):
 
 def get_training_datasets(featurestore=None):
     """
-    Gets a list of all training datasets in a featurestore
+    Gets a list of all training datasets in a featurestore, will use the cached metadata
 
     >>> # List all Training Datasets in a Feature Store
     >>> featurestore.get_training_datasets()
@@ -1855,7 +1967,21 @@ def get_training_datasets(featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    featurestore_metadata = _get_featurestore_metadata(featurestore)
+    try:
+        return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_training_datasets(_get_featurestore_metadata(featurestore, update_cache=True))
+
+def _do_get_training_datasets(featurestore_metadata):
+    """
+    Gets a list of all training datasets in a featurestore
+
+    Args:
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A list of names of the training datasets in this featurestore
+    """
     training_dataset_names = list(map(lambda td: _get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
                                                                  td[
                                                                      constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]),
@@ -2121,6 +2247,11 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
     """
     Gets the tf record schema for a training dataset that is stored in tfrecords format
 
+    Example usage:
+
+    >>> # get tf record schema for a tfrecords dataset
+    >>> featurestore.get_training_dataset_tf_record_schema("team_position_prediction", training_dataset_version=1,featurestore = featurestore.project_featurestore())
+
     Args:
         :training_dataset: the training dataset to get the tfrecords schema for
         :training_dataset_version: the version of the training dataset
@@ -2165,7 +2296,11 @@ def _do_get_training_dataset_tf_record_schema(training_dataset, featurestore_met
 
 def get_training_dataset(training_dataset, featurestore=None, training_dataset_version=1, dataframe_type="spark"):
     """
-    Reads a training dataset into a spark dataframe
+    Reads a training dataset into a spark dataframe, will first look for the training dataset using the cached metadata
+    of the featurestore, if it fails it will reload the metadata and try again.
+
+    Example usage:
+    >>> featurestore.get_training_dataset("team_position_prediction_csv").show(5)
 
     Args:
         :training_dataset: the name of the training dataset to read
@@ -2178,129 +2313,369 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
     """
     if featurestore is None:
         featurestore = project_featurestore()
+    try:
+        return _do_get_training_dataset(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version, dataframe_type=dataframe_type)
+    except:
+        return _do_get_training_dataset(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version, dataframe_type=dataframe_type)
+
+def _do_get_training_dataset_csv(abspath, dataframe_type):
+    """
+    Reads a training dataset in CSV format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
     spark = util._find_spark()
-    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.COMMA_DELIMITER).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.COMMA_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_tsv(abspath, dataframe_type):
+    """
+    Reads a training dataset in TSV format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.TAB_DELIMITER).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+            constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+            constants.DELIMITERS.TAB_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_parquet(abspath, dataframe_type):
+    """
+    Reads a training dataset in Parquet format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.parquet(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+        spark_df = spark.read.parquet(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_tfrecords(abspath, dataframe_type):
+    """
+    Reads a training dataset in tfrecords format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if hdfs.exists(abspath):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(abspath)
+    elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+        spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
+            abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
+    if not hdfs.exists(abspath) and not hdfs.exists(
+                    abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+        raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
+                                                                                                   abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
+    return _return_dataframe_type(spark_df, dataframe_type)
+
+def _do_get_training_dataset_npy(abspath, dataframe_type):
+    """
+    Reads a training dataset in numpy format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
+        raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
+    tf = TemporaryFile()
+    data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+    tf.write(data)
+    tf.seek(0)
+    np_array = np.load(tf)
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
+        return np_array
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
+        return np_array.tolist()
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
+        if np_array.ndim != 2:
+            raise AssertionError(
+                "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
+                    np_array.ndim))
+        num_cols = np_array.shape[1]
+        dataframe_dict = {}
+        for n_col in list(range(num_cols)):
+            col_name = "col_" + str(n_col)
+            dataframe_dict[col_name] = np_array[:, n_col]
+        pandas_df = pd.DataFrame(dataframe_dict)
+        sc = spark.sparkContext
+        sql_context = SQLContext(sc)
+        return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+
+
+def _do_get_training_dataset_hdf5(abspath, dataframe_type, training_dataset):
+    """
+    Reads a training dataset in hdf5 format from HopsFS
+
+    Args:
+        :abspath: the path to the dataset
+        :dataframe_type: the type of the dataframe to return
+        :training_dataset: name of the hdf5 dataset
+
+    Returns:
+        dataframe with the data of the training dataset
+
+    """
+    spark = util._find_spark()
+    if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
+        raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
+    tf = TemporaryFile()
+    data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
+    tf.write(data)
+    tf.seek(0)
+    hdf5_file = h5py.File(tf)
+    np_array = hdf5_file[training_dataset][()]
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
+        return np_array
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
+        return np_array.tolist()
+    if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
+        if np_array.ndim != 2:
+            raise AssertionError(
+                "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
+                    np_array.ndim))
+        num_cols = np_array.shape[1]
+        dataframe_dict = {}
+        for n_col in list(range(num_cols)):
+            col_name = "col_" + str(n_col)
+            dataframe_dict[col_name] = np_array[:, n_col]
+        pandas_df = pd.DataFrame(dataframe_dict)
+        sc = spark.sparkContext
+        sql_context = SQLContext(sc)
+        return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+
+def _do_get_training_dataset(training_dataset, featurestore_metadata, training_dataset_version=1, dataframe_type="spark"):
+    """
+    Reads a training dataset into a spark dataframe
+
+    Args:
+        :training_dataset: the name of the training dataset to read
+        :training_dataset_version: the version of the training dataset
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        A spark dataframe with the given training dataset data
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
                     constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME]
+    data_format = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT]
     # abspath means "hdfs://namenode:port/ is preprended
     abspath = pydoop.path.abspath(hdfs_path)
-    data_format = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT]
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_csv(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_tsv(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.parquet(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            spark_df = spark.read.parquet(abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                        abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_parquet(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        if hdfs.exists(abspath):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(abspath)
-        elif hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
-        if not hdfs.exists(abspath) and not hdfs.exists(
-                        abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            raise AssertionError("Could not find a training dataset in folder {} or in file {}".format(abspath,
-                                                                                                       abspath + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
-        return _return_dataframe_type(spark_df, dataframe_type)
+        return _do_get_training_dataset_tfrecords(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
-        if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
-            raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
-        tf = TemporaryFile()
-        data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
-        tf.write(data)
-        tf.seek(0)
-        np_array = np.load(tf)
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
-            return np_array
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
-            return np_array.tolist()
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
-            if np_array.ndim != 2:
-                raise AssertionError(
-                    "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
-                        np_array.ndim))
-            num_cols = np_array.shape[1]
-            dataframe_dict = {}
-            for n_col in list(range(num_cols)):
-                col_name = "col_" + str(n_col)
-                dataframe_dict[col_name] = np_array[:, n_col]
-            pandas_df = pd.DataFrame(dataframe_dict)
-            sc = spark.sparkContext
-            sql_context = SQLContext(sc)
-            return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+        return _do_get_training_dataset_npy(abspath, dataframe_type)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
-        if not hdfs.exists(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
-            raise AssertionError("Could not find a training dataset in file {}".format(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
-        tf = TemporaryFile()
-        data = hdfs.load(abspath + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
-        tf.write(data)
-        tf.seek(0)
-        hdf5_file = h5py.File(tf)
-        np_array = hdf5_file[training_dataset][()]
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
-            return np_array
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
-            return np_array.tolist()
-        if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
-            if np_array.ndim != 2:
-                raise AssertionError(
-                    "Cannot convert numpy array that do not have two dimensions to a dataframe. The number of dimensions are: {}".format(
-                        np_array.ndim))
-            num_cols = np_array.shape[1]
-            dataframe_dict = {}
-            for n_col in list(range(num_cols)):
-                col_name = "col_" + str(n_col)
-                dataframe_dict[col_name] = np_array[:, n_col]
-            pandas_df = pd.DataFrame(dataframe_dict)
-            sc = spark.sparkContext
-            sql_context = SQLContext(sc)
-            return _return_dataframe_type(sql_context.createDataFrame(pandas_df), dataframe_type)
+        return _do_get_training_dataset_hdf5(abspath, dataframe_type, training_dataset)
 
-    if data_format != constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
+    if data_format not in constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS:
         raise AssertionError(
             "invalid data format to materialize training dataset. The provided format: {} is not in the list of supported formats: {}".format(
-                data_format, ",".join[
-                    constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT]))
+                data_format, ",".join(constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS)))
 
+def _write_training_dataset_hdfs_csv(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the CSV format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER).mode(
+        write_mode).option(
+        constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+
+def _write_training_dataset_hdfs_tsv(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the TSV format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER).mode(
+        write_mode).option(
+        constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+
+def _write_training_dataset_hdfs_parquet(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the Parquet format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    df.write.mode(write_mode).parquet(path)
+
+def _write_training_dataset_hdfs_tfrecords(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the tfrecords format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in tf-records format, only overwrite, set the optional argument write_mode='overwrite'")
+    df.write.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+                                        constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(
+        write_mode).save(path)
+
+def _write_training_dataset_hdfs_npy(df, write_mode, path):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the npy format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in .npy format, only overwrite, set the optional argument write_mode='overwrite'")
+    if not isinstance(df, np.ndarray):
+        if isinstance(df, DataFrame) or isinstance(df, RDD):
+            df = np.array(df.collect())
+        if isinstance(df, pd.DataFrame):
+            df = df.values
+        if isinstance(df, list):
+            df = np.array(df)
+    tf = TemporaryFile()
+    tf.seek(0)
+    np.save(tf, df)
+    tf.seek(0)
+    hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+
+def _write_training_dataset_hdfs_hdf5(df, write_mode, path, training_dataset):
+    """
+    Writes a dataframe of data as a training dataset on HDFS in the hdf5 format
+
+    Args:
+        :df: the dataframe to materialize
+        :path: the hdfs path where the dataframe will be materialized
+        :write_mode: spark write mode, 'append' or 'overwrite'
+        :training_dataset: name of the hdf5 dataset to write
+
+    Returns:
+        None
+
+    """
+    if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        raise AssertionError(
+            "Append is not supported for training datasets stored in .hdf5 format, only overwrite, set the optional argument write_mode='overwrite'")
+    if not isinstance(df, np.ndarray):
+        if isinstance(df, DataFrame) or isinstance(df, RDD):
+            df = np.array(df.collect())
+        if isinstance(df, pd.DataFrame):
+            df = df.values
+        if isinstance(df, list):
+            df = np.array(df)
+    tf = TemporaryFile()
+    tf.seek(0)
+    hdf5_file = h5py.File(tf)
+    tf.seek(0)
+    hdf5_file.create_dataset(training_dataset, data=df)
+    tf.seek(0)
+    hdf5_file.close()
+    tf.seek(0)
+    hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
 
 def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
     """
@@ -2320,69 +2695,22 @@ def _write_training_dataset_hdfs(df, path, data_format, write_mode, name):
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
                                    "Saving training dataset in path: {} in format {}".format(path, data_format))
 
-    # some spark versions cannot handle overwrite, so then this is necessary
-    # if(hdfs.exists(path)):
-    #   hdfs.rmr(path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT:
-        df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER).mode(
-            write_mode).option(
-            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+        _write_training_dataset_hdfs_csv(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT:
-        df.write.option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER).mode(
-            write_mode).option(
-            constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").csv(path)
+        _write_training_dataset_hdfs_tsv(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT:
-        df.write.mode(write_mode).parquet(path)
+        _write_training_dataset_hdfs_parquet(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in tf-records format, only overwrite, set the optional argument write_mode='overwrite'")
-        df.write.format(data_format).option(constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-                                            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(
-            write_mode).save(path)
+        _write_training_dataset_hdfs_tfrecords(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in .npy format, only overwrite, set the optional argument write_mode='overwrite'")
-        if not isinstance(df, np.ndarray):
-            if isinstance(df, DataFrame) or isinstance(df, RDD):
-                df = np.array(df.collect())
-            if isinstance(df, pd.DataFrame):
-                df = df.values
-            if isinstance(df, list):
-                df = np.array(df)
-        tf = TemporaryFile()
-        tf.seek(0)
-        np.save(tf, df)
-        tf.seek(0)
-        hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
+        _write_training_dataset_hdfs_npy(df, write_mode, path)
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
-        if (write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise AssertionError(
-                "Append is not supported for training datasets stored in .hdf5 format, only overwrite, set the optional argument write_mode='overwrite'")
-        if not isinstance(df, np.ndarray):
-            if isinstance(df, DataFrame) or isinstance(df, RDD):
-                df = np.array(df.collect())
-            if isinstance(df, pd.DataFrame):
-                df = df.values
-            if isinstance(df, list):
-                df = np.array(df)
-        tf = TemporaryFile()
-        tf.seek(0)
-        hdf5_file = h5py.File(tf)
-        tf.seek(0)
-        hdf5_file.create_dataset(name, data=df)
-        tf.seek(0)
-        hdf5_file.close()
-        tf.seek(0)
-        hdfs.dump(tf.read(), path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
-
-    if data_format != constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT and data_format != constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
+        _write_training_dataset_hdfs_hdf5(df, write_mode, path, name)
+    if data_format not in constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS:
         raise AssertionError(
             "invalid data format to materialize training dataset. The provided format: {} is not in the list of supported formats: {}".format(
-                data_format, ",".join[
-                    constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT, constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT]))
-
+                data_format, ",".join(constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS)))
     spark.sparkContext.setJobGroup("", "")
 
 
@@ -2390,8 +2718,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                             data_format="tfrecords", training_dataset_version=1,
                             job_name=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                            corr_method='pearson',
-                            num_clusters=5):
+                            corr_method='pearson', num_clusters=5):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -2459,8 +2786,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                  hdfs_path + constants.DELIMITERS.SLASH_DELIMITER + training_dataset,
                                  data_format,
                                  constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                 training_dataset,
-                                 petastorm_args)
+                                 training_dataset)
     #update metadata cache
     _get_featurestore_metadata(featurestore, update_cache=True)
     _log("Training Dataset created successfully")
@@ -2557,14 +2883,59 @@ def insert_into_training_dataset(
         None
 
     """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        return _do_insert_into_training_dataset(df, training_dataset, _get_featurestore_metadata(featurestore, update_cache=False),
+                                         featurestore, training_dataset_version=training_dataset_version, descriptive_statistics=descriptive_statistics,
+                                         feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                         corr_method=corr_method, num_clusters=num_clusters, write_mode=write_mode)
+    except:
+        return _do_insert_into_training_dataset(df, training_dataset, _get_featurestore_metadata(featurestore, update_cache=True),
+                                         featurestore, training_dataset_version=training_dataset_version, descriptive_statistics=descriptive_statistics,
+                                         feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                         corr_method=corr_method, num_clusters=num_clusters, write_mode=write_mode)
+
+def _do_insert_into_training_dataset(
+        df, training_dataset, featurestore_metadata, featurestore=None, training_dataset_version=1,
+        descriptive_statistics=True, feature_correlation=True,
+        feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
+        num_clusters=5, write_mode="overwrite", ):
+    """
+    Inserts the data in a training dataset from a spark dataframe (append or overwrite)
+
+    Args:
+        :df: the dataframe to write
+        :training_dataset: the name of the training dataset
+        :featurestore: the featurestore that the training dataset is linked to
+        :featurestore_metadata: metadata of the featurestore
+        :training_dataset_version: the version of the training dataset (defaults to 1)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :write_mode: spark write mode ('append' or 'overwrite'). Note: append is not supported for tfrecords datasets.
+
+    Returns:
+        None
+
+    """
     try:
         spark_df = _convert_dataframe_to_spark(df)
     except Exception as e:
-        raise AssertionError("Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(str(e)))
+        raise AssertionError(
+            "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to the Feature Store, error: {}".format(
+                str(e)))
 
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = _compute_dataframe_stats(
         training_dataset, spark_df=spark_df, version=training_dataset_version, featurestore=featurestore,
@@ -2603,18 +2974,22 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
         :training_dataset_version: version of the training dataset
 
     Returns:
-        The training dataset if it finds it, otherwise null
+        The training dataset if it finds it, otherwise exception
     """
     matches = list(
         filter(lambda td: td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset and
                           td[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION] == training_dataset_version,
                training_datasets))
     if len(matches) == 0:
+        training_dataset_names = list(map(lambda td: _get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
+                                                                     td[
+                                                                         constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]),
+                                          training_datasets))
         raise AssertionError("Could not find the requested training dataset with name: {} " \
                              "and version: {} among the list of available training datasets: {}".format(
             training_dataset,
             training_dataset_version,
-            training_datasets))
+            training_dataset_names))
     return matches[0]
 
 
@@ -2638,7 +3013,30 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+    try:
+        return _do_get_training_dataset_path(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False), training_dataset_version=training_dataset_version)
+    except:
+        return _do_get_training_dataset_path(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True), training_dataset_version=training_dataset_version)
+
+def _do_get_training_dataset_path(training_dataset, featurestore_metadata, training_dataset_version=1):
+    """
+    Gets the HDFS path to a training dataset with a specific name and version in a featurestore
+
+    Example usage:
+
+    >>> featurestore.get_training_dataset_path("AML_dataset")
+    >>> # By default the library will look for the training dataset in the project's featurestore and use version 1, but this can be overriden if required:
+    >>> featurestore.get_training_dataset_path("AML_dataset",  featurestore=featurestore.project_featurestore(), training_dataset_version=1)
+
+    Args:
+        :training_dataset: name of the training dataset
+        :featurestore_metadata: metadata of the featurestore
+        :training_dataset_version: version of the training dataset
+
+    Returns:
+        The HDFS path to the training dataset
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
     hdfs_path = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset_json[
@@ -2657,6 +3055,9 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     """
     Utility method to get the latest version of a particular training dataset
 
+    Example usage:
+    >>> featurestore.get_latest_training_dataset_version("team_position_prediction")
+
     Args:
         :training_dataset: the training dataset to get the latest version of
         :featurestore: the featurestore where the training dataset resides
@@ -2666,8 +3067,23 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     """
     if featurestore is None:
         featurestore = project_featurestore()
+    try:
+        return _do_get_latest_training_dataset_version(training_dataset, _get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_latest_training_dataset_version(training_dataset, _get_featurestore_metadata(featurestore, update_cache=True))
 
-    training_datasets = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
+def _do_get_latest_training_dataset_version(training_dataset, featurestore_metadata):
+    """
+    Utility method to get the latest version of a particular training dataset
+
+    Args:
+        :training_dataset: the training dataset to get the latest version of
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the latest version of the training dataset in the feature store
+    """
+    training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     matches = list(
         filter(lambda x: x[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] == training_dataset, training_datasets))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]), matches))
@@ -2681,6 +3097,9 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     """
     Utility method to get the latest version of a particular featuregroup
 
+    Example usage:
+    >>> featurestore.get_latest_featuregroup_version("teams_features_spanish")
+
     Args:
         :featuregroup: the featuregroup to get the latest version of
         :featurestore: the featurestore where the featuregroup resides
@@ -2691,7 +3110,24 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     if featurestore is None:
         featurestore = project_featurestore()
 
-    featuregroups = _get_featurestore_metadata(featurestore)[constants.REST_CONFIG.JSON_FEATUREGROUPS]
+    try:
+        return _do_get_latest_featuregroup_version(featuregroup, _get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return _do_get_latest_featuregroup_version(featuregroup, _get_featurestore_metadata(featurestore, update_cache=False))
+
+
+def _do_get_latest_featuregroup_version(featuregroup, featurestore_metadata):
+    """
+    Utility method to get the latest version of a particular featuregroup
+
+    Args:
+        :featuregroup: the featuregroup to get the latest version of
+        :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the latest version of the featuregroup in the feature store
+    """
+    featuregroups = featurestore_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS]
     matches = list(filter(lambda x: x[constants.REST_CONFIG.JSON_FEATUREGROUPNAME] == featuregroup, featuregroups))
     versions = list(map(lambda x: int(x[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]), matches))
     if (len(versions) > 0):
@@ -2749,3 +3185,8 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         training_dataset, featurestore, training_dataset_version,
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
+
+try:
+    metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())
+except:
+    pass
