@@ -159,6 +159,14 @@ class FEATURE_STORE:
     TRAINING_DATASET_TSV_SUFFIX = ".tsv"
     TRAINING_DATASET_PARQUET_SUFFIX = ".parquet"
     TRAINING_DATASET_TFRECORDS_SUFFIX = ".tfrecords"
+    TRAINING_DATASET_SUPPORTED_FORMATS = [
+        TRAINING_DATASET_TSV_FORMAT,
+        TRAINING_DATASET_CSV_FORMAT,
+        TRAINING_DATASET_PARQUET_FORMAT,
+        TRAINING_DATASET_TFRECORDS_FORMAT,
+        TRAINING_DATASET_NPY_FORMAT,
+        TRAINING_DATASET_HDF5_FORMAT
+    ]
     CLUSTERING_ANALYSIS_INPUT_COLUMN = "featurestore_feature_clustering_analysis_input_col"
     CLUSTERING_ANALYSIS_OUTPUT_COLUMN = "featurestore_feature_clustering_analysis_output_col"
     CLUSTERING_ANALYSIS_PCA_COLUMN = "featurestore_feature_clustering_analysis_pca_col"
