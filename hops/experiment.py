@@ -222,14 +222,14 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
 
         util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
-        retval, tensorboard_logdir = launcher._launch(sc, map_fun, args_dict, local_logdir)
+        retval, tensorboard_logdir, hp = launcher._launch(sc, map_fun, args_dict, local_logdir)
 
         if retval:
-            experiment_json = util._finalize_experiment(experiment_json, None, retval)
+            experiment_json = util._finalize_experiment(experiment_json, hp, retval)
             util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
             return tensorboard_logdir
 
-        experiment_json = util._finalize_experiment(experiment_json, None, None)
+        experiment_json = util._finalize_experiment(experiment_json, hp, None)
 
         util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
 
