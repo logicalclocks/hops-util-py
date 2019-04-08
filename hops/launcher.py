@@ -59,9 +59,30 @@ def _launch(sc, map_fun, args_dict=None, local_logdir=False, name="no-name"):
             with pydoop.hdfs.open(path_to_metric, "r") as fi:
                 metric = float(fi.read())
                 fi.close()
-                return metric, hopshdfs._get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
+                return metric, _get_logdir(app_id), None
+    elif num_executions == 1 and not args_dict == None:
+        arg_count = six.get_function_code(map_fun).co_argcount
+        arg_names = six.get_function_code(map_fun).co_varnames
+        argIndex = 0
+        param_string = ''
+        while arg_count > 0:
+            param_name = arg_names[argIndex]
+            param_val = args_dict[param_name][0]
+            param_string += str(param_name) + '=' + str(param_val) + '.'
+            arg_count -= 1
+            argIndex += 1
+        param_string = param_string[:-1]
+        path_to_metric = _get_logdir(app_id) + '/' + param_string + '/metric'
+        if pydoop.hdfs.path.exists(path_to_metric):
+            with pydoop.hdfs.open(path_to_metric, "r") as fi:
+                metric = float(fi.read())
+                fi.close()
+                return metric, _get_logdir(app_id), param_string
+        else:
+            return None, _get_logdir(app_id), param_string
 
-    return None, hopshdfs._get_experiments_dir() + '/' + app_id + '/launcher/run.' +  str(run_id)
+
+    return None, _get_logdir(app_id), None
 
 def _get_logdir(app_id):
     """
@@ -141,8 +162,10 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
                 print('Started running task ' + param_string + '\n')
                 hopshdfs.log('Started running task ' + param_string)
                 task_start = datetime.datetime.now()
-                map_fun(*args)
+                retval = map_fun(*args)
                 task_end = datetime.datetime.now()
+                if retval:
+                    _handle_return(retval, hdfs_exec_logdir)
                 time_str = 'Finished task ' + param_string + ' - took ' + util._time_diff(task_start, task_end)
                 print('\n' + time_str)
                 print('-------------------------------------------------------')
