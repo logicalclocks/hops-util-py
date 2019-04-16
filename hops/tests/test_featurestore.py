@@ -16,10 +16,8 @@ import mock
 import logging
 from petastorm.unischema import Unischema, UnischemaField
 from petastorm.codecs import ScalarCodec
-from pyspark.sql import SparkSession
-from pyspark.sql import SQLContext
 from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, ArrayType
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, SQLContext, SparkSession
 import pandas as pd
 import numpy as np
 import pyspark
@@ -54,21 +52,13 @@ if (sys.version_info > (3, 0)):
     # Mock imports for Python 3
     with mock.patch('builtins.__import__', side_effect=import_mock):
         import pydoop.hdfs as pydoop
-        from hops import hdfs
-        from hops import featurestore
-        from hops import constants
-        from hops import util
-        from hops import tls
+        from hops import hdfs, featurestore, constants, util, tls
 
 else:
     # Python 2
     with mock.patch('__builtin__.__import__', side_effect=import_mock):
         import pydoop.hdfs as pydoop
-        from hops import hdfs
-        from hops import featurestore
-        from hops import constants
-        from hops import util
-        from hops import tls
+        from hops import hdfs, featurestore, constants, util, tls
 
 
 class TestFeaturestoreSuite(object):
@@ -129,7 +119,7 @@ class TestFeaturestoreSuite(object):
         spark = self.spark_session()
         # Create test_project_featurestore
         spark.sql("DROP DATABASE IF EXISTS test_project_featurestore CASCADE")
-        spark.sql("create database IF NOT EXISTS test_project_featurestore")
+        spark.sql("CREATE DATABASE IF NOT EXISTS test_project_featurestore")
         spark.sql("use test_project_featurestore")
         games_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
             "./hops/tests/test_resources/games_features.csv")
@@ -556,15 +546,28 @@ class TestFeaturestoreSuite(object):
     def test_write_featuregroup_hive(self):
         """ Test write_featuregroup_hive method"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
+        self.unmocked_delete_table_contents = featurestore._delete_table_contents
+        featurestore._delete_table_contents = mock.MagicMock(return_value=True)
         spark = self.spark_session()
         teams_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
             "./hops/tests/test_resources/teams_features.csv")
+        # Mock table creation which usually is done through Hopsworks
+        spark.sql("CREATE TABLE IF NOT EXISTS `test_project_featurestore`.`teams_features_1`"
+                  "(team_budget FLOAT,team_id INT,team_position INT)")
+        spark.sql("CREATE TABLE IF NOT EXISTS `test_project_featurestore`.`teams_features_2`"
+                  "(team_budget FLOAT,team_id INT,team_position INT)")
         featurestore._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
                                               1, "append")
+        featurestore._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
+                                              1, "overwrite")
+        featurestore._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
+                                              2, "overwrite")
         with pytest.raises(ValueError) as ex:
             featurestore._write_featuregroup_hive(teams_features_df, "teams_features",
                                                   featurestore.project_featurestore(), 1, "test")
             assert "The provided write mode test does not match the supported modes" in ex.value
+        #unmock for later tests
+        featurestore._delete_table_contents = self.unmocked_delete_table_contents
 
     def test_update_featuregroup_stats_rest(self, sample_metadata):
         """ Test _update_featuregroup_stats_rest"""
@@ -647,11 +650,13 @@ class TestFeaturestoreSuite(object):
         raw_schema = json.loads(teams_features_df.schema.json())
         raw_fields = raw_schema[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]
         primary_key = "team_id"
-        parsed_feature = featurestore._convert_field_to_feature(raw_fields[0], primary_key)
+        partition_by = []
+        parsed_feature = featurestore._convert_field_to_feature(raw_fields[0], primary_key, partition_by)
         assert constants.REST_CONFIG.JSON_FEATURE_NAME in parsed_feature
         assert constants.REST_CONFIG.JSON_FEATURE_TYPE in parsed_feature
         assert constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION in parsed_feature
         assert constants.REST_CONFIG.JSON_FEATURE_PRIMARY in parsed_feature
+        assert constants.REST_CONFIG.JSON_FEATURE_PARTITION in parsed_feature
         assert parsed_feature[constants.REST_CONFIG.JSON_FEATURE_NAME] == "team_budget"
 
     def test_parse_spark_features_schema(self):
@@ -1661,3 +1666,41 @@ class TestFeaturestoreSuite(object):
                                                           write_mode=
                                                           constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
             assert "Append is not supported for training datasets stored in tf-records format" in ex.value
+
+    def test_hive_partition_featuregroup(self):
+        """ Test _insert_into_featuregroup with partitions """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        self.unmocked_delete_table_contents = featurestore._delete_table_contents
+        featurestore._delete_table_contents = mock.MagicMock(return_value=True)
+        spark = self.spark_session()
+        # Mock table creation which usually is done through Hopsworks
+        spark.sql("CREATE TABLE IF NOT EXISTS `test_project_featurestore`.`games_features_not_partitioned_1`"
+                  "(away_team_id INT,home_team_id INT,score INT)")
+        games_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
+            "./hops/tests/test_resources/games_features.csv")
+        featurestore._write_featuregroup_hive(games_features_df, "games_features_not_partitioned",
+                                              featurestore.project_featurestore(), 1, "overwrite")
+        table_dir = "./spark-warehouse/test_project_featurestore.db/games_features_not_partitioned_1/"
+        table_files = os.listdir(table_dir)
+        # without partitioning there should only be files in the table-dir, no directories.
+        for filename in table_files:
+            assert os.path.isfile(table_dir + filename)
+
+        # Mock table creation which usually is done through Hopsworks
+        spark.sql("CREATE TABLE IF NOT EXISTS `test_project_featurestore`.`games_features_partitioned_1`"
+                  "(away_team_id INT,home_team_id INT) PARTITIONED BY (score INT)")
+
+        # create table partitioned on column "score"
+        featurestore._write_featuregroup_hive(games_features_df, "games_features_partitioned", featurestore.project_featurestore(),
+                                              1, "overwrite")
+        table_dir = "./spark-warehouse/test_project_featurestore.db/games_features_partitioned_1/"
+        table_files = os.listdir(table_dir)
+        # with partitioning the table should be organized with sub-directories for each partition
+        for filename in table_files:
+            assert os.path.isdir(table_dir + filename)
+        assert "score=1" in table_files
+        assert "score=2" in table_files
+        assert "score=3" in table_files
+
+        #unmock for later tests
+        featurestore._delete_table_contents = self.unmocked_delete_table_contents

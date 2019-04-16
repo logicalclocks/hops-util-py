@@ -37,7 +37,7 @@ setup(
         'test': [
             'mock',
             'pytest',
-            'pyspark'
+            'pyspark==2.4.0'
         ]
     },
     author='Robin Andersson',

@@ -195,24 +195,20 @@ and
     >>> training_dataset_version=1)
 """
 
-from hops import util
+from hops import util, hdfs, constants
 from hops import hdfs
-from hops import tls
 import pydoop.hdfs as pydoop
-from hops import constants
 import math
 from pyspark.sql.utils import AnalysisException
 import json
 from pyspark.mllib.stat import Statistics
-from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.feature import PCA
+from pyspark.ml.feature import VectorAssembler, PCA
 from pyspark.ml.clustering import KMeans
 import re
 import numpy as np
 import pandas as pd
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, SQLContext
 from pyspark.rdd import RDD
-from pyspark.sql import SQLContext
 from tempfile import TemporaryFile
 import pyarrow as pa
 from petastorm.etl.dataset_metadata import materialize_dataset
@@ -478,11 +474,11 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
     Args:
         :featuregroup: the featuregroup to get
         :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
-        :featuregroup_version: (Optional) the version of the featuregroup
+        :featuregroup_version: the version of the featuregroup, defaults to 1
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
-        a spark dataframe with the contents of the featurestore
+        a dataframe with the contents of the featuregroup
 
     """
     if featurestore is None:
@@ -556,7 +552,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
-        A spark dataframe with the feature
+        A dataframe with the feature
 
     """
     try:  # try with cached metadata
@@ -586,7 +582,7 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
         :featurestore_metadata: the metadata of the featurestore to query
 
     Returns:
-        A spark dataframe with the feature
+        A dataframe with the feature
 
     """
     if featurestore is None:
@@ -795,7 +791,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
-        A spark dataframe with all the features
+        A dataframe with all the features
 
     """
     # try with cached metadata
@@ -826,7 +822,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
         :featurestore_metadata: the metadata of the featurestore
 
     Returns:
-        A spark dataframe with all the features
+        A dataframe with all the features
 
     """
     if featurestore is None:
@@ -1039,6 +1035,7 @@ def _get_featurestores():
 def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, mode):
     """
     Writes the contents of a spark dataframe to a feature group Hive table
+
     Args:
         :spark_df: the data to write
         :featuregroup: the featuregroup to write to
@@ -1050,6 +1047,11 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
         None
     """
     spark = util._find_spark()
+    sc = spark.sparkContext
+    sqlContext = SQLContext(sc)
+    sqlContext.setConf("hive.exec.dynamic.partition", "true")
+    sqlContext.setConf("hive.exec.dynamic.partition.mode", "nonstrict")
+
     spark.sparkContext.setJobGroup("Inserting dataframe into featuregroup",
                                    "Inserting into featuregroup: {} in the featurestore {}".format(featuregroup,
                                                                                                    featurestore))
@@ -1068,11 +1070,12 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
                                                        constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE))
     # overwrite is not supported because it will drop the table and create a new one,
     # this means that all the featuregroup metadata will be dropped due to ON DELETE CASCADE
-    # to simulate "overwrite" we call appservice to drop featuregroup and re-create with the same metadata
+    # to simulate "overwrite" we call hopsworks REST API to drop featuregroup and re-create with the same metadata
     mode = constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE
     # Specify format hive as it is managed table
     format = "hive"
-    spark_df.write.format(format).mode(mode).saveAsTable(tbl_name)
+    # Insert into featuregroup (hive table) with dynamic partitions
+    spark_df.write.format(format).mode(mode).insertInto(tbl_name)
     spark.sparkContext.setJobGroup("", "")
 
 def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append",
@@ -1091,9 +1094,10 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
     >>> # You can also explicitly define the feature store, the featuregroup version, and the write mode
     >>> # (only append and overwrite are supported)
     >>> featurestore.insert_into_featuregroup(sampleDf, "trx_graph_summary_features",
-    >>> featurestore=featurestore.project_featurestore(), featuregroup_version=1, mode="append",
-    >>> descriptive_statistics=True, feature_correlation=True, feature_histograms=True, cluster_analysis=True,
-    >>> stat_columns=None))
+    >>>                                       featurestore=featurestore.project_featurestore(), featuregroup_version=1,
+    >>>                                       mode="append", descriptive_statistics=True, feature_correlation=True,
+    >>>                                       feature_histograms=True, cluster_analysis=True,
+    >>>                                       stat_columns=None)
 
     Args:
         :df: the dataframe containing the data to insert into the featuregroup
@@ -1179,7 +1183,7 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     raise AssertionError("Dataframe data type: {} not recognized.".format(spark_dtype))
 
 
-def _convert_field_to_feature(field_dict, primary_key):
+def _convert_field_to_feature(field_dict, primary_key, partition_by):
     """
     Helper function that converts a field in a spark dataframe to a feature dict that is compatible with the
      featurestore API
@@ -1187,6 +1191,7 @@ def _convert_field_to_feature(field_dict, primary_key):
     Args:
         :field_dict: the dict of spark field to convert
         :primary_key: name of the primary key feature
+        :partition_by: a list of columns to partition_by, defaults to the empty list
 
     Returns:
         a feature dict that is compatible with the featurestore API
@@ -1204,21 +1209,24 @@ def _convert_field_to_feature(field_dict, primary_key):
             constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]
     if f_desc == "":
         f_desc = "-"  # comment must be non-empty
+    f_partition = f_name in partition_by
     return {
         constants.REST_CONFIG.JSON_FEATURE_NAME: f_name,
         constants.REST_CONFIG.JSON_FEATURE_TYPE: f_type,
         constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION: f_desc,
-        constants.REST_CONFIG.JSON_FEATURE_PRIMARY: f_primary
+        constants.REST_CONFIG.JSON_FEATURE_PRIMARY: f_primary,
+        constants.REST_CONFIG.JSON_FEATURE_PARTITION: f_partition
     }
 
 
-def _parse_spark_features_schema(spark_schema, primary_key):
+def _parse_spark_features_schema(spark_schema, primary_key, partition_by = []):
     """
     Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
 
     Args:
         :spark_schema: the spark schema to parse
         :primary_key: the column in the dataframe that should be the primary key
+        :partition_by: a list of columns to partition_by, defaults to the empty list
 
     Returns:
         A list of the parsed features
@@ -1226,7 +1234,7 @@ def _parse_spark_features_schema(spark_schema, primary_key):
     """
     raw_schema = json.loads(spark_schema.json())
     raw_fields = raw_schema[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]
-    parsed_features = list(map(lambda field: _convert_field_to_feature(field, primary_key), raw_fields))
+    parsed_features = list(map(lambda field: _convert_field_to_feature(field, primary_key, partition_by), raw_fields))
     return parsed_features
 
 
@@ -1913,7 +1921,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
                         dependencies=[], descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                         corr_method='pearson',
-                        num_clusters=5):
+                        num_clusters=5, partition_by=[]):
     """
     Creates a new featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call to create
     the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly created table)
@@ -1930,7 +1938,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  job_name=None, dependencies=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
-    >>>                                  stat_columns=None)
+    >>>                                  stat_columns=None, partition_by=[])
 
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
@@ -1954,6 +1962,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         :num_bins: number of bins to use for computing histograms
         :num_clusters: the number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :partition_by: a list of columns to partition_by, defaults to the empty list
 
     Returns:
         None
@@ -1977,7 +1986,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         job_name = util.get_job_name()
 
     _validate_primary_key(spark_df, primary_key)
-    features_schema = _parse_spark_features_schema(spark_df.schema, primary_key)
+    features_schema = _parse_spark_features_schema(spark_df.schema, primary_key, partition_by)
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             featuregroup, spark_df=spark_df, version=featuregroup_version, featurestore=featurestore,
@@ -2497,7 +2506,7 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
 
     Returns:
-        A spark dataframe with the given training dataset data
+        A dataframe with the given training dataset data
     """
     if featurestore is None:
         featurestore = project_featurestore()
@@ -2827,7 +2836,7 @@ def _do_get_training_dataset(training_dataset, featurestore_metadata, training_d
         :featurestore_metadata: metadata of the featurestore
 
     Returns:
-        A spark dataframe with the given training dataset data
+        A dataframe with the given training dataset data
     """
     training_datasets = featurestore_metadata[constants.REST_CONFIG.JSON_TRAINING_DATASETS]
     training_dataset_json = _find_training_dataset(training_datasets, training_dataset, training_dataset_version)
@@ -3714,6 +3723,42 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         training_dataset, featurestore, training_dataset_version,
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
+
+
+def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark"):
+    """
+    Gets the partitions of a featuregroup
+
+    Example usage:
+
+    >>> partitions = featurestore.get_featuregroup_partitions("trx_summary_features")
+    >>> #You can also explicitly define version, featurestore and type of the returned dataframe:
+    >>> featurestore.get_featuregroup_partitions("trx_summary_features",
+    >>>                                          featurestore=featurestore.project_featurestore(),
+    >>>                                          featuregroup_version = 1,
+    >>>                                          dataframe_type="spark")
+
+    Args:
+        :featuregroup: the featuregroup to get partitions for
+        :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
+        :featuregroup_version: the version of the featuregroup, defaults to 1
+        :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+
+    Returns:
+        a dataframe with the partitions of the featuregroup
+
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    spark = util._find_spark()
+    spark.sparkContext.setJobGroup("Fetching Partitions of a Featuregroup",
+                                   "Getting partitions for feature group: {} from the featurestore {}".format(
+                                       featuregroup, featurestore))
+    _use_featurestore(spark, featurestore)
+    sql_str = "SHOW PARTITIONS " + _get_table_name(featuregroup, featuregroup_version)
+    result = _run_and_log_sql(spark, sql_str)
+    spark.sparkContext.setJobGroup("", "")
+    return _return_dataframe_type(result, dataframe_type)
 
 try:
     metadata_cache = _get_featurestore_metadata(featurestore=project_featurestore())

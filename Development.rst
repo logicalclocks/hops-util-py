@@ -125,4 +125,3 @@ The integration tests can be triggered from https://github.com/logicalclocks/hop
         install-mode: "git"
         branch: "test"
         repo: "kim"
-
