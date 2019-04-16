@@ -35,7 +35,20 @@ pipeline {
         """
       }
     }
+    stage ('update-it-notebook') {
+      when { 
+        branch 'master' 
+      }
+      steps {
+        sh 'scp it_tests/integration_tests.ipynb snurran:/var/www/hops/hops-util-py_tests'
+      }
+    }
     stage ('deploy-bin') {
+      when { 
+        not { 
+          branch 'master' 
+        } 
+      }
       environment {
         PYPI = credentials('977daeb0-e1c8-43a0-b35a-fc37bb9eee9b')
       }
@@ -47,6 +60,11 @@ pipeline {
       }
     }
     stage ('deploy-doc') {
+      when { 
+        not { 
+          branch 'master' 
+        } 
+      }
       steps {
         sh 'scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
       }
