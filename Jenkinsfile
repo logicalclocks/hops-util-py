@@ -36,37 +36,36 @@ pipeline {
       }
     }
     stage ('update-it-notebook') {
-      when { 
-        branch 'master' 
-      }
       steps {
         sh 'scp it_tests/integration_tests.ipynb snurran:/var/www/hops/hops-util-py_tests'
       }
     }
     stage ('deploy-bin') {
-      when { 
-        not { 
-          branch 'master' 
-        } 
-      }
       environment {
         PYPI = credentials('977daeb0-e1c8-43a0-b35a-fc37bb9eee9b')
       }
       steps {
         sh """
         source $WORKSPACE/../hops-util-py-env/bin/activate
-    	  twine upload -u $PYPI_USR -p $PYPI_PSW dist/*
+    	  twine upload -u $PYPI_USR -p $PYPI_PSW --skip-existing dist/*
         """
       }
     }
     stage ('deploy-doc') {
-      when { 
-        not { 
-          branch 'master' 
-        } 
-      }
       steps {
-        sh 'scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py'
+        sh """
+        set -x
+        version=`curl http://hops-py.logicalclocks.com/ --silent | grep -A1 "\\"version\\"" | tail -1`
+        current_version=`cat hops/version.py | head -1 | awk -F '=' {'print \$2'}`
+        current_version=`echo \${current_version//\\'}`
+
+        if [ `printf '%s\n' "\$version" "\$current_version" | sort -V | tail -1` == \$current_version ];
+        then
+          scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py;
+        else
+          echo "Ignored"
+        fi
+        """
       }
     }
   }
