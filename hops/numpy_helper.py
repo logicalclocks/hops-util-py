@@ -20,7 +20,7 @@ def load(hdfs_filename, **kwds):
       IOError: If the file does not exist.
     """
     hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.localize(hdfs_path)
+    local_path = hdfs.copy_to_local(hdfs_path)
     return np.load(local_path, **kwds)
 
 def save(hdfs_filename, data):
