@@ -13,6 +13,7 @@ import os
 import errno
 import pydoop.hdfs.path as path
 from hops import constants
+import sys
 
 fd = None
 
@@ -228,12 +229,12 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 
     For example, if you execute:
 
-    >>> copy_to_hdfs("data.tfrecords", "/Resources/", project="demo")
+    >>> copy_to_hdfs("data.tfrecords", "/Resources", project="demo")
 
     This will copy the file data.tfrecords to hdfs://Projects/demo/Resources/data.tfrecords
 
     Args:
-        :local_path: the path on the local filesystem to copy
+        :local_path: Absolute or local path on the local filesystem to copy
         :relative_hdfs_path: a path in HDFS relative to the project root to where the local path should be written
         :overwrite: a boolean flag whether to overwrite if the path already exists in HDFS
         :project: name of the project, defaults to the current HDFS user's project
@@ -244,15 +245,24 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     if "PDIR" in os.environ:
         full_local = os.environ['PDIR'] + '/' + local_path
     else:
-        full_local = os.getcwd() + '/' + local_path
+        # Absolute path
+        if local_path.startswith(os.getcwd()):
+            full_local = local_path
+        else:
+            # Relative path
+            full_local = os.getcwd() + '/' + local_path
 
     hdfs_path = _expand_path(relative_hdfs_path, project, exists=False)
 
     if overwrite:
         hdfs_handle = get()
         # check if project path exist, if so delete it (since overwrite flag was set to true)
-        if hdfs_handle.exists(hdfs_path):
-            hdfs_handle.delete(hdfs_path, recursive=True)
+        if os.path.isdir(full_local):
+            hdfs_path = hdfs_path + "/" + os.path.basename(full_local)
+            if hdfs_handle.exists(hdfs_path):
+                hdfs_handle.delete(hdfs_path, recursive=True)
+        elif hdfs_handle.exists(hdfs_path):
+            hdfs_handle.delete(hdfs_path)
 
     print("Started copying " + hdfs_path + " on hdfs to path " + hdfs_path + "\n")
 
@@ -293,7 +303,12 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
     if "PDIR" in os.environ:
         local_dir = os.environ['PDIR'] + '/' + local_path
     else:
-        local_dir = os.getcwd() + '/' + local_path
+        # Absolute path
+        if local_path.startswith(os.getcwd()):
+            local_dir = local_path
+        else:
+        # Relative path
+            local_dir = os.getcwd() + '/' + local_path
 
     if not os.path.isdir(local_dir):
         raise IOError("You need to supply the path to a local directory. This is not a local dir: %s" % local_dir)
@@ -314,6 +329,8 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
         if hdfs_size == sz:
             print("File " + project_hdfs_path + " is already localized, skipping download...")
             return full_local
+        else:
+            os.remove(full_local)
 
     if os.path.isdir(full_local) and not overwrite:
         try:
@@ -702,7 +719,25 @@ def isfile(hdfs_path, project=None):
     if project == None:
         project = project_name()
     hdfs_path = _expand_path(hdfs_path, project)
-    return hdfs.isfile(hdfs_path)
+    return path.isfile(hdfs_path)
+
+def isdir(hdfs_path, project=None):
+    """
+    Return True if path refers to a directory.
+
+    Args:
+        :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+
+    Returns:
+        True if path refers to a file.
+
+    Raises: IOError
+    """
+    if project == None:
+        project = project_name()
+    hdfs_path = _expand_path(hdfs_path, project)
+    return path.isdir(hdfs_path)
 
 
 def capacity():
@@ -778,3 +813,46 @@ def abs_path(hdfs_path):
         Return an absolute path for hdfs_path.
     """
     return _expand_path(hdfs_path)
+
+def add_py_file(hdfs_path, project=None):
+    """
+     Add a .py file from HDFS to sys.path
+
+     For example, if you execute:
+
+     >>> add_py_file("Resources/my_module.py")
+
+     You can import it simply as:
+
+     >>> import my_module
+
+     Args:
+         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS) to a .py file
+
+     Returns:
+        Return full local path to localized python file
+    """
+
+    localized_deps = os.getcwd() + "/localized_deps"
+    if not os.path.exists(localized_deps):
+        os.mkdir(localized_deps)
+        open(localized_deps + '/__init__.py', mode='w').close()
+
+    if localized_deps not in sys.path:
+        sys.path.append(localized_deps)
+
+    if project == None:
+        project = project_name()
+    hdfs_path = _expand_path(hdfs_path, project)
+
+    if path.isfile(hdfs_path) and hdfs_path.endswith('.py'):
+        py_path = copy_to_local(hdfs_path, localized_deps)
+        if py_path not in sys.path:
+            sys.path.append(py_path)
+        return py_path
+    else:
+        raise Exception("Given path " + hdfs_path + " does not point to a .py file")
+
+
+
+
