@@ -15,7 +15,6 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
-        'pyspark',
         'hopsfacets',
         'pyjks',
         'pathlib',
@@ -37,7 +36,8 @@ setup(
         ],
         'test': [
             'mock',
-            'pytest'
+            'pytest',
+            'pyspark'
         ]
     },
     author='Robin Andersson',
