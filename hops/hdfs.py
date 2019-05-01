@@ -14,6 +14,7 @@ import errno
 import pydoop.hdfs.path as path
 from hops import constants
 import sys
+import subprocess
 
 fd = None
 
@@ -257,12 +258,9 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     if overwrite:
         hdfs_handle = get()
         # check if project path exist, if so delete it (since overwrite flag was set to true)
-        if os.path.isdir(full_local):
-            hdfs_path = hdfs_path + "/" + os.path.basename(full_local)
-            if hdfs_handle.exists(hdfs_path):
-                hdfs_handle.delete(hdfs_path, recursive=True)
-        elif hdfs_handle.exists(hdfs_path):
-            hdfs_handle.delete(hdfs_path)
+        hdfs_path = hdfs_path + "/" + os.path.basename(full_local)
+        if hdfs_handle.exists(hdfs_path):
+            hdfs_handle.delete(hdfs_path, recursive=True)
 
     print("Started copying " + hdfs_path + " on hdfs to path " + hdfs_path + "\n")
 
@@ -307,7 +305,7 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
         if local_path.startswith(os.getcwd()):
             local_dir = local_path
         else:
-        # Relative path
+            # Relative path
             local_dir = os.getcwd() + '/' + local_path
 
     if not os.path.isdir(local_dir):
@@ -320,7 +318,7 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
 
     # Get the amount of free space on the local drive
     stat = os.statvfs(local_dir)
-    free_space_bytes = stat.f_bsize * stat.f_bavail    
+    free_space_bytes = stat.f_bsize * stat.f_bavail
 
     hdfs_size = path.getsize(project_hdfs_path)
 
@@ -344,10 +342,10 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
             print("Failed while checking directory structure to avoid re-downloading dataset, falling back to downloading")
             print(e)
             shutil.rmtree(full_local)
-        
+
     if hdfs_size > free_space_bytes:
         raise IOError("Not enough local free space available on scratch directory: %s" % local_path)
-    
+
     if overwrite:
         if os.path.isdir(full_local):
             shutil.rmtree(full_local)
@@ -415,7 +413,7 @@ def _get_experiments_dir():
 
 
 def glob(hdfs_path, recursive=False, project=None):
-    """ 
+    """
     Finds all the pathnames matching a specified pattern according to the rules used by the Unix shell, although results are returned in arbitrary order.
 
     Globbing gives you the list of files in a dir that matches a supplied pattern
@@ -453,7 +451,7 @@ def glob(hdfs_path, recursive=False, project=None):
 
 
 def ls(hdfs_path, recursive=False, project=None):
-    """ 
+    """
     Returns all the pathnames in the supplied directory.
 
     Args:
@@ -471,7 +469,7 @@ def ls(hdfs_path, recursive=False, project=None):
 
 
 def lsl(hdfs_path, recursive=False, project=None):
-    """ 
+    """
     Returns all the pathnames in the supplied directory.
 
     Args:
@@ -489,7 +487,7 @@ def lsl(hdfs_path, recursive=False, project=None):
 
 
 def rmr(hdfs_path, project=None):
-    """ 
+    """
     Recursively remove files and directories.
 
     Args:
@@ -504,7 +502,7 @@ def rmr(hdfs_path, project=None):
 
 
 def mkdir(hdfs_path, project=None):
-    """ 
+    """
     Create a directory and its parents as needed.
 
     Args:
@@ -519,9 +517,9 @@ def mkdir(hdfs_path, project=None):
 
 
 def move(src, dest):
-    """ 
+    """
     Move or rename src to dest.
- 
+
     Args:
         :src: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :dest: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
@@ -533,9 +531,9 @@ def move(src, dest):
 
 
 def rename(src, dest):
-    """ 
+    """
     Rename src to dest.
- 
+
     Args:
         :src: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :dest: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
@@ -546,7 +544,7 @@ def rename(src, dest):
 
 
 def chown(hdfs_path, user, group, project=None):
-    """ 
+    """
     Change file owner and group.
 
     Args:
@@ -562,7 +560,7 @@ def chown(hdfs_path, user, group, project=None):
 
 
 def chmod(hdfs_path, mode, project=None):
-    """ 
+    """
     Change file mode bits.
 
     Args:
@@ -577,7 +575,7 @@ def chmod(hdfs_path, mode, project=None):
 
 
 def stat(hdfs_path, project=None):
-    """ 
+    """
     Performs the equivalent of os.stat() on path, returning a StatResult object.
 
     Args:
@@ -594,7 +592,7 @@ def stat(hdfs_path, project=None):
 
 
 def access(hdfs_path, mode, project=None):
-    """ 
+    """
     Perform the equivalent of os.access() on path.
 
     Args:
@@ -661,7 +659,7 @@ def close():
 
 
 def exists(hdfs_path, project=None):
-    """ 
+    """
     Return True if hdfs_path exists in the default HDFS.
 
     Args:
@@ -685,7 +683,7 @@ def exists(hdfs_path, project=None):
 
 
 def isdir(hdfs_path, project=None):
-    """ 
+    """
     Return True if path refers to a directory.
 
     Args:
@@ -704,7 +702,7 @@ def isdir(hdfs_path, project=None):
 
 
 def isfile(hdfs_path, project=None):
-    """ 
+    """
     Return True if path refers to a file.
 
     Args:
@@ -814,23 +812,25 @@ def abs_path(hdfs_path):
     """
     return _expand_path(hdfs_path)
 
-def add_py_file(hdfs_path, project=None):
+def add_module(hdfs_path, project=None):
     """
-     Add a .py file from HDFS to sys.path
+     Add a .py or .ipynb file from HDFS to sys.path
 
      For example, if you execute:
 
-     >>> add_py_file("Resources/my_module.py")
+     >>> add_module("Resources/my_module.py")
+     >>> add_module("Resources/my_notebook.ipynb")
 
      You can import it simply as:
 
      >>> import my_module
+     >>> import my_notebook
 
      Args:
-         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS) to a .py file
+         :hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS) to a .py or .ipynb file
 
      Returns:
-        Return full local path to localized python file
+        Return full local path to localized python file or converted python file in case of .ipynb file
     """
 
     localized_deps = os.getcwd() + "/localized_deps"
@@ -850,9 +850,29 @@ def add_py_file(hdfs_path, project=None):
         if py_path not in sys.path:
             sys.path.append(py_path)
         return py_path
-    else:
-        raise Exception("Given path " + hdfs_path + " does not point to a .py file")
+    elif path.isfile(hdfs_path) and hdfs_path.endswith('.ipynb'):
+        ipynb_path = copy_to_local(hdfs_path, localized_deps)
+        python_path = os.environ['PYSPARK_PYTHON']
+        jupyter_binary = os.path.dirname(python_path) + '/jupyter'
+        if not os.path.exists(jupyter_binary):
+            raise Exception('Could not find jupyter binary on path {}'.format(jupyter_binary))
 
+        converted_py_path = os.path.splitext(ipynb_path)[0] + '.py'
+        if os.path.exists(converted_py_path):
+            os.remove(converted_py_path)
+
+        conversion = subprocess.Popen([jupyter_binary, 'nbconvert', '--to', 'python', ipynb_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = conversion.communicate()
+        if conversion.returncode != 0:
+            raise Exception("Notebook conversion to .py failed: stdout: {} \n stderr: {}".format(out, err))
+
+        if not os.path.exists(converted_py_path):
+            raise Exception('Could not find converted .py file on path {}'.format(converted_py_path))
+        if converted_py_path not in sys.path:
+            sys.path.append(converted_py_path)
+        return converted_py_path
+    else:
+        raise Exception("Given path " + hdfs_path + " does not point to a .py or .ipynb file")
 
 
 
