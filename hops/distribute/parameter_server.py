@@ -195,7 +195,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps):
 
             if devices.get_num_gpus() > 0:
                 t.do_run = False
-                t.join()
+                t.join(20)
 
             _cleanup(tb_hdfs_path)
 

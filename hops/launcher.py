@@ -195,7 +195,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
             _cleanup(tb_hdfs_path)
             if devices.get_num_gpus() > 0:
                 t.do_run = False
-                t.join()
+                t.join(20)
             raise
         finally:
             try:
@@ -208,7 +208,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir):
         _cleanup(tb_hdfs_path)
         if devices.get_num_gpus() > 0:
             t.do_run = False
-            t.join()
+            t.join(20)
 
     return _wrapper_fun
 
