@@ -120,8 +120,7 @@ The integration tests can be triggered from https://github.com/logicalclocks/hop
 
 .. code-block:: bash
 
-    default["kagent"]["hops-util-py"]["install-mode"]
-    kagent:
+    conda:
       hops-util-py:
         install-mode: "git"
         branch: "test"
