@@ -280,6 +280,7 @@ class REST_CONFIG:
     JSON_FEATURE_TYPE = "type"
     JSON_FEATURE_DESCRIPTION = "description"
     JSON_FEATURE_PRIMARY = "primary"
+    JSON_FEATURE_PARTITION = "partition"
 
     JSON_TRAINING_DATASET_ID = "id"
     JSON_TRAINING_DATASET_NAME = "name"
