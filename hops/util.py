@@ -10,12 +10,10 @@ from ctypes import cdll
 import itertools
 import socket
 import json
-import base64
 from datetime import datetime
 import time
 from hops import hdfs
 from hops import version
-from pyspark.sql import SparkSession
 from hops import constants
 import ssl
 
@@ -36,11 +34,17 @@ try:
 except ImportError:
     import httplib as http
 
+# in case importing in %%local
+try:
+    from pyspark.sql import SparkSession
+except:
+    pass
 
 def _get_elastic_endpoint():
     """
 
     Returns:
+        The endpoint for putting things into elastic search
 
     """
     elastic_endpoint = os.environ[constants.ENV_VARIABLES.ELASTIC_ENDPOINT_ENV_VAR]
@@ -58,10 +62,10 @@ def _get_hopsworks_rest_endpoint():
     """
 
     Returns:
+        The hopsworks REST endpoint for making requests to the REST API
 
     """
-    elastic_endpoint = os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR]
-    return elastic_endpoint
+    return os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR]
 
 hopsworks_endpoint = None
 try:
@@ -71,12 +75,14 @@ except:
 
 def _find_in_path(path, file):
     """
+    Utility method for finding a filename-string in a path
 
     Args:
-        :path:
-        :file:
+        :path: the path to search
+        :file: the filename to search for
 
     Returns:
+        True if the filename was found in the path, otherwise False
 
     """
     for p in path.split(os.pathsep):
@@ -87,9 +93,10 @@ def _find_in_path(path, file):
 
 def _find_tensorboard():
     """
+    Utility method for finding the tensorboard binary
 
     Returns:
-         tb_path
+         tb_path, path to the binary
     """
     pypath = os.getenv("PYSPARK_PYTHON")
     pydir = os.path.dirname(pypath)
@@ -105,7 +112,7 @@ def _on_executor_exit(signame):
     SIGNAME to be sent when the parent process dies
 
     Args:
-        :signame:
+        :signame: the signame to send
 
     Returns:
         set_parent_exit_signal
@@ -247,11 +254,14 @@ def _get_ip_address():
 
 def _time_diff(task_start, task_end):
     """
+    Utility method for computing and pretty-printing the time difference between two timestamps
+
     Args:
-        :task_start:
-        :tast_end:
+        :task_start: the starting timestamp
+        :tast_end: the ending timestamp
 
     Returns:
+        The time difference in a pretty-printed format
 
     """
     time_diff = task_end - task_start
@@ -272,13 +282,16 @@ def _time_diff(task_start, task_end):
 
 def _put_elastic(project, appid, elastic_id, json_data):
     """
+    Utility method for putting JSON data into elastic search
+
     Args:
-        :project:
-        :appid:
-        :elastic_id:
-        :json_data:
+        :project: the project of the user/app
+        :appid: the YARN appid
+        :elastic_id: the id in elastic
+        :json_data: the data to put
 
     Returns:
+        None
 
     """
     if not elastic_endpoint:
@@ -415,11 +428,13 @@ def _version_resources(versioned_resources, rundir):
 
 def _convert_to_dict(best_param):
     """
+    Utiliy method for converting best_param string to dict
 
     Args:
-        best_param:
+        :best_param: the best_param string
 
     Returns:
+        a dict with param->value
 
     """
     best_param_dict={}

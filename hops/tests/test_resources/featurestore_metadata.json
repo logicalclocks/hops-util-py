@@ -20,19 +20,22 @@
           "name": "away_team_id",
           "type": "int",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "home_team_id",
           "type": "int",
           "description": "-",
-          "primary": true
+          "primary": true,
+          "partition": false
         },
         {
           "name": "score",
           "type": "int",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -70,19 +73,22 @@
           "name": "average_position",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_id",
           "type": "int",
           "description": "-",
-          "primary": true
+          "primary": true,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -120,19 +126,22 @@
           "name": "average_attendance",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_id",
           "type": "int",
           "description": "-",
-          "primary": true
+          "primary": true,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -170,43 +179,50 @@
           "name": "average_player_age",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_id",
           "type": "int",
           "description": "-",
-          "primary": true
+          "primary": true,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -244,19 +260,22 @@
           "name": "team_budget",
           "type": "float",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_id",
           "type": "int",
           "description": "-",
-          "primary": true
+          "primary": true,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "int",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -289,73 +308,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -386,73 +417,86 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
+
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -483,73 +527,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -580,73 +636,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -677,73 +745,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -774,73 +854,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
@@ -871,73 +963,85 @@
           "name": "team_budget",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_worth",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_position",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_attendance",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_rating",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "team_position",
           "type": "INT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "sum_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         },
         {
           "name": "average_player_age",
           "type": "FLOAT",
           "description": "-",
-          "primary": false
+          "primary": false,
+          "partition": false
         }
       ],
       "featuresHistogram": null,
