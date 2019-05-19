@@ -118,7 +118,7 @@ def _get_featurestore_metadata(featurestore):
                                  "server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, "
                                  "error msg: {}, user msg: {}".format(
-                resource_url, featurestore, response.code, response.reason, error_code, error_msg, user_msg))
+                resource_url, featurestore, response.status, response.reason, error_code, error_msg, user_msg))
     return response_object
 
 
