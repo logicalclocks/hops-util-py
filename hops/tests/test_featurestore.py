@@ -60,8 +60,9 @@ if (sys.version_info > (3, 0)):
         from hops.featurestore_impl.dao.feature import Feature
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
-            RestAPIError, InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
+            InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
             FeaturegroupNotFound
+        from hops.exceptions import RestAPIError
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
         from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
@@ -79,8 +80,9 @@ else:
         from hops.featurestore_impl.dao.feature import Feature
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
-            RestAPIError, InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
+            InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
             FeaturegroupNotFound
+        from hops.exceptions import RestAPIError
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
         from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame

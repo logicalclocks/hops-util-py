@@ -12,7 +12,6 @@ confluent-kafka-python. For example, assuming that you have created a topic call
 have installed confluent-kafka-python inside your project's anaconda environment:
 
     >>> from hops import kafka
-    >>> from hops import tls
     >>> from confluent_kafka import Producer, Consumer
     >>> TOPIC_NAME = "test"
     >>> config = kafka.get_kafka_default_config()
@@ -50,10 +49,11 @@ Similarly, you can define a pyspark kafka consumer as follows, using the spark s
 """
 
 import os
-from hops import constants
-from hops import tls
-from hops import util
-from hops import hdfs
+from hops import constants, tls, util, hdfs
+from ast import literal_eval
+from io import BytesIO
+from avro.io import DatumReader, BinaryDecoder
+import avro.schema
 import json
 
 def get_broker_endpoints():
@@ -64,6 +64,7 @@ def get_broker_endpoints():
         a string with broker endpoints comma-separated
     """
     return os.environ[constants.ENV_VARIABLES.KAFKA_BROKERS_ENV_VAR].replace("INTERNAL://","")
+
 
 def get_security_protocol():
     """
@@ -83,6 +84,7 @@ def get_broker_endpoints_list():
         a list with broker endpoint strings
     """
     return get_broker_endpoints().split(",")
+
 
 def get_kafka_default_config():
     """
@@ -125,3 +127,49 @@ def get_schema(topic):
     resp_body = response.read()
     response_object = json.loads(resp_body)
     return response_object
+
+
+def parse_avro_msg(msg, avro_schema):
+    """
+    Parses an avro record using a specified avro schema
+
+    Args:
+        :msg: the avro message to parse
+        :avro_schema: the avro schema
+
+    Returns:
+         The parsed/decoded message
+    """
+    reader = DatumReader(avro_schema)
+    message_bytes = BytesIO(msg)
+    decoder = BinaryDecoder(message_bytes)
+    return reader.read(decoder)
+
+
+def convert_json_schema_to_avro(json_schema):
+    """
+    Parses a JSON kafka topic schema returned by Hopsworks REST API into an avro schema
+
+    Args:
+       :json_schema: the json schema to convert
+
+    Returns:
+         the avro schema
+    """
+    return avro.schema.parse(literal_eval(json.dumps(json_schema["contents"])))
+
+
+class KafkaTopicDTO(object):
+    """
+    Represents a KafkaTopic in Hopsworks
+    """
+
+    def __init__(self, kafka_topic_dto_json):
+        """
+        Initialize the kafka topic from JSON payload returned by Hopsworks REST API
+
+        Args:
+            :kafka_topic_dto_json: JSON data about the kafka topic returned from Hopsworks REST API
+        """
+        self.name = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_NAME]
+        self.schema_version = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_SCHEMA_VERSION]
