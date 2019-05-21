@@ -69,6 +69,7 @@ def _register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
         tb_env = os.environ.copy()
         tb_env['CUDA_VISIBLE_DEVICES'] = ''
         tb_env['LC_ALL'] = 'C'
+        tb_env['TMPDIR'] = os.getcwd()
 
         tb_proc = None
         global local_logdir_path
@@ -165,6 +166,7 @@ def _restart_debugging(interactive=True):
     tb_env = os.environ.copy()
     tb_env['CUDA_VISIBLE_DEVICES'] = ''
     tb_env['LC_ALL'] = 'C'
+    tb_env['TMPDIR'] = os.getcwd()
 
     global pypath
     global tb_path
@@ -217,6 +219,7 @@ def visualize(hdfs_root_logdir):
     tb_env = os.environ.copy()
     tb_env['CUDA_VISIBLE_DEVICES'] = ''
     tb_env['LC_ALL'] = 'C'
+    tb_env['TMPDIR'] = os.getcwd()
 
     tb_proc = subprocess.Popen([pypath, tb_path, "--logdir=%s" % logdir, "--port=%d" % tb_port, "--host=%s" % "0.0.0.0"],
                                env=tb_env, preexec_fn=util._on_executor_exit('SIGTERM'))
