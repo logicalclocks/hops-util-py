@@ -274,8 +274,9 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
 
     if overwrite:
         hdfs_path = hdfs_path + "/" + os.path.basename(full_local)
-        # delete hdfs path since overwrite flag was set to true
-        delete(hdfs_path, recursive=True)
+        if exists(hdfs_path):
+            # delete hdfs path since overwrite flag was set to true
+            delete(hdfs_path, recursive=True)
 
     print("Started copying local path {} to hdfs path {}\n".format(local_path, hdfs_path))
 

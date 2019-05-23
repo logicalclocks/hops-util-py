@@ -415,8 +415,8 @@ def _export_local_model(local_model_path, model_dir_hdfs, overwrite):
            the path to the exported model files in HDFS
     """
     if os.path.isdir(local_model_path):
-        if not local_model_path.endswith("/"):
-            local_model_path = local_model_path + "/"
+        if not local_model_path.endswith(constants.DELIMITERS.SLASH_DELIMITER):
+            local_model_path = local_model_path + constants.DELIMITERS.SLASH_DELIMITER
         for filename in os.listdir(local_model_path):
             hdfs.copy_to_hdfs(local_model_path + filename, model_dir_hdfs, overwrite=overwrite)
 
@@ -438,11 +438,22 @@ def _export_hdfs_model(hdfs_model_path, model_dir_hdfs, overwrite):
     Returns:
            the path to the exported model files in HDFS
     """
-    model_name = hdfs_model_path
-    if constants.DELIMITERS.SLASH_DELIMITER in hdfs_model_path:
-        last_index = model_name.rfind("/")
-        model_name = model_name[last_index + 1:]
-    hdfs.cp(hdfs_model_path, model_dir_hdfs + constants.DELIMITERS.SLASH_DELIMITER + model_name, overwrite=overwrite)
+    if hdfs.isdir(hdfs_model_path):
+        for file_source_path in hdfs.ls(hdfs_model_path):
+            model_name = file_source_path
+            if constants.DELIMITERS.SLASH_DELIMITER in file_source_path:
+                last_index = model_name.rfind(constants.DELIMITERS.SLASH_DELIMITER)
+                model_name = model_name[last_index + 1:]
+            dest_path = model_dir_hdfs + constants.DELIMITERS.SLASH_DELIMITER + model_name
+            hdfs.cp(file_source_path, dest_path)
+    elif hdfs.isfile(hdfs_model_path):
+        model_name = hdfs_model_path
+        if constants.DELIMITERS.SLASH_DELIMITER in hdfs_model_path:
+            last_index = model_name.rfind(constants.DELIMITERS.SLASH_DELIMITER)
+            model_name = model_name[last_index + 1:]
+        dest_path = model_dir_hdfs + constants.DELIMITERS.SLASH_DELIMITER + model_name
+        hdfs.cp(hdfs_model_path, dest_path, overwrite=overwrite)
+
     return model_dir_hdfs
 
 
@@ -706,9 +717,6 @@ def _make_inference_request_rest(serving_name, data, verb):
                                                                 error_code, error_msg, user_msg))
     except:  # for python 2
         if response.status != 201 and response.status != 200:
-            resp_body = response.read()
-            response_object = json.loads(resp_body)
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                           "user msg: {}".format(resource_url, response.status, response.reason,
