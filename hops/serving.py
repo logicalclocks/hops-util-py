@@ -33,21 +33,21 @@ def exists(serving_name):
            True if the serving exists, otherwise false
     """
     try:
-        get_serving_id(serving_name)
+        get_id(serving_name)
         return True
     except ServingNotFound as e:
         print("No serving with name {} was found in the project {}".format(serving_name, hdfs.project_name()))
         return False
 
 
-def delete_serving(serving_name):
+def delete(serving_name):
     """
     Deletes serving instance with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.delete_serving("irisFlowerClassifier")
+    >>> serving.delete("irisFlowerClassifier")
 
     Args:
         :serving_name: name of the serving to delete
@@ -55,7 +55,7 @@ def delete_serving(serving_name):
     Returns:
         None
     """
-    serving_id = get_serving_id(serving_name)
+    serving_id = get_id(serving_name)
     print("Deleting serving with name: {}...".format(serving_name))
     _delete_serving_rest(serving_id)
     print("Serving with name: {} successfully deleted".format(serving_name))
@@ -102,14 +102,14 @@ def _delete_serving_rest(serving_id):
                                                                 response.reason, error_code, error_msg, user_msg))
 
 
-def start_serving(serving_name):
+def start(serving_name):
     """
     Starts a model serving instance with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.start_serving("irisFlowerClassifier")
+    >>> serving.start("irisFlowerClassifier")
 
     Args:
         :serving_name: name of the serving to start
@@ -117,20 +117,20 @@ def start_serving(serving_name):
     Returns:
         None
     """
-    serving_id = get_serving_id(serving_name)
+    serving_id = get_id(serving_name)
     print("Starting serving with name: {}...".format(serving_name))
     _start_or_stop_serving_rest(serving_id, constants.MODEL_SERVING.SERVING_ACTION_START)
     print("Serving with name: {} successfully started".format(serving_name))
 
 
-def stop_serving(serving_name):
+def stop(serving_name):
     """
     Stops a model serving instance with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.stop_serving("irisFlowerClassifier")
+    >>> serving.stop("irisFlowerClassifier")
 
     Args:
         :serving_name: name of the serving to stop
@@ -138,7 +138,7 @@ def stop_serving(serving_name):
     Returns:
         None
     """
-    serving_id = get_serving_id(serving_name)
+    serving_id = get_id(serving_name)
     print("Stopping serving with name: {}...".format(serving_name))
     _start_or_stop_serving_rest(serving_id, constants.MODEL_SERVING.SERVING_ACTION_STOP)
     print("Serving with name: {} successfully stopped".format(serving_name))
@@ -186,7 +186,7 @@ def _start_or_stop_serving_rest(serving_id, action):
                                                                 response.reason, error_code, error_msg, user_msg))
 
 
-def create_or_update_serving(artifact_path, serving_name, serving_type="TENSORFLOW", model_version=1,
+def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", model_version=1,
                              batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
                              update = False):
     """
@@ -195,7 +195,7 @@ def create_or_update_serving(artifact_path, serving_name, serving_type="TENSORFL
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.create_or_update_serving("/Models/mnist", "mnist", "TENSORFLOW", 1)
+    >>> serving.create_or_update("/Models/mnist", "mnist", "TENSORFLOW", 1)
 
     Args:
         :artifact_path: path to the artifact to serve (tf model dir or sklearn script)
@@ -210,7 +210,7 @@ def create_or_update_serving(artifact_path, serving_name, serving_type="TENSORFL
     """
     serving_id = None
     if update:
-        serving_id = get_serving_id(serving_name)
+        serving_id = get_id(serving_name)
     artifact_path = hdfs._expand_path(artifact_path)
     _validate_user_serving_input(artifact_path, serving_name, serving_type, model_version, batching_enabled,
                                  num_partitions, num_replicas)
@@ -446,14 +446,14 @@ def _export_hdfs_model(hdfs_model_path, model_dir_hdfs, overwrite):
     return model_dir_hdfs
 
 
-def get_serving_id(serving_name):
+def get_id(serving_name):
     """
     Gets the id of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_id(serving_name)
+    >>> serving.get_id(serving_name)
 
     Args:
         :serving_name: name of the serving to get the id for
@@ -461,19 +461,19 @@ def get_serving_id(serving_name):
     Returns:
          the id of the serving
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.id
 
 
-def get_serving_artifact_path(serving_name):
+def get_artifact_path(serving_name):
     """
     Gets the artifact path of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_artifact_path(serving_name)
+    >>> serving.get_artifact_path(serving_name)
 
     Args:
         :serving_name: name of the serving to get the artifact path for
@@ -481,19 +481,19 @@ def get_serving_artifact_path(serving_name):
     Returns:
          the artifact path of the serving (model path in case of tensorflow, or python script in case of SkLearn)
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.artifact_path
 
 
-def get_serving_type(serving_name):
+def get_type(serving_name):
     """
     Gets the type of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_type(serving_name)
+    >>> serving.get_type(serving_name)
 
     Args:
         :serving_name: name of the serving to get the typ for
@@ -501,19 +501,19 @@ def get_serving_type(serving_name):
     Returns:
          the type of the serving (e.g Tensorflow or SkLearn)
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.serving_type
 
 
-def get_serving_version(serving_name):
+def get_version(serving_name):
     """
     Gets the version of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_version(serving_name)
+    >>> serving.get_version(serving_name)
 
     Args:
         :serving_name: name of the serving to get the version for
@@ -521,19 +521,19 @@ def get_serving_version(serving_name):
     Returns:
          the version of the serving
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.model_version
 
 
-def get_serving_kafka_topic(serving_name):
+def get_kafka_topic(serving_name):
     """
     Gets the kafka topic name of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_kafka_topic(serving_name)
+    >>> serving.get_kafka_topic(serving_name)
 
     Args:
         :serving_name: name of the serving to get the kafka topic name for
@@ -541,19 +541,19 @@ def get_serving_kafka_topic(serving_name):
     Returns:
          the kafka topic name of the serving
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.kafka_topic_dto.name
 
 
-def get_serving_status(serving_name):
+def get_status(serving_name):
     """
     Gets the status of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_serving_status(serving_name)
+    >>> serving.get_status(serving_name)
 
     Args:
         :serving_name: name of the serving to get the status for
@@ -561,19 +561,19 @@ def get_serving_status(serving_name):
     Returns:
          the status of the serving
     """
-    servings = get_servings()
+    servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.status
 
 
-def get_servings():
+def get_all():
     """
     Gets the list of servings for the current project
 
     Example:
 
     >>> from hops import serving
-    >>> servings = serving.get_servings()
+    >>> servings = serving.get_all()
     >>> servings[0].name
 
     Returns:
