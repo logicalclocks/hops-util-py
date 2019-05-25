@@ -698,7 +698,7 @@ def _get_servings_rest():
 
 def make_inference_request(serving_name, data, verb=":predict"):
     """
-    Makes a REST request to Hopsworks for creating or updating a model serving instance
+    Submit an inference request
 
     Example use-case:
 
@@ -717,7 +717,7 @@ def make_inference_request(serving_name, data, verb=":predict"):
 
 def _make_inference_request_rest(serving_name, data, verb):
     """
-    Makes a REST request to Hopsworks for creating or updating a model serving instance
+    Makes a REST request to Hopsworks for submitting an inference request to the serving instance
 
     Args:
         :serving_name: name of the model being served

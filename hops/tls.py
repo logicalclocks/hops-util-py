@@ -244,3 +244,4 @@ def _write_pems():
     ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
 
     _write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path)
+
