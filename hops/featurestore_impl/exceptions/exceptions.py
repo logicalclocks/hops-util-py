@@ -34,3 +34,30 @@ class HiveDatabaseNotFound(Exception):
 
 class SparkToHiveSchemaConversionError(Exception):
     """This exception will be raised if there is an error in translating the spark schema to a hive schema"""
+
+class FeatureVisualizationError(Exception):
+    """This exception will be raised if there is an error in visualization feature statistics"""
+
+class FeatureDistributionsNotComputed(Exception):
+    """
+    This exception will be raised if the user tries to visualize feature distributions
+    for a feature group or training dataset for which the distributions have not been computed
+    """
+
+class FeatureCorrelationsNotComputed(Exception):
+    """
+    This exception will be raised if the user tries to visualize feature correlations
+    for a feature group or training dataset for which the correlations have not been computed
+    """
+
+class FeatureClustersNotComputed(Exception):
+    """
+    This exception will be raised if the user tries to visualize feature clusters
+    for a feature group or training dataset for which the clusters have not been computed
+    """
+
+class DescriptiveStatisticsNotComputed(Exception):
+    """
+    This exception will be raised if the user tries to visualize feature clusters
+    for a feature group or training dataset for which the clusters have not been computed
+    """

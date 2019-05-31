@@ -6,10 +6,11 @@ from hops import constants, util, hdfs
 import json
 import numpy as np
 from hops.featurestore_impl.exceptions.exceptions import InferTFRecordSchemaError, \
-    InvalidPrimaryKey, SparkToHiveSchemaConversionError
+    InvalidPrimaryKey, SparkToHiveSchemaConversionError, CouldNotConvertDataframe
 import pandas as pd
 import math
 import re
+import os
 
 
 # for backwards compatibility
@@ -86,6 +87,9 @@ def _get_dataframe_tf_record_schema_json(spark_df, fixed=True):
 
     Returns:
         a dict with the tensorflow example as well as a json friendly version of the schema
+
+    Raises:
+        :InferTFRecordSchemaError: if a tf record schema could not be inferred from the dataframe
     """
     example = {}
     example_json = {}
@@ -280,6 +284,8 @@ def _validate_primary_key(featuregroup_df, primary_key):
     Returns:
         True if the validation succeeded, otherwise raises an error
 
+    Raises:
+        :InvalidPrimaryKey: when the primary key does not exist in the dataframe
     """
     cols = map(lambda x: x[0], featuregroup_df.dtypes)
     if primary_key in cols:
@@ -416,6 +422,8 @@ def _compute_feature_histograms(spark_df, num_bins=20):
     Returns:
         A list of histogram JSONs for all columns
 
+    Raises:
+        :ValueError: when the provided dataframe is of a structure that can't be used for computing certain statistics.
     """
     histograms_json = []
     for idx, col in enumerate(spark_df.dtypes):
@@ -491,6 +499,8 @@ def _compute_corr_matrix(spark_df, corr_method='pearson'):
     Returns:
         a pandas dataframe with the correlation matrix
 
+    Raises:
+        :ValueError: when the provided dataframe is of a structure that can't be used for computing correlations.
     """
     numeric_columns = spark_df.dtypes
     if (len(numeric_columns) == 0):
@@ -547,6 +557,9 @@ def _convert_dataframe_to_spark(dataframe):
 
     Returns:
         the dataframe convertd to a spark dataframe
+
+    Raises:
+        :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     spark = util._find_spark()
     if isinstance(dataframe, pd.DataFrame):
@@ -557,7 +570,7 @@ def _convert_dataframe_to_spark(dataframe):
         dataframe = np.array(dataframe)
     if isinstance(dataframe, np.ndarray):
         if dataframe.ndim != 2:
-            raise ValueError(
+            raise CouldNotConvertDataframe(
                 "Cannot convert numpy array that do not have two dimensions to a dataframe. "
                 "The number of dimensions are: {}".format(dataframe.ndim))
         num_cols = dataframe.shape[1]
@@ -573,7 +586,7 @@ def _convert_dataframe_to_spark(dataframe):
         return dataframe.toDF()
     if isinstance(dataframe, DataFrame):
         return dataframe
-    raise ValueError(
+    raise CouldNotConvertDataframe(
         "The provided dataframe type is not recognized. Supported types are: spark rdds, spark dataframes, "
         "pandas dataframes, python 2D lists, and numpy 2D arrays. The provided dataframe has type: {}".format(
             type(dataframe)))
@@ -592,6 +605,9 @@ def _validate_metadata(name, dtypes, dependencies, description):
 
     Returns:
         None
+
+    Raises:
+        :ValueError: if the metadata does not match the required validation rules
     """
     name_pattern = re.compile("^[a-zA-Z0-9_]+$")
     if len(name) > 256 or name == "" or not name_pattern.match(name):
@@ -627,6 +643,8 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     Returns:
         the hive datatype or None
 
+    Raises:
+        :SparkToHiveSchemaConversionError: if there was an error converting a spark datatype to a hive datatype
     """
     if type(spark_dtype) is dict:
         if spark_dtype[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE].lower() == constants.SPARK_CONFIG.SPARK_ARRAY:
@@ -837,3 +855,29 @@ def _do_get_project_featurestore():
     project_name = hdfs.project_name()
     featurestore_name = project_name.lower() + constants.FEATURE_STORE.FEATURESTORE_SUFFIX
     return featurestore_name
+
+
+def _visualization_validation_warning():
+    """
+    Checks whether the user is trying to do visualization inside a livy session and prints a warning message
+    if the user is trying to plot inside the livy session.
+
+    Returns:
+        None
+
+    """
+    if constants.ENV_VARIABLES.LIVY_VERSION_ENV_VAR in os.environ:
+        _log("Visualizations are not supported in Livy Sessions. "
+                      "Use %%local and %matplotlib inline to access the "
+                      "python kernel from PySpark notebooks")
+
+
+def _matplotlib_magic_reminder():
+    """
+    Prints a reminder message to the user to enable matplotlib inline when plotting inside Jupyter notebooks
+
+    Returns:
+        None
+
+    """
+    _log("Remember to add %%matplotlib inline when doing visualizations in Jupyter notebooks")

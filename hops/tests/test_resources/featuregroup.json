@@ -1,0 +1,906 @@
+{
+  "type": "featuregroupDTO",
+  "clusterAnalysis": {
+    "dataPoints": [
+      {
+        "datapointName": "0",
+        "firstDimension": -29.264389,
+        "secondDimension": -26.574423
+      },
+      {
+        "datapointName": "1",
+        "firstDimension": -42.468998,
+        "secondDimension": 11.561569
+      },
+      {
+        "datapointName": "2",
+        "firstDimension": -19.38664,
+        "secondDimension": -20.376434
+      },
+      {
+        "datapointName": "3",
+        "firstDimension": -21.123789,
+        "secondDimension": -12.777223
+      },
+      {
+        "datapointName": "4",
+        "firstDimension": -40.807064,
+        "secondDimension": -7.1989565
+      },
+      {
+        "datapointName": "5",
+        "firstDimension": -36.810482,
+        "secondDimension": -14.868135
+      },
+      {
+        "datapointName": "6",
+        "firstDimension": -25.129387,
+        "secondDimension": -2.81771
+      },
+      {
+        "datapointName": "7",
+        "firstDimension": -42.208473,
+        "secondDimension": -23.380253
+      },
+      {
+        "datapointName": "8",
+        "firstDimension": -49.64324,
+        "secondDimension": 8.474471
+      },
+      {
+        "datapointName": "9",
+        "firstDimension": -52.890095,
+        "secondDimension": -8.920524
+      },
+      {
+        "datapointName": "10",
+        "firstDimension": -52.890095,
+        "secondDimension": -8.920524
+      },
+      {
+        "datapointName": "11",
+        "firstDimension": -53.237885,
+        "secondDimension": 5.814791
+      },
+      {
+        "datapointName": "12",
+        "firstDimension": -51.455605,
+        "secondDimension": 4.9123683
+      },
+      {
+        "datapointName": "13",
+        "firstDimension": -61.393528,
+        "secondDimension": -10.214672
+      },
+      {
+        "datapointName": "14",
+        "firstDimension": -16.668093,
+        "secondDimension": -15.033279
+      },
+      {
+        "datapointName": "15",
+        "firstDimension": -53.364258,
+        "secondDimension": -16.565908
+      },
+      {
+        "datapointName": "16",
+        "firstDimension": -43.39022,
+        "secondDimension": 7.5482545
+      },
+      {
+        "datapointName": "17",
+        "firstDimension": -25.99044,
+        "secondDimension": 2.0980272
+      },
+      {
+        "datapointName": "18",
+        "firstDimension": -16.69818,
+        "secondDimension": -19.497805
+      },
+      {
+        "datapointName": "19",
+        "firstDimension": -29.702436,
+        "secondDimension": -25.232685
+      },
+      {
+        "datapointName": "20",
+        "firstDimension": -65.90038,
+        "secondDimension": -19.178
+      },
+      {
+        "datapointName": "21",
+        "firstDimension": -52.056137,
+        "secondDimension": -25.113716
+      },
+      {
+        "datapointName": "22",
+        "firstDimension": -43.37518,
+        "secondDimension": 9.780518
+      },
+      {
+        "datapointName": "23",
+        "firstDimension": -17.925056,
+        "secondDimension": 4.7339134
+      },
+      {
+        "datapointName": "24",
+        "firstDimension": -41.653072,
+        "secondDimension": -0.05095669
+      },
+      {
+        "datapointName": "25",
+        "firstDimension": -40.24867,
+        "secondDimension": 9.3174095
+      },
+      {
+        "datapointName": "26",
+        "firstDimension": -34.025738,
+        "secondDimension": 3.9266667
+      },
+      {
+        "datapointName": "27",
+        "firstDimension": -57.78384,
+        "secondDimension": -5.322729
+      },
+      {
+        "datapointName": "28",
+        "firstDimension": -26.458574,
+        "secondDimension": -1.0247613
+      },
+      {
+        "datapointName": "29",
+        "firstDimension": -30.46118,
+        "secondDimension": 2.1218212
+      },
+      {
+        "datapointName": "30",
+        "firstDimension": -8.551554,
+        "secondDimension": -1.1780078
+      },
+      {
+        "datapointName": "31",
+        "firstDimension": -9.004644,
+        "secondDimension": -2.0685337
+      },
+      {
+        "datapointName": "32",
+        "firstDimension": -26.515755,
+        "secondDimension": -16.766743
+      },
+      {
+        "datapointName": "33",
+        "firstDimension": -21.081652,
+        "secondDimension": 0.73249614
+      },
+      {
+        "datapointName": "34",
+        "firstDimension": -64.112076,
+        "secondDimension": -15.557827
+      },
+      {
+        "datapointName": "35",
+        "firstDimension": -53.26797,
+        "secondDimension": 1.3502654
+      },
+      {
+        "datapointName": "36",
+        "firstDimension": -54.70849,
+        "secondDimension": -17.005222
+      },
+      {
+        "datapointName": "37",
+        "firstDimension": -48.872448,
+        "secondDimension": -9.834843
+      },
+      {
+        "datapointName": "38",
+        "firstDimension": -30.08933,
+        "secondDimension": -12.671564
+      },
+      {
+        "datapointName": "39",
+        "firstDimension": -18.88842,
+        "secondDimension": -12.78912
+      },
+      {
+        "datapointName": "40",
+        "firstDimension": -43.02739,
+        "secondDimension": -4.954797
+      },
+      {
+        "datapointName": "41",
+        "firstDimension": -38.674004,
+        "secondDimension": -29.649624
+      },
+      {
+        "datapointName": "42",
+        "firstDimension": -51.998955,
+        "secondDimension": -9.371735
+      },
+      {
+        "datapointName": "43",
+        "firstDimension": -14.387593,
+        "secondDimension": -8.348388
+      },
+      {
+        "datapointName": "44",
+        "firstDimension": -16.26013,
+        "secondDimension": -20.839542
+      },
+      {
+        "datapointName": "45",
+        "firstDimension": -42.892002,
+        "secondDimension": 15.135569
+      },
+      {
+        "datapointName": "46",
+        "firstDimension": -46.643105,
+        "secondDimension": -14.369336
+      },
+      {
+        "datapointName": "47",
+        "firstDimension": -61.444683,
+        "secondDimension": -21.434057
+      },
+      {
+        "datapointName": "48",
+        "firstDimension": -39.468857,
+        "secondDimension": -11.282239
+      }
+    ],
+    "clusters": [
+      {
+        "datapointName": "0",
+        "cluster": 0
+      },
+      {
+        "datapointName": "1",
+        "cluster": 3
+      },
+      {
+        "datapointName": "2",
+        "cluster": 0
+      },
+      {
+        "datapointName": "3",
+        "cluster": 1
+      },
+      {
+        "datapointName": "4",
+        "cluster": 2
+      },
+      {
+        "datapointName": "5",
+        "cluster": 2
+      },
+      {
+        "datapointName": "6",
+        "cluster": 1
+      },
+      {
+        "datapointName": "7",
+        "cluster": 4
+      },
+      {
+        "datapointName": "8",
+        "cluster": 3
+      },
+      {
+        "datapointName": "9",
+        "cluster": 2
+      },
+      {
+        "datapointName": "10",
+        "cluster": 2
+      },
+      {
+        "datapointName": "11",
+        "cluster": 2
+      },
+      {
+        "datapointName": "12",
+        "cluster": 2
+      },
+      {
+        "datapointName": "13",
+        "cluster": 4
+      },
+      {
+        "datapointName": "14",
+        "cluster": 1
+      },
+      {
+        "datapointName": "15",
+        "cluster": 4
+      },
+      {
+        "datapointName": "16",
+        "cluster": 3
+      },
+      {
+        "datapointName": "17",
+        "cluster": 1
+      },
+      {
+        "datapointName": "18",
+        "cluster": 1
+      },
+      {
+        "datapointName": "19",
+        "cluster": 0
+      },
+      {
+        "datapointName": "20",
+        "cluster": 4
+      },
+      {
+        "datapointName": "21",
+        "cluster": 4
+      },
+      {
+        "datapointName": "22",
+        "cluster": 3
+      },
+      {
+        "datapointName": "23",
+        "cluster": 1
+      },
+      {
+        "datapointName": "24",
+        "cluster": 2
+      },
+      {
+        "datapointName": "25",
+        "cluster": 3
+      },
+      {
+        "datapointName": "26",
+        "cluster": 3
+      },
+      {
+        "datapointName": "27",
+        "cluster": 2
+      },
+      {
+        "datapointName": "28",
+        "cluster": 1
+      },
+      {
+        "datapointName": "29",
+        "cluster": 3
+      },
+      {
+        "datapointName": "30",
+        "cluster": 1
+      },
+      {
+        "datapointName": "31",
+        "cluster": 1
+      },
+      {
+        "datapointName": "32",
+        "cluster": 0
+      },
+      {
+        "datapointName": "33",
+        "cluster": 1
+      },
+      {
+        "datapointName": "34",
+        "cluster": 4
+      },
+      {
+        "datapointName": "35",
+        "cluster": 2
+      },
+      {
+        "datapointName": "36",
+        "cluster": 4
+      },
+      {
+        "datapointName": "37",
+        "cluster": 2
+      },
+      {
+        "datapointName": "38",
+        "cluster": 1
+      },
+      {
+        "datapointName": "39",
+        "cluster": 1
+      },
+      {
+        "datapointName": "40",
+        "cluster": 2
+      },
+      {
+        "datapointName": "41",
+        "cluster": 0
+      },
+      {
+        "datapointName": "42",
+        "cluster": 2
+      },
+      {
+        "datapointName": "43",
+        "cluster": 1
+      },
+      {
+        "datapointName": "44",
+        "cluster": 0
+      },
+      {
+        "datapointName": "45",
+        "cluster": 3
+      },
+      {
+        "datapointName": "46",
+        "cluster": 4
+      },
+      {
+        "datapointName": "47",
+        "cluster": 4
+      },
+      {
+        "datapointName": "48",
+        "cluster": 2
+      }
+    ],
+    "statisticType": "clusterAnalysis"
+  },
+  "created": "2019-06-09T10:41:17Z",
+  "creator": "admin@hopsworks.ai",
+  "dependencies": [
+    {
+      "path": "/Projects/demo_featurestore_admin000/TestJob/data/games.csv",
+      "modification": "2019-06-09T10:39:19.352Z",
+      "inodeId": 100354,
+      "dir": false
+    }
+  ],
+  "description": "Features of games",
+  "descriptiveStatistics": {
+    "descriptiveStats": [
+      {
+        "featureName": "score",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 2.0013
+          },
+          {
+            "metricName": "stddev",
+            "value": 0.9183587
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 3.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "home_team_id",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5899
+          },
+          {
+            "metricName": "stddev",
+            "value": 14.334562
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 50.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "away_team_id",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5768
+          },
+          {
+            "metricName": "stddev",
+            "value": 14.504639
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 50.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      }
+    ]
+  },
+  "featureCorrelationMatrix": {
+    "featureCorrelations": [
+      {
+        "featureName": "score",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": 0.6314415,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": -0.61798954,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "home_team_id",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": -0.011694523,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": -0.61798954,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "away_team_id",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": -0.011694523,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": 0.6314415,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      }
+    ]
+  },
+  "features": [
+    {
+      "name": "away_team_id",
+      "type": "int",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "home_team_id",
+      "type": "int",
+      "description": "-",
+      "primary": true,
+      "partition": false
+    },
+    {
+      "name": "score",
+      "type": "int",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    }
+  ],
+  "featuresHistogram": {
+    "featureDistributions": [
+      {
+        "featureName": "away_team_id",
+        "frequencyDistribution": [
+          {
+            "bin": "3.45",
+            "frequency": 621
+          },
+          {
+            "bin": "5.9",
+            "frequency": 388
+          },
+          {
+            "bin": "8.35",
+            "frequency": 607
+          },
+          {
+            "bin": "10.8",
+            "frequency": 407
+          },
+          {
+            "bin": "13.25",
+            "frequency": 623
+          },
+          {
+            "bin": "15.7",
+            "frequency": 390
+          },
+          {
+            "bin": "18.15",
+            "frequency": 574
+          },
+          {
+            "bin": "20.6",
+            "frequency": 372
+          },
+          {
+            "bin": "23.05",
+            "frequency": 568
+          },
+          {
+            "bin": "25.5",
+            "frequency": 417
+          },
+          {
+            "bin": "27.95",
+            "frequency": 397
+          },
+          {
+            "bin": "30.4",
+            "frequency": 566
+          },
+          {
+            "bin": "32.85",
+            "frequency": 387
+          },
+          {
+            "bin": "35.3",
+            "frequency": 595
+          },
+          {
+            "bin": "37.75",
+            "frequency": 447
+          },
+          {
+            "bin": "40.2",
+            "frequency": 620
+          },
+          {
+            "bin": "42.65",
+            "frequency": 414
+          },
+          {
+            "bin": "45.1",
+            "frequency": 622
+          },
+          {
+            "bin": "47.55",
+            "frequency": 387
+          },
+          {
+            "bin": "50.0",
+            "frequency": 598
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "home_team_id",
+        "frequencyDistribution": [
+          {
+            "bin": "3.45",
+            "frequency": 554
+          },
+          {
+            "bin": "5.9",
+            "frequency": 385
+          },
+          {
+            "bin": "8.35",
+            "frequency": 609
+          },
+          {
+            "bin": "10.8",
+            "frequency": 393
+          },
+          {
+            "bin": "13.25",
+            "frequency": 611
+          },
+          {
+            "bin": "15.7",
+            "frequency": 437
+          },
+          {
+            "bin": "18.15",
+            "frequency": 615
+          },
+          {
+            "bin": "20.6",
+            "frequency": 357
+          },
+          {
+            "bin": "23.05",
+            "frequency": 609
+          },
+          {
+            "bin": "25.5",
+            "frequency": 396
+          },
+          {
+            "bin": "27.95",
+            "frequency": 420
+          },
+          {
+            "bin": "30.4",
+            "frequency": 600
+          },
+          {
+            "bin": "32.85",
+            "frequency": 404
+          },
+          {
+            "bin": "35.3",
+            "frequency": 603
+          },
+          {
+            "bin": "37.75",
+            "frequency": 397
+          },
+          {
+            "bin": "40.2",
+            "frequency": 627
+          },
+          {
+            "bin": "42.65",
+            "frequency": 398
+          },
+          {
+            "bin": "45.1",
+            "frequency": 575
+          },
+          {
+            "bin": "47.55",
+            "frequency": 413
+          },
+          {
+            "bin": "50.0",
+            "frequency": 597
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "score",
+        "frequencyDistribution": [
+          {
+            "bin": "1.1",
+            "frequency": 4210
+          },
+          {
+            "bin": "1.2",
+            "frequency": 0
+          },
+          {
+            "bin": "1.3",
+            "frequency": 0
+          },
+          {
+            "bin": "1.4",
+            "frequency": 0
+          },
+          {
+            "bin": "1.5",
+            "frequency": 0
+          },
+          {
+            "bin": "1.6",
+            "frequency": 0
+          },
+          {
+            "bin": "1.7",
+            "frequency": 0
+          },
+          {
+            "bin": "1.8",
+            "frequency": 0
+          },
+          {
+            "bin": "1.9",
+            "frequency": 0
+          },
+          {
+            "bin": "2.0",
+            "frequency": 0
+          },
+          {
+            "bin": "2.1",
+            "frequency": 1567
+          },
+          {
+            "bin": "2.2",
+            "frequency": 0
+          },
+          {
+            "bin": "2.3",
+            "frequency": 0
+          },
+          {
+            "bin": "2.4",
+            "frequency": 0
+          },
+          {
+            "bin": "2.5",
+            "frequency": 0
+          },
+          {
+            "bin": "2.6",
+            "frequency": 0
+          },
+          {
+            "bin": "2.7",
+            "frequency": 0
+          },
+          {
+            "bin": "2.8",
+            "frequency": 0
+          },
+          {
+            "bin": "2.9",
+            "frequency": 0
+          },
+          {
+            "bin": "3.0",
+            "frequency": 4223
+          }
+        ],
+        "statisticType": "featureDistributions"
+      }
+    ]
+  },
+  "featurestoreId": 1,
+  "featurestoreName": "demo_featurestore_admin000_featurestore",
+  "id": 1,
+  "inodeId": 100493,
+  "jobId": 1,
+  "jobName": "featurestore_tour_job",
+  "jobStatus": "Succeeded",
+  "lastComputed": "2019-06-09T10:39:45Z",
+  "name": "games_features",
+  "version": 1,
+  "hdfsStorePaths": [
+    "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
+  ]
+}

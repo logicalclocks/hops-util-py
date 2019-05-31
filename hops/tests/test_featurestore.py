@@ -29,6 +29,8 @@ import h5py
 import shutil
 
 # Mocked imports and modules that depends on mocked imports
+from hops.featurestore_impl.dao.statistics import Statistics
+
 orig_import = __import__
 pydoop_mock = mock.Mock()
 pydoop_hdfs_mock = mock.Mock()
@@ -61,7 +63,8 @@ if (sys.version_info > (3, 0)):
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
             InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
-            FeaturegroupNotFound
+            FeaturegroupNotFound, CouldNotConvertDataframe, FeatureVisualizationError, FeatureClustersNotComputed, \
+            FeatureCorrelationsNotComputed, FeatureDistributionsNotComputed, DescriptiveStatisticsNotComputed
         from hops.exceptions import RestAPIError
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
@@ -81,7 +84,8 @@ else:
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
             InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
-            FeaturegroupNotFound
+            FeaturegroupNotFound, CouldNotConvertDataframe, FeatureVisualizationError, FeatureClustersNotComputed, \
+            FeatureCorrelationsNotComputed, FeatureDistributionsNotComputed, DescriptiveStatisticsNotComputed
         from hops.exceptions import RestAPIError
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
@@ -104,6 +108,33 @@ class TestFeaturestoreSuite(object):
             metadata = json.load(f)
             f.close()
             return metadata
+
+
+    @pytest.fixture
+    def sample_statistics(self):
+        """ Fixture for setting up some sample feature statistics for tests """
+        with open("./hops/tests/test_resources/statistics.json") as f:
+            statistics = json.load(f)
+            f.close()
+            return statistics
+
+
+    @pytest.fixture
+    def sample_featuregroup(self):
+        """ Fixture for setting up some sample featuregroup for tests """
+        with open("./hops/tests/test_resources/featuregroup.json") as f:
+            featuregroup = json.load(f)
+            f.close()
+            return featuregroup
+
+
+    @pytest.fixture
+    def sample_training_dataset(self):
+        """ Fixture for setting up a sample training dataset for tests """
+        with open("./hops/tests/test_resources/training_dataset.json") as f:
+            training_dataset = json.load(f)
+            f.close()
+            return training_dataset
 
 
     @pytest.fixture
@@ -252,8 +283,10 @@ class TestFeaturestoreSuite(object):
 
 
     def test_parse_metadata(self, sample_metadata):
-        """ Tests that featuregroups, featurestore, and training datasets
-        are parsed correctly given a valid json metadata object"""
+        """
+        Tests that featuregroups, featurestore, and training datasets
+        are parsed correctly given a valid json metadata object
+        """
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         names = []
         for fg in featurestore_metadata.featuregroups.values():
@@ -367,7 +400,7 @@ class TestFeaturestoreSuite(object):
         assert converted_python.count() == len(python_df)
         assert len(converted_python.schema.fields) == len(python_df[0])
         numpy_df = np.random.rand(50, 2, 3)
-        with pytest.raises(ValueError) as ex:
+        with pytest.raises(CouldNotConvertDataframe) as ex:
             fs_utils._convert_dataframe_to_spark(numpy_df)
             assert "Cannot convert numpy array that do not have two dimensions to a dataframe." in ex.value
 
@@ -1911,7 +1944,7 @@ class TestFeaturestoreSuite(object):
         core._delete_table_contents = self.unmocked_delete_table_contents
 
 
-    def test_dao(self, sample_metadata):
+    def test_dao(self, sample_metadata, sample_statistics):
         """ Test initialization of data access objects """
         fs_metadata = FeaturestoreMetadata(sample_metadata)
         assert not fs_metadata.featuregroups is None
@@ -1933,6 +1966,48 @@ class TestFeaturestoreSuite(object):
         assert not fs_metadata.featuregroups["games_features_1"].features[0].primary is None
         assert not fs_metadata.featuregroups["games_features_1"].features[0].partition is None
         assert not fs_metadata.featuregroups["games_features_1"].features[0].type is None
+        stats = Statistics(sample_statistics[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS],
+                           sample_statistics[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION],
+                           sample_statistics[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM],
+                           sample_statistics[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS])
+        assert not stats.cluster_analysis is None
+        assert not stats.cluster_analysis.clusters is None
+        assert not stats.cluster_analysis.datapoints is None
+        assert len(stats.cluster_analysis.datapoints) <= constants.FEATURE_STORE.CLUSTERING_ANALYSIS_SAMPLE_SIZE
+        assert len(stats.cluster_analysis.clusters) == len(stats.cluster_analysis.datapoints)
+        assert not stats.cluster_analysis.clusters[0].datapoint_name is None
+        assert not stats.cluster_analysis.clusters[0].cluster is None
+        assert len(set(list(map(lambda cluster: cluster.cluster, stats.cluster_analysis.clusters)))) == 5
+        assert not stats.correlation_matrix is None
+        assert not stats.correlation_matrix.feature_correlations is None
+        assert len(stats.correlation_matrix.feature_correlations) > 0
+        assert len(stats.correlation_matrix.feature_correlations) < \
+               constants.FEATURE_STORE.MAX_CORRELATION_MATRIX_COLUMNS
+        assert not stats.correlation_matrix.feature_correlations[0].feature_name is None
+        assert not stats.correlation_matrix.feature_correlations[0].correlation_values is None
+        assert len(stats.correlation_matrix.feature_correlations[0].correlation_values) == \
+               len(stats.correlation_matrix.feature_correlations)
+        assert not stats.descriptive_stats is None
+        assert not stats.descriptive_stats.descriptive_stats is None
+        assert len(stats.descriptive_stats.descriptive_stats) > 0
+        assert not stats.descriptive_stats.descriptive_stats[0].feature_name is None
+        assert not stats.descriptive_stats.descriptive_stats[0].metric_values is None
+        assert len(stats.descriptive_stats.descriptive_stats[0].metric_values) > 0
+        assert not stats.descriptive_stats.descriptive_stats[0].metric_values[0].metric_name is None
+        assert not stats.descriptive_stats.descriptive_stats[0].metric_values[0].value is None
+        assert not stats.feature_histograms is None
+        assert not stats.feature_histograms.feature_distributions is None
+        assert len(stats.feature_histograms.feature_distributions) > 0
+        assert not stats.feature_histograms.feature_distributions[0].feature_name is None
+        assert not stats.feature_histograms.feature_distributions[0].frequency_distribution is None
+        assert len(stats.feature_histograms.feature_distributions[0].frequency_distribution) > 0
+        assert not stats.feature_histograms.feature_distributions[0].frequency_distribution[0].bin is None
+        assert not stats.feature_histograms.feature_distributions[0].frequency_distribution[0].frequency is None
+        stats = Statistics(None, None, None, None)
+        assert stats.cluster_analysis is None
+        assert stats.descriptive_stats is None
+        assert stats.correlation_matrix is None
+        assert stats.feature_histograms is None
 
 
     def test_get_feature(self, sample_metadata):
@@ -2092,3 +2167,411 @@ class TestFeaturestoreSuite(object):
         pydoop.path.abspath = mock.MagicMock(return_value="test")
         hdfs_path = featurestore.get_training_dataset_path("team_position_prediction")
         assert hdfs_path == "test"
+
+
+    def test_get_featuregroup_statistics(self, sample_metadata, sample_featuregroup):
+        """ Test get_featuregroup_statistics """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_featuregroup_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+        stats = featurestore.get_featuregroup_statistics("games_features",
+                                                         featurestore=featurestore.project_featurestore(),
+                                                         featuregroup_version=1)
+        assert stats.descriptive_stats is not None
+        assert stats.cluster_analysis is not None
+        assert stats.correlation_matrix is not None
+        assert stats.feature_histograms is not None
+
+
+    def test_get_training_dataset_statistics(self, sample_metadata, sample_training_dataset):
+        """ Test get_training_dataset_statistics """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_training_dataset_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+        stats = featurestore.get_training_dataset_statistics("team_position_prediction",
+                                                         featurestore=featurestore.project_featurestore(),
+                                                         training_dataset_version=1)
+        assert stats.descriptive_stats is not None
+        assert stats.cluster_analysis is not None
+        assert stats.correlation_matrix is not None
+        assert stats.feature_histograms is not None
+
+
+    def test_visualize_featuregroup_distributions(self, sample_metadata, sample_featuregroup):
+        """ Test visualize_featuregroup_distributions """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = featurestore.visualize_featuregroup_distributions("games_features", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_featuregroup_distributions("games_features", plot=False)
+                assert "There was an error in visualizing the feature distributions" in ex.value
+
+
+    def test_do_visualize_featuregroup_distributions(self, sample_metadata, sample_featuregroup):
+        """ Test _do_visualize_featuregroup_distributions """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = core._do_visualize_featuregroup_distributions("games_features")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureDistributionsNotComputed) as ex:
+                core._do_visualize_featuregroup_distributions("games_features")
+                assert "feature distributions have not been computed for this featuregroup" in ex.value
+
+
+    def test_visualize_featuregroup_correlations(self, sample_metadata, sample_featuregroup):
+        """ Test visualize_featuregroup_correlations """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = featurestore.visualize_featuregroup_correlations("games_features", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_featuregroup_correlations("games_features", plot=False)
+                assert "There was an error in visualizing the feature correlations" in ex.value
+
+
+    def test_do_visualize_featuregroup_correlations(self, sample_metadata, sample_featuregroup):
+        """ Test _do_visualize_featuregroup_correlations """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = core._do_visualize_featuregroup_correlations("games_features")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureCorrelationsNotComputed) as ex:
+                core._do_visualize_featuregroup_correlations("games_features")
+                assert "feature correlations have not been computed for this featuregroup" in ex.value
+
+
+    def test_visualize_featuregroup_clusters(self, sample_metadata, sample_featuregroup):
+        """ Test visualize_featuregroup_clusters """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = featurestore.visualize_featuregroup_clusters("games_features", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_featuregroup_clusters("games_features", plot=False)
+                assert "There was an error in visualizing the feature clusters" in ex.value
+
+
+    def test_do_visualize_featuregroup_clusters(self, sample_metadata, sample_featuregroup):
+        """ Test _do_visualize_featuregroup_clusters """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_featuregroup_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+            fig = core._do_visualize_featuregroup_clusters("games_features")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_featuregroup_wo_stats = sample_featuregroup
+            del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS]
+            rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+            with pytest.raises(FeatureClustersNotComputed) as ex:
+                core._do_visualize_featuregroup_clusters("games_features")
+                assert "feature clusters have not been computed for this featuregroup" in ex.value
+
+
+    def test_visualize_featuregroup_descriptive_stats(self, sample_metadata, sample_featuregroup):
+        """ Test visualize_featuregroup_descriptive_stats """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_featuregroup_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+        df = featurestore.visualize_featuregroup_descriptive_stats("games_features")
+        assert df is not None
+        assert "metric" in df.columns
+        assert "away_team_id" in df.columns
+        assert "score" in df.columns
+        assert "home_team_id" in df.columns
+        assert len(df.columns) == 4
+        assert len(df["metric"].values) > 0
+        assert len(df["away_team_id"].values) > 0
+        assert len(df["score"].values) > 0
+        assert len(df["home_team_id"].values) > 0
+        sample_featuregroup_wo_stats = sample_featuregroup
+        del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS]
+        rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+        with pytest.raises(FeatureVisualizationError) as ex:
+            featurestore.visualize_featuregroup_descriptive_stats("games_features")
+            assert "There was an error in visualizing the descriptive statistics" in ex.value
+
+
+    def test_do_visualize_featuregroup_descriptive_stats(self, sample_metadata, sample_featuregroup):
+        """ Test _do_visualize_featuregroup_descriptive_stats """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_featuregroup_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup)
+        df = core._do_visualize_featuregroup_descriptive_stats("games_features")
+        assert df is not None
+        assert "metric" in df.columns
+        assert "away_team_id" in df.columns
+        assert "score" in df.columns
+        assert "home_team_id" in df.columns
+        assert len(df.columns) == 4
+        assert len(df["metric"].values) > 0
+        assert len(df["away_team_id"].values) > 0
+        assert len(df["score"].values) > 0
+        assert len(df["home_team_id"].values) > 0
+        sample_featuregroup_wo_stats = sample_featuregroup
+        del sample_featuregroup_wo_stats[constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS]
+        rest_rpc._get_featuregroup_rest = mock.MagicMock(return_value=sample_featuregroup_wo_stats)
+        with pytest.raises(DescriptiveStatisticsNotComputed) as ex:
+            core._do_visualize_featuregroup_descriptive_stats("games_features")
+            assert "descriptive statistics have not been computed for this featuregroup" in ex.value
+
+
+    def test_visualize_training_dataset_distributions(self, sample_metadata, sample_training_dataset):
+        """ Test visualize_training_dataset_distributions """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = featurestore.visualize_training_dataset_distributions("team_position_prediction", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES_HISTOGRAM]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_training_dataset_distributions("team_position_prediction", plot=False)
+                assert "There was an error in visualizing the feature distributions" in ex.value
+
+
+    def test_do_visualize_training_dataset_distributions(self, sample_metadata, sample_training_dataset):
+        """ Test _do_visualize_training_dataset_distributions """
+        # Matplotlib not working properly in 2.7
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = core._do_visualize_training_dataset_distributions("team_position_prediction")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES_HISTOGRAM]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureDistributionsNotComputed) as ex:
+                core._do_visualize_training_dataset_distributions("team_position_prediction")
+                assert "feature distributions have not been computed for this training dataset" in ex.value
+
+
+    def test_visualize_training_dataset_correlations(self, sample_metadata, sample_training_dataset):
+        """ Test visualize_training_dataset_correlations """
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = featurestore.visualize_training_dataset_correlations("team_position_prediction", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_training_dataset_correlations("team_position_prediction", plot=False)
+                assert "There was an error in visualizing the feature correlations" in ex.value
+
+
+    def test_do_visualize_training_dataset_correlations(self, sample_metadata, sample_training_dataset):
+        """ Test _do_visualize_training_dataset_correlations """
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = core._do_visualize_training_dataset_correlations("team_position_prediction")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureCorrelationsNotComputed) as ex:
+                core._do_visualize_training_dataset_correlations("team_position_prediction")
+                assert "feature correlations have not been computed for this training dataset" in ex.value
+
+
+    def test_visualize_training_dataset_clusters(self, sample_metadata, sample_training_dataset):
+        """ Test visualize_training_dataset_correlations """
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = featurestore.visualize_training_dataset_clusters("team_position_prediction", plot=False)
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureVisualizationError) as ex:
+                featurestore.visualize_training_dataset_clusters("team_position_prediction", plot=False)
+                assert "There was an error in visualizing the feature clusters" in ex.value
+
+
+    def test_do_visualize_training_dataset_clusters(self, sample_metadata, sample_training_dataset):
+        """ Test _do_visualize_training_dataset_correlations """
+        if (sys.version_info > (3, 0)):
+            hdfs.project_name = mock.MagicMock(return_value="test_project")
+            core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+            core._get_featurestore_id = mock.MagicMock(return_value=1)
+            core._get_training_dataset_id = mock.MagicMock(return_value=1)
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+            fig = core._do_visualize_training_dataset_clusters("team_position_prediction")
+            assert fig is not None
+            assert fig.patch is not None
+            sample_training_dataset_wo_stats = sample_training_dataset
+            del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS]
+            rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+            with pytest.raises(FeatureClustersNotComputed) as ex:
+                core._do_visualize_training_dataset_clusters("team_position_prediction")
+                assert "clusters have not been computed for this training dataset" in ex.value
+
+
+    def test_visualize_training_dataset_descriptive_stats(self, sample_metadata, sample_training_dataset):
+        """ Test visualize_training_dataset_descriptive_stats """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_training_dataset_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+        df = featurestore.visualize_training_dataset_descriptive_stats("team_position_prediction")
+        assert df is not None
+        assert "metric" in df.columns
+        assert "team_budget" in df.columns
+        assert "average_position" in df.columns
+        assert "sum_player_rating" in df.columns
+        assert "average_attendance" in df.columns
+        assert "average_player_worth" in df.columns
+        assert "sum_player_worth" in df.columns
+        assert "sum_position" in df.columns
+        assert "sum_attendance" in df.columns
+        assert "average_player_rating" in df.columns
+        assert "team_position" in df.columns
+        assert "sum_player_age" in df.columns
+        assert "average_player_age" in df.columns
+        assert len(df.columns) == 13
+        assert len(df["metric"].values) > 0
+        assert len(df["team_budget"].values) > 0
+        assert len(df["average_position"].values) > 0
+        assert len(df["sum_player_rating"].values) > 0
+        assert len(df["average_attendance"].values) > 0
+        assert len(df["average_player_worth"].values) > 0
+        assert len(df["sum_player_worth"].values) > 0
+        assert len(df["sum_position"].values) > 0
+        assert len(df["sum_attendance"].values) > 0
+        assert len(df["average_player_rating"].values) > 0
+        assert len(df["team_position"].values) > 0
+        assert len(df["sum_player_age"].values) > 0
+        assert len(df["average_player_age"].values) > 0
+        sample_training_dataset_wo_stats = sample_training_dataset
+        del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_DESC_STATS]
+        rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+        with pytest.raises(FeatureVisualizationError) as ex:
+            featurestore.visualize_training_dataset_descriptive_stats("team_position_prediction")
+            assert "There was an error in visualizing the descriptive statistics" in ex.value
+
+
+    def test_do_visualize_training_dataset_descriptive_stats(self, sample_metadata, sample_training_dataset):
+        """ Test _do_visualize_training_dataset_descriptive_stats """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        core._get_featurestore_id = mock.MagicMock(return_value=1)
+        core._get_training_dataset_id = mock.MagicMock(return_value=1)
+        rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+        df = core._do_visualize_training_dataset_descriptive_stats("team_position_prediction")
+        assert df is not None
+        assert "metric" in df.columns
+        assert "team_budget" in df.columns
+        assert "average_position" in df.columns
+        assert "sum_player_rating" in df.columns
+        assert "average_attendance" in df.columns
+        assert "average_player_worth" in df.columns
+        assert "sum_player_worth" in df.columns
+        assert "sum_position" in df.columns
+        assert "sum_attendance" in df.columns
+        assert "average_player_rating" in df.columns
+        assert "team_position" in df.columns
+        assert "sum_player_age" in df.columns
+        assert "average_player_age" in df.columns
+        assert len(df.columns) == 13
+        assert len(df["metric"].values) > 0
+        assert len(df["team_budget"].values) > 0
+        assert len(df["average_position"].values) > 0
+        assert len(df["sum_player_rating"].values) > 0
+        assert len(df["average_attendance"].values) > 0
+        assert len(df["average_player_worth"].values) > 0
+        assert len(df["sum_player_worth"].values) > 0
+        assert len(df["sum_position"].values) > 0
+        assert len(df["sum_attendance"].values) > 0
+        assert len(df["average_player_rating"].values) > 0
+        assert len(df["team_position"].values) > 0
+        assert len(df["sum_player_age"].values) > 0
+        assert len(df["average_player_age"].values) > 0
+        sample_training_dataset_wo_stats = sample_training_dataset
+        del sample_training_dataset_wo_stats[constants.REST_CONFIG.JSON_TRAINING_DATASET_DESC_STATS]
+        rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset_wo_stats)
+        with pytest.raises(DescriptiveStatisticsNotComputed) as ex:
+            core._do_visualize_training_dataset_descriptive_stats("team_position_prediction")
+            assert "descriptive statistics have not been computed for this training dataset" in ex.value

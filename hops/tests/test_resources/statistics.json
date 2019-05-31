@@ -1,0 +1,888 @@
+{
+  "type": "featuregroupDTO",
+  "clusterAnalysis": {
+    "dataPoints": [
+      {
+        "datapointName": "0",
+        "firstDimension": -54.511707,
+        "secondDimension": -2.039878
+      },
+      {
+        "datapointName": "1",
+        "firstDimension": -57.52241,
+        "secondDimension": -9.022713
+      },
+      {
+        "datapointName": "2",
+        "firstDimension": -48.512203,
+        "secondDimension": 10.627839
+      },
+      {
+        "datapointName": "3",
+        "firstDimension": -9.653789,
+        "secondDimension": 8.899269
+      },
+      {
+        "datapointName": "4",
+        "firstDimension": -56.870552,
+        "secondDimension": -11.158477
+      },
+      {
+        "datapointName": "5",
+        "firstDimension": -55.046204,
+        "secondDimension": 4.3869667
+      },
+      {
+        "datapointName": "6",
+        "firstDimension": -14.847412,
+        "secondDimension": -0.20168777
+      },
+      {
+        "datapointName": "7",
+        "firstDimension": -41.443703,
+        "secondDimension": 10.441867
+      },
+      {
+        "datapointName": "8",
+        "firstDimension": -56.68725,
+        "secondDimension": -4.1012535
+      },
+      {
+        "datapointName": "9",
+        "firstDimension": -9.690449,
+        "secondDimension": 7.487824
+      },
+      {
+        "datapointName": "10",
+        "firstDimension": -31.203993,
+        "secondDimension": -3.3593094
+      },
+      {
+        "datapointName": "11",
+        "firstDimension": -32.66822,
+        "secondDimension": 21.510258
+      },
+      {
+        "datapointName": "12",
+        "firstDimension": -65.58658,
+        "secondDimension": 6.839839
+      },
+      {
+        "datapointName": "13",
+        "firstDimension": -54.467667,
+        "secondDimension": -0.571687
+      },
+      {
+        "datapointName": "14",
+        "firstDimension": -31.423954,
+        "secondDimension": -11.827978
+      },
+      {
+        "datapointName": "15",
+        "firstDimension": -60.012486,
+        "secondDimension": 3.8114252
+      },
+      {
+        "datapointName": "16",
+        "firstDimension": -42.916855,
+        "secondDimension": -18.587646
+      },
+      {
+        "datapointName": "17",
+        "firstDimension": -33.37953,
+        "secondDimension": -5.420685
+      },
+      {
+        "datapointName": "18",
+        "firstDimension": -35.137043,
+        "secondDimension": 8.157325
+      },
+      {
+        "datapointName": "19",
+        "firstDimension": -17.916025,
+        "secondDimension": 17.591105
+      },
+      {
+        "datapointName": "20",
+        "firstDimension": -34.002758,
+        "secondDimension": -29.415245
+      },
+      {
+        "datapointName": "21",
+        "firstDimension": -59.13328,
+        "secondDimension": 10.201076
+      },
+      {
+        "datapointName": "22",
+        "firstDimension": -34.581295,
+        "secondDimension": -24.456593
+      },
+      {
+        "datapointName": "23",
+        "firstDimension": -20.224337,
+        "secondDimension": -16.359867
+      },
+      {
+        "datapointName": "24",
+        "firstDimension": -21.073368,
+        "secondDimension": 4.9624906
+      },
+      {
+        "datapointName": "25",
+        "firstDimension": -22.399878,
+        "secondDimension": -18.421244
+      },
+      {
+        "datapointName": "26",
+        "firstDimension": -23.776917,
+        "secondDimension": -16.972605
+      },
+      {
+        "datapointName": "27",
+        "firstDimension": -48.16839,
+        "secondDimension": -2.9129755
+      },
+      {
+        "datapointName": "28",
+        "firstDimension": -34.727936,
+        "secondDimension": -30.102371
+      },
+      {
+        "datapointName": "29",
+        "firstDimension": -24.245476,
+        "secondDimension": -7.779616
+      },
+      {
+        "datapointName": "30",
+        "firstDimension": -28.22257,
+        "secondDimension": 2.268827
+      },
+      {
+        "datapointName": "31",
+        "firstDimension": -18.641205,
+        "secondDimension": 16.903978
+      },
+      {
+        "datapointName": "32",
+        "firstDimension": -35.343136,
+        "secondDimension": -26.555162
+      },
+      {
+        "datapointName": "33",
+        "firstDimension": -35.825565,
+        "secondDimension": 8.881644
+      },
+      {
+        "datapointName": "34",
+        "firstDimension": -32.259117,
+        "secondDimension": -16.749437
+      },
+      {
+        "datapointName": "35",
+        "firstDimension": -22.340425,
+        "secondDimension": 10.645464
+      },
+      {
+        "datapointName": "36",
+        "firstDimension": -34.485184,
+        "secondDimension": 6.02156
+      },
+      {
+        "datapointName": "37",
+        "firstDimension": -47.750362,
+        "secondDimension": 12.726409
+      },
+      {
+        "datapointName": "38",
+        "firstDimension": -48.85691,
+        "secondDimension": -2.1886559
+      },
+      {
+        "datapointName": "39",
+        "firstDimension": -33.84071,
+        "secondDimension": 3.8290496
+      },
+      {
+        "datapointName": "40",
+        "firstDimension": -3.4644935,
+        "secondDimension": 2.3236458
+      },
+      {
+        "datapointName": "41",
+        "firstDimension": -28.237978,
+        "secondDimension": -25.329689
+      },
+      {
+        "datapointName": "42",
+        "firstDimension": -41.875603,
+        "secondDimension": 21.046299
+      },
+      {
+        "datapointName": "43",
+        "firstDimension": -22.53111,
+        "secondDimension": 3.531494
+      },
+      {
+        "datapointName": "44",
+        "firstDimension": -48.702885,
+        "secondDimension": 3.5138693
+      },
+      {
+        "datapointName": "45",
+        "firstDimension": -37.781143,
+        "secondDimension": 15.288938
+      },
+      {
+        "datapointName": "46",
+        "firstDimension": -50.60055,
+        "secondDimension": -14.854465
+      }
+    ],
+    "clusters": [
+      {
+        "datapointName": "0",
+        "cluster": 4
+      },
+      {
+        "datapointName": "1",
+        "cluster": 4
+      },
+      {
+        "datapointName": "2",
+        "cluster": 2
+      },
+      {
+        "datapointName": "3",
+        "cluster": 1
+      },
+      {
+        "datapointName": "4",
+        "cluster": 4
+      },
+      {
+        "datapointName": "5",
+        "cluster": 4
+      },
+      {
+        "datapointName": "6",
+        "cluster": 1
+      },
+      {
+        "datapointName": "7",
+        "cluster": 2
+      },
+      {
+        "datapointName": "8",
+        "cluster": 4
+      },
+      {
+        "datapointName": "9",
+        "cluster": 1
+      },
+      {
+        "datapointName": "10",
+        "cluster": 1
+      },
+      {
+        "datapointName": "11",
+        "cluster": 3
+      },
+      {
+        "datapointName": "12",
+        "cluster": 4
+      },
+      {
+        "datapointName": "13",
+        "cluster": 4
+      },
+      {
+        "datapointName": "14",
+        "cluster": 0
+      },
+      {
+        "datapointName": "15",
+        "cluster": 4
+      },
+      {
+        "datapointName": "16",
+        "cluster": 0
+      },
+      {
+        "datapointName": "17",
+        "cluster": 0
+      },
+      {
+        "datapointName": "18",
+        "cluster": 2
+      },
+      {
+        "datapointName": "19",
+        "cluster": 3
+      },
+      {
+        "datapointName": "20",
+        "cluster": 0
+      },
+      {
+        "datapointName": "21",
+        "cluster": 4
+      },
+      {
+        "datapointName": "22",
+        "cluster": 0
+      },
+      {
+        "datapointName": "23",
+        "cluster": 0
+      },
+      {
+        "datapointName": "24",
+        "cluster": 1
+      },
+      {
+        "datapointName": "25",
+        "cluster": 0
+      },
+      {
+        "datapointName": "26",
+        "cluster": 0
+      },
+      {
+        "datapointName": "27",
+        "cluster": 4
+      },
+      {
+        "datapointName": "28",
+        "cluster": 0
+      },
+      {
+        "datapointName": "29",
+        "cluster": 1
+      },
+      {
+        "datapointName": "30",
+        "cluster": 1
+      },
+      {
+        "datapointName": "31",
+        "cluster": 3
+      },
+      {
+        "datapointName": "32",
+        "cluster": 0
+      },
+      {
+        "datapointName": "33",
+        "cluster": 2
+      },
+      {
+        "datapointName": "34",
+        "cluster": 0
+      },
+      {
+        "datapointName": "35",
+        "cluster": 1
+      },
+      {
+        "datapointName": "36",
+        "cluster": 2
+      },
+      {
+        "datapointName": "37",
+        "cluster": 2
+      },
+      {
+        "datapointName": "38",
+        "cluster": 4
+      },
+      {
+        "datapointName": "39",
+        "cluster": 2
+      },
+      {
+        "datapointName": "40",
+        "cluster": 1
+      },
+      {
+        "datapointName": "41",
+        "cluster": 0
+      },
+      {
+        "datapointName": "42",
+        "cluster": 3
+      },
+      {
+        "datapointName": "43",
+        "cluster": 1
+      },
+      {
+        "datapointName": "44",
+        "cluster": 2
+      },
+      {
+        "datapointName": "45",
+        "cluster": 3
+      },
+      {
+        "datapointName": "46",
+        "cluster": 4
+      }
+    ],
+    "statisticType": "clusterAnalysis"
+  },
+  "created": "2019-05-31T07:33:06Z",
+  "creator": "admin@hopsworks.com",
+  "dependencies": [
+    {
+      "path": "/Projects/demo_featurestore_admin000/TestJob/data/games.csv",
+      "modification": "2019-05-31T07:29:42.575Z",
+      "inodeId": 100350,
+      "dir": false
+    }
+  ],
+  "description": "Features of games",
+  "descriptiveStatistics": {
+    "descriptiveStats": [
+      {
+        "featureName": "score",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 2.0013
+          },
+          {
+            "metricName": "stddev",
+            "value": 0.9183587
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 3.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "home_team_id",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5899
+          },
+          {
+            "metricName": "stddev",
+            "value": 14.334562
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 50.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "away_team_id",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 10000.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5768
+          },
+          {
+            "metricName": "stddev",
+            "value": 14.504639
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 50.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      }
+    ]
+  },
+  "featureCorrelationMatrix": {
+    "featureCorrelations": [
+      {
+        "featureName": "score",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": 0.6314415,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": -0.61798954,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "home_team_id",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": -0.011694523,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": -0.61798954,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "away_team_id",
+        "correlationValues": [
+          {
+            "featureName": "away_team_id",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "home_team_id",
+            "correlation": -0.011694523,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "score",
+            "correlation": 0.6314415,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      }
+    ]
+  },
+  "features": [
+    {
+      "name": "away_team_id",
+      "type": "int",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "home_team_id",
+      "type": "int",
+      "description": "-",
+      "primary": true,
+      "partition": false
+    },
+    {
+      "name": "score",
+      "type": "int",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    }
+  ],
+  "featuresHistogram": {
+    "featureDistributions": [
+      {
+        "featureName": "away_team_id",
+        "frequencyDistribution": [
+          {
+            "bin": "3.45",
+            "frequency": 621
+          },
+          {
+            "bin": "5.9",
+            "frequency": 388
+          },
+          {
+            "bin": "8.35",
+            "frequency": 607
+          },
+          {
+            "bin": "10.8",
+            "frequency": 407
+          },
+          {
+            "bin": "13.25",
+            "frequency": 623
+          },
+          {
+            "bin": "15.7",
+            "frequency": 390
+          },
+          {
+            "bin": "18.15",
+            "frequency": 574
+          },
+          {
+            "bin": "20.6",
+            "frequency": 372
+          },
+          {
+            "bin": "23.05",
+            "frequency": 568
+          },
+          {
+            "bin": "25.5",
+            "frequency": 417
+          },
+          {
+            "bin": "27.95",
+            "frequency": 397
+          },
+          {
+            "bin": "30.4",
+            "frequency": 566
+          },
+          {
+            "bin": "32.85",
+            "frequency": 387
+          },
+          {
+            "bin": "35.3",
+            "frequency": 595
+          },
+          {
+            "bin": "37.75",
+            "frequency": 447
+          },
+          {
+            "bin": "40.2",
+            "frequency": 620
+          },
+          {
+            "bin": "42.65",
+            "frequency": 414
+          },
+          {
+            "bin": "45.1",
+            "frequency": 622
+          },
+          {
+            "bin": "47.55",
+            "frequency": 387
+          },
+          {
+            "bin": "50.0",
+            "frequency": 598
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "home_team_id",
+        "frequencyDistribution": [
+          {
+            "bin": "3.45",
+            "frequency": 554
+          },
+          {
+            "bin": "5.9",
+            "frequency": 385
+          },
+          {
+            "bin": "8.35",
+            "frequency": 609
+          },
+          {
+            "bin": "10.8",
+            "frequency": 393
+          },
+          {
+            "bin": "13.25",
+            "frequency": 611
+          },
+          {
+            "bin": "15.7",
+            "frequency": 437
+          },
+          {
+            "bin": "18.15",
+            "frequency": 615
+          },
+          {
+            "bin": "20.6",
+            "frequency": 357
+          },
+          {
+            "bin": "23.05",
+            "frequency": 609
+          },
+          {
+            "bin": "25.5",
+            "frequency": 396
+          },
+          {
+            "bin": "27.95",
+            "frequency": 420
+          },
+          {
+            "bin": "30.4",
+            "frequency": 600
+          },
+          {
+            "bin": "32.85",
+            "frequency": 404
+          },
+          {
+            "bin": "35.3",
+            "frequency": 603
+          },
+          {
+            "bin": "37.75",
+            "frequency": 397
+          },
+          {
+            "bin": "40.2",
+            "frequency": 627
+          },
+          {
+            "bin": "42.65",
+            "frequency": 398
+          },
+          {
+            "bin": "45.1",
+            "frequency": 575
+          },
+          {
+            "bin": "47.55",
+            "frequency": 413
+          },
+          {
+            "bin": "50.0",
+            "frequency": 597
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "score",
+        "frequencyDistribution": [
+          {
+            "bin": "1.1",
+            "frequency": 4210
+          },
+          {
+            "bin": "1.2",
+            "frequency": 0
+          },
+          {
+            "bin": "1.3",
+            "frequency": 0
+          },
+          {
+            "bin": "1.4",
+            "frequency": 0
+          },
+          {
+            "bin": "1.5",
+            "frequency": 0
+          },
+          {
+            "bin": "1.6",
+            "frequency": 0
+          },
+          {
+            "bin": "1.7",
+            "frequency": 0
+          },
+          {
+            "bin": "1.8",
+            "frequency": 0
+          },
+          {
+            "bin": "1.9",
+            "frequency": 0
+          },
+          {
+            "bin": "2.0",
+            "frequency": 0
+          },
+          {
+            "bin": "2.1",
+            "frequency": 1567
+          },
+          {
+            "bin": "2.2",
+            "frequency": 0
+          },
+          {
+            "bin": "2.3",
+            "frequency": 0
+          },
+          {
+            "bin": "2.4",
+            "frequency": 0
+          },
+          {
+            "bin": "2.5",
+            "frequency": 0
+          },
+          {
+            "bin": "2.6",
+            "frequency": 0
+          },
+          {
+            "bin": "2.7",
+            "frequency": 0
+          },
+          {
+            "bin": "2.8",
+            "frequency": 0
+          },
+          {
+            "bin": "2.9",
+            "frequency": 0
+          },
+          {
+            "bin": "3.0",
+            "frequency": 4223
+          }
+        ],
+        "statisticType": "featureDistributions"
+      }
+    ]
+  },
+  "featurestoreId": 1,
+  "featurestoreName": "demo_featurestore_admin000_featurestore",
+  "id": 2,
+  "inodeId": 100506,
+  "jobId": 1,
+  "jobName": "featurestore_tour_job",
+  "jobStatus": "Succeeded",
+  "lastComputed": "2019-05-31T07:31:56Z",
+  "name": "games_features",
+  "version": 1,
+  "hdfsStorePaths": [
+    "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
+  ]
+}

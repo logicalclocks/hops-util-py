@@ -3,35 +3,25 @@ Featurestore Core Implementation
 
 Module hierarchy of featurestore implementation:
 
-              					      +---+
-                              +-------+dao|
- 				              |	      +---+
- 				              |
-                              |       +-----------+
-                              +-------+exceptions |
-                              |       +-----------+
-	   +--------------+	      |
-	   |              |    +--+---+	  +-------------+
-	   | featurestore +----+ core +---+query_planner|
-	   |              |    +---+--+	  +-------------+
-	   +--------------+	       |
-				               |	  +----+
-                               +------+rest|
-				               |	  +----+
-				               |
-				               |	  +----+
-                               +------+util|
-					           |      +----+
-					           |
-					           |      +---------------+
-					           +------+ featureframes |
-					           |      +---------------+
+- featurestore
+       |
+       --- core
+             |
+             ----dao
+             ----exceptions
+             ----query_planner
+             ----rest
+             ----util
+             ----featureframes
+             ----visualizations
 """
 
 from hops import constants, util, hdfs
+from hops.featurestore_impl.dao.statistics import Statistics
 from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.exceptions.exceptions import FeaturegroupNotFound, HiveDatabaseNotFound, \
-    TrainingDatasetNotFound, CouldNotConvertDataframe, TFRecordSchemaNotFound
+    TrainingDatasetNotFound, CouldNotConvertDataframe, TFRecordSchemaNotFound, FeatureDistributionsNotComputed, \
+    FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed
 from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
 from hops.featurestore_impl.dao.training_dataset import TrainingDataset
 from hops.featurestore_impl.query_planner.logical_query_plan import LogicalQueryPlan
@@ -40,6 +30,7 @@ from hops.featurestore_impl.query_planner.fg_query import FeaturegroupQuery
 from hops.featurestore_impl.query_planner import query_planner
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
+from hops.featurestore_impl.visualizations import statistics_plots
 import pydoop.hdfs as pydoop
 import json
 
@@ -57,7 +48,6 @@ except:
     pass
 
 metadata_cache = None
-
 
 def _get_featurestore_id(featurestore):
     """
@@ -86,6 +76,8 @@ def _use_featurestore(spark, featurestore=None):
     Returns:
         None
 
+    Raises:
+        :HiveDatabaseNotFound: when no hive database with the provided featurestore name exist
     """
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
@@ -154,7 +146,7 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by):
     }
 
 
-def _parse_spark_features_schema(spark_schema, primary_key, partition_by = []):
+def _parse_spark_features_schema(spark_schema, primary_key, partition_by=[]):
     """
     Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
 
@@ -294,6 +286,8 @@ def _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version):
     Returns:
         the id of the featuregroup
 
+    Raises:
+        :FeaturegroupNotFound: when the requested featuregroup could not be found in the metadata
     """
     metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     if metadata is None or featurestore != metadata.featurestore:
@@ -366,8 +360,12 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
         :featurestore: the featurestore where the featuregroup resides
         :featuregroup_version: the version of the featuregroup
         :mode: the write mode (append or overwrite)
+
     Returns:
         None
+
+    Raises:
+        :ValueError: when the provided write mode does not match the supported write modes (append and overwrite)
     """
     spark = util._find_spark()
     sc = spark.sparkContext
@@ -385,7 +383,7 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
         _delete_table_contents(featurestore, featuregroup, featuregroup_version)
 
     if not mode == constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE and not mode == \
-                                                                                    constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE:
+            constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE:
         raise ValueError(
             "The provided write mode {} does not match "
             "the supported modes: ['{}', '{}']".format(mode,
@@ -554,6 +552,9 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
 
     Returns:
         None
+
+    Raises:
+        :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
@@ -634,6 +635,8 @@ def _do_insert_into_training_dataset(
     Returns:
         None
 
+    Raises:
+        :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
@@ -691,6 +694,8 @@ def _get_training_dataset_id(featurestore, training_dataset_name, training_datas
     Returns:
         the id of the training dataset
 
+    Raises:
+        :TrainingDatasetNotFound: if the requested trainining dataset could not be found
     """
     metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     if metadata is None or featurestore != metadata.featurestore.name:
@@ -715,7 +720,7 @@ def _do_get_training_datasets(featurestore_metadata):
     """
     training_dataset_names = list(
         map(lambda td: fs_utils._get_table_name(td.name,
-                                                  td.version),
+                                                td.version),
             featurestore_metadata.training_datasets.values()))
     return training_dataset_names
 
@@ -762,6 +767,8 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
     Returns:
         the tf records schema
 
+    Raises:
+        :TFRecordSchemaNotFound: if a tfrecord schema for the given training dataset could not be found
     """
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
@@ -778,6 +785,7 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
         constants.FEATURE_STORE.TRAINING_DATASET_TF_RECORD_SCHEMA_FILE_NAME))
     return fs_utils._convert_tf_record_schema_json_to_dict(tf_record_json_schema)
 
+
 def _do_get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark"):
     """
     Gets the partitions of a featuregroup
@@ -787,6 +795,7 @@ def _do_get_featuregroup_partitions(featuregroup, featurestore=None, featuregrou
         :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+
      Returns:
         a dataframe with the partitions of the featuregroup
      """
@@ -799,6 +808,327 @@ def _do_get_featuregroup_partitions(featuregroup, featurestore=None, featuregrou
     result = _run_and_log_sql(spark, sql_str)
     spark.sparkContext.setJobGroup("", "")
     return fs_utils._return_dataframe_type(result, dataframe_type)
+
+
+def _do_visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1,
+                                             figsize=(16,12), color='lightblue', log=False, align="center"):
+    """
+    Creates a matplotlib figure of the feature distributions in a featuregroup in the featurestore.
+
+    1. Fetches the stored statistics for the featuregroup
+    2. If the feature distributions have been computed for the featuregroup, create the figure
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: size of the figure
+        :color: the color of the histograms
+        :log: whether to use log-scaling on the y-axis or not
+        :align: how to align the bars, defaults to center.
+
+    Returns:
+        Matplotlib figure with the feature distributions
+
+    Raises:
+        :FeatureDistributionsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_featuregroup_statistics(featuregroup_name, featurestore=featurestore,
+                                            featuregroup_version=featuregroup_version)
+    if stats.feature_histograms is None or stats.feature_histograms.feature_distributions is None:
+        raise FeatureDistributionsNotComputed("Cannot visualize the feature distributions for the "
+                                              "feature group: {} with version: {} in featurestore: {} since the "
+                                              "feature distributions have not been computed for this featuregroup."
+                                              " To compute the feature distributions, call "
+                                              "featurestore.update_featuregroup_stats(featuregroup_name)")
+    fig = statistics_plots._visualize_feature_distributions(stats.feature_histograms.feature_distributions,
+                                                            figsize=figsize, color=color, log=log, align=align)
+    return fig
+
+
+def _do_visualize_featuregroup_correlations(featuregroup_name, featurestore=None, featuregroup_version=1,
+                                            figsize=(16,12), cmap="coolwarm", annot=True, fmt=".2f", linewidths=.05):
+    """
+    Creates a matplotlib figure of the feature correlations in a featuregroup in the featurestore.
+
+    1. Fetches the stored statistics for the featuregroup
+    2. If the feature correlations have been computed for the featuregroup, create the figure
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: the size of the figure
+        :cmap: the color map
+        :annot: whether to annotate the heatmap
+        :fmt: how to format the annotations
+        :linewidths: line width in the plot
+
+    Returns:
+        Matplotlib figure with the feature correlations
+
+    Raises:
+        :FeatureCorrelationsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_featuregroup_statistics(featuregroup_name, featurestore=featurestore,
+                                            featuregroup_version=featuregroup_version)
+    if stats.correlation_matrix is None or stats.correlation_matrix.feature_correlations is None:
+        raise FeatureCorrelationsNotComputed("Cannot visualize the feature correlations for the "
+                                              "feature group: {} with version: {} in featurestore: {} since the "
+                                              "feature correlations have not been computed for this featuregroup."
+                                              " To compute the feature correlations, call "
+                                              "featurestore.update_featuregroup_stats(featuregroup_name)")
+    fig = statistics_plots._visualize_feature_correlations(stats.correlation_matrix.feature_correlations,
+                                                            figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
+                                                           linewidths=linewidths)
+    return fig
+
+
+def _do_visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12)):
+    """
+    Creates a matplotlib figure of the feature clusters in a featuregroup in the featurestore.
+
+    1. Fetches the stored statistics for the featuregroup
+    2. If the feature clusters have been computed for the featuregroup, create the figure
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: the size of the figure
+
+    Returns:
+        Matplotlib figure with the feature clusters
+
+    Raises:
+        :FeatureClustersNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_featuregroup_statistics(featuregroup_name, featurestore=featurestore,
+                                            featuregroup_version=featuregroup_version)
+    if stats.cluster_analysis is None:
+        raise FeatureClustersNotComputed("Cannot visualize the feature clusters for the "
+                                             "feature group: {} with version: {} in featurestore: {} since the "
+                                             "feature clusters have not been computed for this featuregroup."
+                                             " To compute the feature clusters, call "
+                                             "featurestore.update_featuregroup_stats(featuregroup_name)")
+    fig = statistics_plots._visualize_feature_clusters(stats.cluster_analysis, figsize=figsize)
+    return fig
+
+
+def _do_visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=None,
+                                                     featuregroup_version=1):
+    """
+    Creates a pandas dataframe of the descriptive statistics of a featuregroup in the featurestore.
+
+    1. Fetches the stored statistics for the featuregroup
+    2. If the descriptive statistics have been computed for the featuregroup, create the pandas dataframe
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+        Pandas dataframe with the descriptive statistics
+
+    Raises:
+        :DescriptiveStatisticsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_featuregroup_statistics(featuregroup_name, featurestore=featurestore,
+                                                featuregroup_version=featuregroup_version)
+    if stats.descriptive_stats is None or stats.descriptive_stats.descriptive_stats is None:
+        raise DescriptiveStatisticsNotComputed("Cannot visualize the descriptive statistics for the "
+                                         "featuregroup: {} with version: {} in featurestore: {} since the "
+                                         "descriptive statistics have not been computed for this featuregroup."
+                                         " To compute the descriptive statistics, call "
+                                         "featurestore.update_featuregroup_stats(featuregroup_name)")
+    df = statistics_plots._visualize_descriptive_stats(stats.descriptive_stats.descriptive_stats)
+    return df
+
+
+def _do_visualize_training_dataset_distributions(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                                 figsize=(16,12), color='lightblue', log=False, align="center"):
+    """
+    Creates a matplotlib figure of the feature distributions in a training dataset in the featurestore.
+
+    1. Fetches the stored statistics for the training dataset
+    2. If the feature distributions have been computed for the training dataset, create the figure
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :figsize: size of the figure
+        :color: the color of the histograms
+        :log: whether to use log-scaling on the y-axis or not
+        :align: how to align the bars, defaults to center.
+
+    Returns:
+        Matplotlib figure with the feature distributions
+
+    Raises:
+        :FeatureDistributionsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_training_dataset_statistics(training_dataset_name, featurestore=featurestore,
+                                            training_dataset_version=training_dataset_version)
+    if stats.feature_histograms is None or stats.feature_histograms.feature_distributions is None:
+        raise FeatureDistributionsNotComputed("Cannot visualize the feature distributions for the "
+                                              "training dataset: {} with version: {} in featurestore: {} since the "
+                                              "feature distributions have not been computed for this training dataset."
+                                              " To compute the feature distributions, call "
+                                              "featurestore.update_training_dataset_stats(training_dataset_name)")
+    fig = statistics_plots._visualize_feature_distributions(stats.feature_histograms.feature_distributions,
+                                                            figsize=figsize, color=color, log=log, align=align)
+    return fig
+
+
+def _do_visualize_training_dataset_correlations(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                                figsize=(16,12), cmap="coolwarm", annot=True, fmt=".2f",
+                                                linewidths=.05):
+    """
+    Creates a matplotlib figure of the feature correlations in a training dataset in the featurestore.
+
+    1. Fetches the stored statistics for the training dataset
+    2. If the feature correlations have been computed for the training dataset, create the figure
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :tranining_dataset_version: the version of the training dataset
+        :figsize: the size of the figure
+        :cmap: the color map
+        :annot: whether to annotate the heatmap
+        :fmt: how to format the annotations
+        :linewidths: line width in the plot
+
+    Returns:
+        Matplotlib figure with the feature correlations
+
+    Raises:
+        :FeatureCorrelationsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_training_dataset_statistics(training_dataset_name, featurestore=featurestore,
+                                            training_dataset_version=training_dataset_version)
+    if stats.correlation_matrix is None or stats.correlation_matrix.feature_correlations is None:
+        raise FeatureCorrelationsNotComputed("Cannot visualize the feature correlations for the "
+                                             "training dataset: {} with version: {} in featurestore: {} since the "
+                                             "feature correlations have not been computed for this training dataset."
+                                             " To compute the feature correlations, call "
+                                             "featurestore.update_training_dataset_stats(training_dataset_name)")
+    fig = statistics_plots._visualize_feature_correlations(stats.correlation_matrix.feature_correlations,
+                                                           figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
+                                                           linewidths=linewidths)
+    return fig
+
+
+def _do_visualize_training_dataset_clusters(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                            figsize=(16,12)):
+    """
+    Creates a matplotlib figure of the feature clusters in a training dataset in the featurestore.
+
+    1. Fetches the stored statistics for the training dataset
+    2. If the feature clusters have been computed for the training dataset, create the figure
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :figsize: the size of the figure
+
+    Returns:
+        Matplotlib figure with the feature clusters
+
+    Raises:
+        :FeatureClustersNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_training_dataset_statistics(training_dataset_name, featurestore=featurestore,
+                                            training_dataset_version=training_dataset_version)
+    if stats.cluster_analysis is None:
+        raise FeatureClustersNotComputed("Cannot visualize the feature clusters for the "
+                                         "training dataset: {} with version: {} in featurestore: {} since the "
+                                         "feature clusters have not been computed for this training dataset."
+                                         " To compute the feature clusters, call "
+                                         "featurestore.update_training_dataset_stats(training_dataset_name)")
+    fig = statistics_plots._visualize_feature_clusters(stats.cluster_analysis, figsize=figsize)
+    return fig
+
+
+def _do_visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore=None,
+                                                     training_dataset_version=1):
+    """
+    Creates a pandas dataframe of the descriptive statistics of a training dataset in the featurestore.
+
+    1. Fetches the stored statistics for the training dataset
+    2. If the descriptive statistics have been computed for the training dataset, create the pandas dataframe
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+
+    Returns:
+        Pandas dataframe with the descriptive statistics
+
+    Raises:
+        :DescriptiveStatisticsNotComputed: if the feature distributions to visualize have not been computed.
+    """
+    stats = _do_get_training_dataset_statistics(training_dataset_name, featurestore=featurestore,
+                                                training_dataset_version=training_dataset_version)
+    if stats.descriptive_stats is None or stats.descriptive_stats.descriptive_stats is None:
+        raise DescriptiveStatisticsNotComputed("Cannot visualize the descriptive statistics for the "
+                                         "training dataset: {} with version: {} in featurestore: {} since the "
+                                         "descriptive statistics have not been computed for this training dataset."
+                                         " To compute the descriptive statistics, call "
+                                         "featurestore.update_training_dataset_stats(training_dataset_name)")
+    df = statistics_plots._visualize_descriptive_stats(stats.descriptive_stats.descriptive_stats)
+    return df
+
+
+def _do_get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregroup_version=1):
+    """
+    Gets the computed statistics (if any) of a featuregroup
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          A Statistics Object
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    response_object = rest_rpc._get_featuregroup_rest(featuregroup_id, featurestore_id)
+    #.get() returns None if key dont exists intead of exception
+    descriptive_stats_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS)
+    correlation_matrix_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION)
+    features_histogram_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM)
+    feature_clusters = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS)
+    return Statistics(descriptive_stats_json, correlation_matrix_json, features_histogram_json, feature_clusters)
+
+
+def _do_get_training_dataset_statistics(training_dataset_name, featurestore=None, training_dataset_version=1):
+    """
+    Gets the computed statistics (if any) of a training dataset
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+
+    Returns:
+          A Statistics Object
+    """
+    training_dataset_id = _get_training_dataset_id(featurestore, training_dataset_name, training_dataset_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    response_object = rest_rpc._get_training_dataset_rest(training_dataset_id, featurestore_id)
+    #.get() returns None if key dont exists intead of exception
+    descriptive_stats_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS)
+    correlation_matrix_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION)
+    features_histogram_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM)
+    feature_clusters = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS)
+    return Statistics(descriptive_stats_json, correlation_matrix_json, features_histogram_json, feature_clusters)
+
 
 try:
     metadata_cache = _get_featurestore_metadata(featurestore=fs_utils._do_get_project_featurestore())

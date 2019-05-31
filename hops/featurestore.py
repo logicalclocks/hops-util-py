@@ -199,7 +199,8 @@ from hops import util, constants
 from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl import core
-from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDataframe
+from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDataframe, FeatureVisualizationError
+import os
 
 
 def project_featurestore():
@@ -271,12 +272,12 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     """
     try:  # try with cached metadata
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=False),
-                                        featurestore=featurestore, featuregroup=featuregroup,
-                                        featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+                                    featurestore=featurestore, featuregroup=featuregroup,
+                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
     except:  # Try again after updating cache
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=True),
-                                        featurestore=featurestore, featuregroup=featuregroup,
-                                        featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+                                    featurestore=featurestore, featuregroup=featuregroup,
+                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
 
 
 def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
@@ -311,16 +312,16 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     # try with cached metadata
     try:
         return core._do_get_features(features,
-                                         core._get_featurestore_metadata(featurestore, update_cache=False),
-                                         featurestore=featurestore,
-                                         featuregroups_version_dict=featuregroups_version_dict,
-                                         join_key=join_key, dataframe_type=dataframe_type)
+                                     core._get_featurestore_metadata(featurestore, update_cache=False),
+                                     featurestore=featurestore,
+                                     featuregroups_version_dict=featuregroups_version_dict,
+                                     join_key=join_key, dataframe_type=dataframe_type)
         # Try again after updating cache
     except:
         return core._do_get_features(features, core._get_featurestore_metadata(featurestore, update_cache=True),
-                                         featurestore=featurestore,
-                                         featuregroups_version_dict=featuregroups_version_dict,
-                                         join_key=join_key, dataframe_type=dataframe_type)
+                                     featurestore=featurestore,
+                                     featuregroups_version_dict=featuregroups_version_dict,
+                                     join_key=join_key, dataframe_type=dataframe_type)
 
 
 def sql(query, featurestore=None, dataframe_type="spark"):
@@ -396,6 +397,9 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
 
     Returns:
         None
+
+    Raises:
+        :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
@@ -539,6 +543,8 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     Returns:
         None
 
+    Raises:
+        :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
@@ -573,7 +579,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
                                        feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
                                        cluster_analysis_data)
     core._write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version,
-                                        constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
+                                  constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
     # update metadata cache
     core._get_featurestore_metadata(featurestore, update_cache=True)
     fs_utils._log("Feature group created successfully")
@@ -736,16 +742,16 @@ def get_training_dataset_tf_record_schema(training_dataset, training_dataset_ver
         featurestore = project_featurestore()
     try:
         return core._do_get_training_dataset_tf_record_schema(training_dataset,
-                                                                  core._get_featurestore_metadata(featurestore,
-                                                                                                  update_cache=False),
-                                                                  training_dataset_version=training_dataset_version,
-                                                                  featurestore=featurestore)
+                                                              core._get_featurestore_metadata(featurestore,
+                                                                                              update_cache=False),
+                                                              training_dataset_version=training_dataset_version,
+                                                              featurestore=featurestore)
     except:
         return core._do_get_training_dataset_tf_record_schema(training_dataset,
-                                                                  core._get_featurestore_metadata(featurestore,
-                                                                                                  update_cache=True),
-                                                                  training_dataset_version=training_dataset_version,
-                                                                  featurestore=featurestore)
+                                                              core._get_featurestore_metadata(featurestore,
+                                                                                              update_cache=True),
+                                                              training_dataset_version=training_dataset_version,
+                                                              featurestore=featurestore)
 
 
 def get_training_dataset(training_dataset, featurestore=None, training_dataset_version=1, dataframe_type="spark"):
@@ -769,14 +775,14 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
         featurestore = project_featurestore()
     try:
         return core._do_get_training_dataset(training_dataset,
-                                                 core._get_featurestore_metadata(featurestore, update_cache=False),
-                                                 training_dataset_version=training_dataset_version,
-                                                 dataframe_type=dataframe_type)
+                                             core._get_featurestore_metadata(featurestore, update_cache=False),
+                                             training_dataset_version=training_dataset_version,
+                                             dataframe_type=dataframe_type)
     except:
         return core._do_get_training_dataset(training_dataset,
-                                                 core._get_featurestore_metadata(featurestore, update_cache=True),
-                                                 training_dataset_version=training_dataset_version,
-                                                 dataframe_type=dataframe_type)
+                                             core._get_featurestore_metadata(featurestore, update_cache=True),
+                                             training_dataset_version=training_dataset_version,
+                                             dataframe_type=dataframe_type)
 
 
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
@@ -837,8 +843,6 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                      num_bins, corr_method, num_clusters, petastorm_args, fixed)
 
 
-
-
 def insert_into_training_dataset(
         df, training_dataset, featurestore=None, training_dataset_version=1,
         descriptive_statistics=True, feature_correlation=True,
@@ -884,31 +888,31 @@ def insert_into_training_dataset(
         featurestore = project_featurestore()
     try:
         core._do_insert_into_training_dataset(df, training_dataset,
-                                                         core._get_featurestore_metadata(featurestore,
-                                                                                         update_cache=False),
-                                                         featurestore,
-                                                         training_dataset_version=training_dataset_version,
-                                                         descriptive_statistics=descriptive_statistics,
-                                                         feature_correlation=feature_correlation,
-                                                         feature_histograms=feature_histograms,
-                                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-                                                         num_bins=num_bins,
-                                                         corr_method=corr_method, num_clusters=num_clusters,
-                                                         write_mode=write_mode)
+                                              core._get_featurestore_metadata(featurestore,
+                                                                              update_cache=False),
+                                              featurestore,
+                                              training_dataset_version=training_dataset_version,
+                                              descriptive_statistics=descriptive_statistics,
+                                              feature_correlation=feature_correlation,
+                                              feature_histograms=feature_histograms,
+                                              cluster_analysis=cluster_analysis, stat_columns=stat_columns,
+                                              num_bins=num_bins,
+                                              corr_method=corr_method, num_clusters=num_clusters,
+                                              write_mode=write_mode)
         fs_utils._log("Insertion into training dataset was successful")
     except:
         core._do_insert_into_training_dataset(df, training_dataset,
-                                                         core._get_featurestore_metadata(featurestore,
-                                                                                         update_cache=True),
-                                                         featurestore,
-                                                         training_dataset_version=training_dataset_version,
-                                                         descriptive_statistics=descriptive_statistics,
-                                                         feature_correlation=feature_correlation,
-                                                         feature_histograms=feature_histograms,
-                                                         cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-                                                         num_bins=num_bins,
-                                                         corr_method=corr_method, num_clusters=num_clusters,
-                                                         write_mode=write_mode)
+                                              core._get_featurestore_metadata(featurestore,
+                                                                              update_cache=True),
+                                              featurestore,
+                                              training_dataset_version=training_dataset_version,
+                                              descriptive_statistics=descriptive_statistics,
+                                              feature_correlation=feature_correlation,
+                                              feature_histograms=feature_histograms,
+                                              cluster_analysis=cluster_analysis, stat_columns=stat_columns,
+                                              num_bins=num_bins,
+                                              corr_method=corr_method, num_clusters=num_clusters,
+                                              write_mode=write_mode)
         fs_utils._log("Insertion into training dataset was successful")
 
 
@@ -936,14 +940,14 @@ def get_training_dataset_path(training_dataset, featurestore=None, training_data
         featurestore = project_featurestore()
     try:
         return core._do_get_training_dataset_path(training_dataset,
-                                                      core._get_featurestore_metadata(featurestore,
-                                                                                      update_cache=False),
-                                                      training_dataset_version=training_dataset_version)
+                                                  core._get_featurestore_metadata(featurestore,
+                                                                                  update_cache=False),
+                                                  training_dataset_version=training_dataset_version)
     except:
         return core._do_get_training_dataset_path(training_dataset,
-                                                      core._get_featurestore_metadata(featurestore,
-                                                                                      update_cache=True),
-                                                      training_dataset_version=training_dataset_version)
+                                                  core._get_featurestore_metadata(featurestore,
+                                                                                  update_cache=True),
+                                                  training_dataset_version=training_dataset_version)
 
 
 def get_latest_training_dataset_version(training_dataset, featurestore=None):
@@ -1064,6 +1068,7 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
         features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
         cluster_analysis_data)
 
+
 def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark"):
     """
     Gets the partitions of a featuregroup
@@ -1080,9 +1085,579 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
         :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+
      Returns:
         a dataframe with the partitions of the featuregroup
      """
     if featurestore is None:
         featurestore = project_featurestore()
     return core._do_get_featuregroup_partitions(featuregroup, featurestore, featuregroup_version, dataframe_type)
+
+
+def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16, 12),
+                                         color='lightblue', log=False, align="center", plot=True):
+    """
+    Visualizes the feature distributions (if they have been computed) for a featuregroup in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_featuregroup_distributions("trx_summary_features")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_featuregroup_distributions("trx_summary_features",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  featuregroup_version = 1,
+    >>>                                                  color="lightblue",
+    >>>                                                  figsize=(16,12),
+    >>>                                                  log=False,
+    >>>                                                  align="center",
+    >>>                                                  plot=True)
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: size of the figure
+        :figsize: the size of the figure
+        :color: the color of the histograms
+        :log: whether to use log-scaling on the y-axis or not
+        :align: how to align the bars, defaults to center.
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature distributions
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_featuregroup_distributions(featuregroup_name, featurestore, featuregroup_version,
+                                                            figsize=figsize, color=color, log=log, align=align)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_featuregroup_distributions(featuregroup_name, featurestore, featuregroup_version,
+                                                                figsize=figsize, color=color, log=log, align=align)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature distributions for "
+                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
+                featuregroup_name, featuregroup_version, featurestore, str(e)))
+
+
+def visualize_featuregroup_correlations(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
+                                        cmap="coolwarm", annot=True, fmt=".2f", linewidths=.05, plot=True):
+    """
+    Visualizes the feature correlations (if they have been computed) for a featuregroup in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_featuregroup_correlations("trx_summary_features")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_featuregroup_correlations("trx_summary_features",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  featuregroup_version = 1,
+    >>>                                                  cmap="coolwarm",
+    >>>                                                  figsize=(16,12),
+    >>>                                                  annot=True,
+    >>>                                                  fmt=".2f",
+    >>>                                                  linewidths=.05
+    >>>                                                  plot=True)
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: the size of the figure
+        :cmap: the color map
+        :annot: whether to annotate the heatmap
+        :fmt: how to format the annotations
+        :linewidths: line width in the plot
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature correlations
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_featuregroup_correlations(featuregroup_name, featurestore, featuregroup_version,
+                                                            figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
+                                                           linewidths=linewidths)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_featuregroup_correlations(featuregroup_name, featurestore, featuregroup_version,
+                                                               figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
+                                                               linewidths=linewidths)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature correlations for "
+                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
+                featuregroup_name, featuregroup_version, featurestore, str(e)))
+
+
+def visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
+                                    plot=True):
+    """
+    Visualizes the feature clusters (if they have been computed) for a featuregroup in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_featuregroup_clusters("trx_summary_features")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_featuregroup_clusters("trx_summary_features",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  featuregroup_version = 1,
+    >>>                                                  figsize=(16,12),
+    >>>                                                  plot=True)
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+        :figsize: the size of the figure
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature clusters
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_featuregroup_clusters(featuregroup_name, featurestore, featuregroup_version,
+                                                           figsize=figsize)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_featuregroup_clusters(featuregroup_name, featurestore, featuregroup_version,
+                                                               figsize=figsize)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature clusters for "
+                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
+                featuregroup_name, featuregroup_version, featurestore, str(e)))
+
+
+def visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=None, featuregroup_version=1):
+    """
+    Visualizes the descriptive stats (if they have been computed) for a featuregroup in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_featuregroup_descriptive_stats("trx_summary_features")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_featuregroup_descriptive_stats("trx_summary_features",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  featuregroup_version = 1)
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+        A pandas dataframe with the descriptive statistics
+
+    Raises:
+        :FeatureVisualizationError: if there was an error in fetching the descriptive statistics
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        df = core._do_visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore,
+                                                                   featuregroup_version)
+        return df
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            df = core._do_visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore,
+                                                                       featuregroup_version)
+            return df
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the descriptive statistics for "
+                                            "featuregroup: {} with version: {} in featurestore: {}. "
+                                            "Error: {}".format(featuregroup_name, featuregroup_version,
+                                                               featurestore, str(e)))
+
+
+def visualize_training_dataset_distributions(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                             figsize=(16, 12), color='lightblue', log=False, align="center", plot=True):
+    """
+    Visualizes the feature distributions (if they have been computed) for a training dataset in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_training_dataset_distributions("AML_dataset")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_training_dataset_distributions("AML_dataset",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  training_dataset_version = 1,
+    >>>                                                  color="lightblue",
+    >>>                                                  figsize=(16,12),
+    >>>                                                  log=False,
+    >>>                                                  align="center",
+    >>>                                                  plot=True)
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :figsize: size of the figure
+        :figsize: the size of the figure
+        :color: the color of the histograms
+        :log: whether to use log-scaling on the y-axis or not
+        :align: how to align the bars, defaults to center.
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature distributions
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_training_dataset_distributions(training_dataset_name, featurestore,
+                                                            training_dataset_version, figsize=figsize, color=color,
+                                                            log=log, align=align)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_training_dataset_distributions(training_dataset_name, featurestore,
+                                                                training_dataset_version, figsize=figsize, color=color,
+                                                                log=log, align=align)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature distributions for "
+                                            "training dataset: {} with version: {} in featurestore: {}. "
+                                            "Error: {}".format(training_dataset_name, training_dataset_version,
+                                                               featurestore, str(e)))
+
+
+def visualize_training_dataset_correlations(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                            figsize=(16,12), cmap="coolwarm", annot=True, fmt=".2f",
+                                            linewidths=.05, plot=True):
+    """
+    Visualizes the feature distributions (if they have been computed) for a training dataset in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_training_dataset_correlations("AML_dataset")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_training_dataset_correlations("AML_dataset",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  training_dataset_version = 1,
+    >>>                                                  cmap="coolwarm",
+    >>>                                                  figsize=(16,12),
+    >>>                                                  annot=True,
+    >>>                                                  fmt=".2f",
+    >>>                                                  linewidths=.05
+    >>>                                                  plot=True)
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :figsize: the size of the figure
+        :cmap: the color map
+        :annot: whether to annotate the heatmap
+        :fmt: how to format the annotations
+        :linewidths: line width in the plot
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature correlations
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_training_dataset_correlations(training_dataset_name, featurestore,
+                                                               training_dataset_version, figsize=figsize, cmap=cmap,
+                                                               annot=annot, fmt=fmt, linewidths=linewidths)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_training_dataset_correlations(training_dataset_name, featurestore,
+                                                                   training_dataset_version, figsize=figsize,
+                                                                   cmap=cmap, annot=annot, fmt=fmt,
+                                                                   linewidths=linewidths)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature correlations for "
+                                            "training dataset: {} with version: {} in featurestore: {}. "
+                                            "Error: {}".format(training_dataset_name, training_dataset_version,
+                                                               featurestore, str(e)))
+
+
+def visualize_training_dataset_clusters(training_dataset_name, featurestore=None, training_dataset_version=1,
+                                        figsize=(16,12), plot=True):
+    """
+    Visualizes the feature clusters (if they have been computed) for a training dataset in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_training_dataset_clusters("AML_dataset")
+    >>> # You can also explicitly define version, featurestore and plotting options
+    >>> featurestore.visualize_training_dataset_clusters("AML_dataset",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  training_dataset_version = 1,
+    >>>                                                  figsize=(16,12),
+    >>>                                                  plot=True)
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+        :figsize: the size of the figure
+        :plot: if set to True it will plot the image and return None, if set to False it will not plot it
+               but rather return the figure
+
+    Returns:
+        if the 'plot' flag is set to True it will plot the image and return None, if the 'plot' flag is set to False
+        it will not plot it but rather return the figure
+
+    Raises:
+        :FeatureVisualizationError: if there was an error visualizing the feature clusters
+    """
+    if plot:
+        fs_utils._visualization_validation_warning()
+        fs_utils._matplotlib_magic_reminder()
+
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        # Construct the figure
+        fig = core._do_visualize_training_dataset_clusters(training_dataset_name, featurestore,
+                                                           training_dataset_version, figsize=figsize)
+        if plot:
+            # Plot the figure
+            fig.tight_layout()
+        else:
+            return fig
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            # Construct the figure
+            fig = core._do_visualize_training_dataset_clusters(training_dataset_name, featurestore,
+                                                               training_dataset_version, figsize=figsize)
+            if plot:
+                # Plot the figure
+                fig.tight_layout()
+            else:
+                return fig
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the feature clusters for "
+                                            "training dataset: {} with version: {} in featurestore: {}. "
+                                            "Error: {}".format(training_dataset_name, training_dataset_version,
+                                                               featurestore, str(e)))
+
+
+def visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore=None, training_dataset_version=1):
+    """
+    Visualizes the descriptive stats (if they have been computed) for a training dataset in the featurestore
+
+    Example usage:
+
+    >>> featurestore.visualize_training_dataset_descriptive_stats("AML_dataset")
+    >>> # You can also explicitly define version and featurestore
+    >>> featurestore.visualize_training_dataset_descriptive_stats("AML_dataset",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  training_dataset_version = 1)
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+
+    Returns:
+        A pandas dataframe with the descriptive statistics
+
+    Raises:
+        :FeatureVisualizationError: if there was an error in fetching the descriptive statistics
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        df = core._do_visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore,
+                                                                   training_dataset_version)
+        return df
+    except:
+        # Retry with updated cache
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        try:
+            df = core._do_visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore,
+                                                                       training_dataset_version)
+            return df
+
+        except Exception as e:
+            raise FeatureVisualizationError("There was an error in visualizing the descriptive statistics for "
+                                            "training dataset: {} with version: {} in featurestore: {}. "
+                                            "Error: {}".format(training_dataset_name, training_dataset_version,
+                                                               featurestore, str(e)))
+
+
+def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregroup_version=1):
+    """
+    Gets the computed statistics (if any) of a featuregroup
+
+    Example usage:
+    >>> stats = featurestore.get_featuregroup_statistics("trx_summary_features")
+    >>> # You can also explicitly define version and featurestore
+    >>> stats = featurestore.get_featuregroup_statistics("trx_summary_features",
+    >>>                                                  featurestore=featurestore.project_featurestore(),
+    >>>                                                  featuregroup_version = 1)
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          A Statistics Object
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        return core._do_get_featuregroup_statistics(featuregroup_name, featurestore, featuregroup_version)
+    except:
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        return core._do_get_featuregroup_statistics(featuregroup_name, featurestore, featuregroup_version)
+
+
+def get_training_dataset_statistics(training_dataset_name, featurestore=None, training_dataset_version=1):
+    """
+    Gets the computed statistics (if any) of a training dataset
+
+    Example usage:
+    >>> stats = featurestore.get_training_dataset_statistics("AML_dataset")
+    >>> # You can also explicitly define version and featurestore
+    >>> stats = featurestore.get_training_dataset_statistics("AML_dataset",
+    >>>                                                      featurestore=featurestore.project_featurestore(),
+    >>>                                                      training_dataset_version = 1)
+
+    Args:
+        :training_dataset_name: the name of the training dataset
+        :featurestore: the featurestore where the training dataset resides
+        :training_dataset_version: the version of the training dataset
+
+    Returns:
+          A Statistics Object
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
+    except:
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+        return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
