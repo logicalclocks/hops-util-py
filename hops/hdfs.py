@@ -18,6 +18,23 @@ import subprocess
 
 fd = None
 
+def get_plain_path(abs_path):
+    """
+    Convert absolute HDFS path to plain path (dropping hdfs:// and ip)
+
+    Example use-case:
+
+    >>> hdfs.get_plain_path("hdfs://10.0.2.15:8020/Projects/demo_deep_learning_admin000/Models/")
+    >>> # returns: "/Projects/demo_deep_learning_admin000/Models/"
+
+     Args:
+         :abs_path: the absolute HDFS path containing hdfs:// and/or ip
+
+    Returns:
+          the plain path without hdfs:// and ip
+    """
+    return path.split(path.abspath(abs_path))[2]
+
 def project_id():
     """
     Get the Hopsworks project id from environment variables
@@ -212,7 +229,7 @@ def _create_directories(app_id, run_id, param_string, type, sub_type=None):
 
     # Need to remove directory if it exists (might be a task retry)
     if pyhdfs_handle.exists(hdfs_exec_logdir):
-        pyhdfs_handle.delete(hdfs_exec_logdir, recursive=True)
+        delete(hdfs_exec_logdir, recursive=True)
 
     # create the new directory
     pyhdfs_handle.create_directory(hdfs_exec_logdir)
@@ -256,18 +273,43 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     hdfs_path = _expand_path(relative_hdfs_path, project, exists=False)
 
     if overwrite:
-        hdfs_handle = get()
-        # check if project path exist, if so delete it (since overwrite flag was set to true)
         hdfs_path = hdfs_path + "/" + os.path.basename(full_local)
-        if hdfs_handle.exists(hdfs_path):
-            hdfs_handle.delete(hdfs_path, recursive=True)
+        if exists(hdfs_path):
+            # delete hdfs path since overwrite flag was set to true
+            delete(hdfs_path, recursive=True)
 
-    print("Started copying " + hdfs_path + " on hdfs to path " + hdfs_path + "\n")
+    print("Started copying local path {} to hdfs path {}\n".format(local_path, hdfs_path))
 
     # copy directories from local path to HDFS project path
     hdfs.put(full_local, hdfs_path)
 
     print("Finished copying\n")
+
+
+def delete(hdfs_path, recursive=False):
+    """
+    Deletes path, path can be absolute or relative.
+    If recursive is set to True and path is a directory, then files will be deleted recursively.
+
+    For example
+
+    >>> delete("/Resources/", recursive=True)
+
+    will delete all files recursively in the folder "Resources" inside the current project.
+
+    Args:
+        :hdfs_path: the path to delete (project-relative or absolute)
+
+    Returns:
+        None
+
+    Raises:
+        IOError when recursive is False and directory is non-empty
+    """
+    hdfs_path = _expand_path(hdfs_path)
+    hdfs_handle = get()
+    if hdfs_handle.exists(hdfs_path):
+        hdfs_handle.delete(hdfs_path, recursive=recursive)
 
 
 def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
@@ -382,19 +424,26 @@ def _is_same_directory(local_path, hdfs_path):
     else:
         return False
 
-def cp(src_hdfs_path, dest_hdfs_path):
+def cp(src_hdfs_path, dest_hdfs_path, overwrite=False):
     """
     Copy the contents of src_hdfs_path to dest_hdfs_path.
 
-    If src_hdfs_path is a directory, its contents will be copied recursively. Source file(s) are opened for reading and copies are opened for writing.
+    If src_hdfs_path is a directory, its contents will be copied recursively.
+    Source file(s) are opened for reading and copies are opened for writing.
 
     Args:
         :src_hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
         :dest_hdfs_path: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+        :overwrite: boolean flag whether to overwrite destination path or not.
 
     """
     src_hdfs_path = _expand_path(src_hdfs_path)
-    dest_hdfs_path = _expand_path(dest_hdfs_path)
+    dest_hdfs_path = _expand_path(dest_hdfs_path, exists=False)
+
+    if overwrite and exists(dest_hdfs_path):
+        # delete path since overwrite flag was set to true
+        delete(dest_hdfs_path, recursive=True)
+
     hdfs.cp(src_hdfs_path, dest_hdfs_path)
 
 
