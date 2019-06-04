@@ -37,5 +37,8 @@ def save(hdfs_filename, data):
     local_file = os.path.basename(hdfs_filename)
     np.save(local_file, data)
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)
+    if local_file in hdfs_path:
+        # copy_to_hdfs expects directory to copy to, excluding the file name
+        hdfs_path = hdfs_path.replace(local_file, "")
     hdfs.copy_to_hdfs(local_file, hdfs_path, overwrite=True)
 
