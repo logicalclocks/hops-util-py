@@ -50,11 +50,16 @@ Similarly, you can define a pyspark kafka consumer as follows, using the spark s
 
 import os
 from hops import constants, tls, util, hdfs
-from ast import literal_eval
-from io import BytesIO
-from avro.io import DatumReader, BinaryDecoder
-import avro.schema
 import json
+
+# avro only officially supported in python 2.7
+try:
+    from ast import literal_eval
+    from io import BytesIO
+    from avro.io import DatumReader, BinaryDecoder
+    import avro.schema
+except:
+    pass
 
 def get_broker_endpoints():
     """
