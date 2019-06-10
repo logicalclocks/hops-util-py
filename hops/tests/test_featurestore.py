@@ -947,10 +947,6 @@ class TestFeaturestoreSuite(object):
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._get_featurestores()
         assert result == data
-        response.status = 200
-        response.code = 500
-        result = rest_rpc._get_featurestores()
-        assert result == data
         response.code = 500
         response.status = 500
         with pytest.raises(RestAPIError) as ex:
