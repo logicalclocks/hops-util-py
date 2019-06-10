@@ -5,6 +5,7 @@ REST calls to Hopsworks Feature Store Service
 from hops import constants, util, hdfs
 from hops.exceptions import RestAPIError
 import json
+import sys
 
 
 def _delete_table_contents(featuregroup_id, featurestore_id):
@@ -34,13 +35,14 @@ def _delete_table_contents(featuregroup_id, featurestore_id):
     response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not clear featuregroup contents (url: {}), server response: \n "
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not clear featuregroup contents (url: {}), server response: \n " \
@@ -66,13 +68,14 @@ def _get_featurestores():
     response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not fetch feature stores (url: {}), server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not fetch feature stores (url: {}), server response: \n " \
@@ -103,7 +106,8 @@ def _get_featurestore_metadata(featurestore):
     response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not fetch featurestore metadata for featurestore: {} (url: {}), "
@@ -111,7 +115,7 @@ def _get_featurestore_metadata(featurestore):
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, "
                                  "error msg: {}, user msg: {}".format(
                 resource_url, featurestore, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not fetch featurestore metadata for featurestore: {} (url: {}), "
@@ -172,13 +176,14 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 201 and response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 201 and response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
@@ -233,13 +238,14 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, featuregro
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if (response.code != 200):
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not update featuregroup stats (url: {}), server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if (response.status != 200):
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not update featuregroup stats (url: {}), server response: \n " \
@@ -299,13 +305,14 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 201 and response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 201 and response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
@@ -361,16 +368,18 @@ def _update_training_dataset_stats_rest(
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if (response.code != 200):
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not update training dataset stats (url: {}), server response: \n " \
-                                 "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:
+        # for python 2
         if (response.status != 200):
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not update training dataset stats (url: {}), server response: \n " \
-                                 "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.status, response.reason, error_code, error_msg, user_msg))
     return response_object

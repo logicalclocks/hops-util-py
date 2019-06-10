@@ -7,6 +7,7 @@ from hops import hdfs, constants, util, exceptions, kafka
 import os
 import json
 import re
+import sys
 
 try:
     import http.client as http
@@ -80,7 +81,8 @@ def _delete_serving_rest(serving_id):
                     constants.REST_CONFIG.HOPSWORKS_SERVING_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
                     + str(serving_id))
     response = util.send_request(connection, method, resource_url)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -90,7 +92,7 @@ def _delete_serving_rest(serving_id):
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                           "user msg: {}".format(serving_id, resource_url, response.code,
                                                                 response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -164,7 +166,8 @@ def _start_or_stop_serving_rest(serving_id, action):
                     constants.REST_CONFIG.HOPSWORKS_SERVING_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
                     + str(serving_id) + constants.MODEL_SERVING.SERVING_START_OR_STOP_PATH_PARAM + action)
     response = util.send_request(connection, method, resource_url)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -174,7 +177,7 @@ def _start_or_stop_serving_rest(serving_id, action):
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                           "user msg: {}".format(action, serving_id, resource_url, response.code,
                                                                 response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -308,7 +311,8 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_SERVING_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER)
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 201 and response.code != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -317,7 +321,7 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                           "user msg: {}".format(resource_url, response.code, response.reason,
                                                                 error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 201 and response.status != 200:
             resp_body = response.read()
             response_object = json.loads(resp_body)
@@ -644,7 +648,8 @@ def _get_servings_rest():
     response = util.send_request(connection, method, resource_url)
     resp_body = response.read()
     response_object = json.loads(resp_body)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise exceptions.RestAPIError("Could not fetch list of servings from Hopsworks REST API (url: {}), "
@@ -652,7 +657,7 @@ def _get_servings_rest():
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, "
                                           "error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:
         if response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise exceptions.RestAPIError("Could not fetch list of servings from Hopsworks REST API (url: {}), "
@@ -709,13 +714,14 @@ def _make_inference_request_rest(serving_name, data, verb):
     resp_body = response.read()
     response_object = json.loads(resp_body)
     error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-    try:  # for python 3
+    # for python 3
+    if sys.version_info > (3, 0):
         if response.code != 201 and response.code != 200:
             raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                           "user msg: {}".format(resource_url, response.code, response.reason,
                                                                 error_code, error_msg, user_msg))
-    except:  # for python 2
+    else:  # for python 2
         if response.status != 201 and response.status != 200:
             raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
                                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
