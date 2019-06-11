@@ -1,6 +1,6 @@
 from hops import hdfs, constants, util
 from hops.featurestore_impl.util import fs_utils
-from hops.featurestore_impl.exceptions.exceptions import TrainingDatasetNotFound
+from hops.featurestore_impl.exceptions.exceptions import TrainingDatasetNotFound, CouldNotConvertDataframe
 from tempfile import TemporaryFile
 import pandas as pd
 import numpy as np
@@ -47,6 +47,9 @@ class FeatureFrame(object):
 
         Returns:
             FeatureFrame implementation
+
+        Raises:
+              :ValueError: if the requested featureframe type could is not supported
         """
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT:
             return CSVFeatureFrame(**kwargs)
@@ -114,6 +117,8 @@ class AvroFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -156,6 +161,9 @@ class ORCFeatureFrame(FeatureFrame):
 
         Returns:
             dataframe with the data of the training dataset
+
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -198,6 +206,9 @@ class TFRecordsFeatureFrame(FeatureFrame):
 
         Returns:
             dataframe with the data of the training dataset
+
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -223,6 +234,8 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Returns:
             None
 
+        Raises:
+              :ValueError: if the user supplied a write mode that is not supported
         """
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
@@ -252,6 +265,9 @@ class NumpyFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
+              :CouldNotConvertDataframe: if the numpy dataset could not be converted to a spark dataframe
         """
         spark = util._find_spark()
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
@@ -269,7 +285,7 @@ class NumpyFeatureFrame(FeatureFrame):
         if self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK or \
                         self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
             if np_array.ndim != 2:
-                raise ValueError(
+                raise CouldNotConvertDataframe(
                     "Cannot convert numpy array that do not have two dimensions to a dataframe. "
                     "The number of dimensions are: {}".format(np_array.ndim))
             num_cols = np_array.shape[1]
@@ -290,6 +306,8 @@ class NumpyFeatureFrame(FeatureFrame):
         Returns:
             None
 
+        Raises:
+              :ValueError: if the user supplied a write mode that is not supported
         """
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
@@ -329,6 +347,9 @@ class HDF5FeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
+              :CouldNotConvertDataframe: if the hdf5 dataset could not be converted to a spark dataframe
         """
         spark = util._find_spark()
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
@@ -347,7 +368,7 @@ class HDF5FeatureFrame(FeatureFrame):
         if self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK \
                 or self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS:
             if np_array.ndim != 2:
-                raise AssertionError(
+                raise CouldNotConvertDataframe(
                     "Cannot convert numpy array that do not have two dimensions to a dataframe. "
                     "The number of dimensions are: {}".format(
                         np_array.ndim))
@@ -369,6 +390,8 @@ class HDF5FeatureFrame(FeatureFrame):
         Returns:
             None
 
+        Raises:
+              :ValueError: if the user supplied a write mode that is not supported
         """
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
@@ -411,6 +434,9 @@ class PetastormFeatureFrame(FeatureFrame):
 
         Returns:
             dataframe with the data of the training dataset
+
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -431,6 +457,9 @@ class PetastormFeatureFrame(FeatureFrame):
 
         Returns:
             None
+
+        Raises:
+              :ValueError: if not petastorm schema was provided
         """
         spark = util._find_spark()
         if constants.PETASTORM_CONFIG.SCHEMA in self.petastorm_args:
@@ -467,6 +496,8 @@ class ImageFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -489,6 +520,8 @@ class ImageFeatureFrame(FeatureFrame):
         Returns:
             None
 
+        Raises:
+              :ValueError: if this method is called, writing datasets in "image" format is not supported with Spark
         """
         raise ValueError("Can not write dataframe in image format. "
                          "To create a training dataset in image format you should manually "
@@ -516,6 +549,8 @@ class ParquetFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -561,6 +596,8 @@ class TSVFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):
@@ -614,6 +651,8 @@ class CSVFeatureFrame(FeatureFrame):
         Returns:
             dataframe with the data of the training dataset
 
+        Raises:
+              :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
         spark = util._find_spark()
         if hdfs.exists(self.path):

@@ -71,6 +71,9 @@ def _delete_serving_rest(serving_id):
 
     Returns:
         None
+
+    Raises:
+        :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     method = constants.HTTP_CONFIG.HTTP_DELETE
     connection = util._get_http_connection(https=True)
@@ -156,6 +159,9 @@ def _start_or_stop_serving_rest(serving_id, action):
 
     Returns:
         None
+
+    Raises:
+        :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     method = constants.HTTP_CONFIG.HTTP_POST
     connection = util._get_http_connection(https=True)
@@ -241,6 +247,9 @@ def _validate_user_serving_input(model_path, model_name, serving_type, model_ver
 
     Returns:
         None
+
+    Raises:
+        :ValueError: if the serving input failed the validation
     """
     name_pattern = re.compile("^[a-zA-Z0-9]+$")
     if len(model_name) > 256 or model_name == "" or not name_pattern.match(model_name):
@@ -285,6 +294,9 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
 
     Returns:
         None
+
+    Raises:
+        :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     json_contents = {
         constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION: model_version,
@@ -374,6 +386,9 @@ def export(model_path, model_name, model_version=1, overwrite=False):
 
     Returns:
         The path to where the model was exported
+
+    Raises:
+        :ValueError: if there was an error with the exportation of the model due to invalid user input
     """
 
     if not hdfs.exists(model_path) and not os.path.exists(model_path):
@@ -607,6 +622,9 @@ def _find_serving_with_name(serving_name, servings):
 
     Returns:
            serving with the given name
+
+    Raises:
+        :ServingNotFound: if the requested serving could not be found
     """
     serving_names = []
     for serving in servings:
@@ -637,6 +655,9 @@ def _get_servings_rest():
 
     Returns:
          JSON response parsed as a python dict
+
+    Raises:
+        :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     method = constants.HTTP_CONFIG.HTTP_GET
     connection = util._get_http_connection(https=True)
@@ -698,6 +719,9 @@ def _make_inference_request_rest(serving_name, data, verb):
 
     Returns:
         the JSON response
+
+    Raises:
+        :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     json_embeddable = json.dumps(data)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}

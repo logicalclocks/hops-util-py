@@ -37,8 +37,9 @@ setup(
         'test': [
             'mock',
             'pytest',
-            'pyspark==2.4.0'
-        ]
+        ],
+        'spark': ['pyspark==2.4.0'],
+        'plotting': ['matplotlib', 'seaborn']
     },
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',

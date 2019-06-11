@@ -43,6 +43,8 @@ def _find_feature(feature, featurestore, featuregroups_parsed):
     Returns:
         the featuregroup that contains the feature
 
+    Raises:
+        :FeatureNotFound: if the requested feature could not be found
     """
     featuregroups_matched = _find_featuregroup_that_contains_feature(featuregroups_parsed, feature)
     if (len(featuregroups_matched) == 0):
@@ -128,6 +130,8 @@ def _get_join_col(featuregroups):
     Returns:
         name of the join column
 
+    Raises:
+        :InferJoinKeyError: if the join key of the featuregroups could not be inferred automatically
     """
     feature_sets = []
     for fg in featuregroups:
@@ -176,6 +180,9 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
 
     Returns:
         The training dataset if it finds it, otherwise exception
+
+    Raises:
+        :TrainingDatasetNotFound: if the requested training dataset could not be found
     """
     try:
         return training_datasets[fs_utils._get_table_name(training_dataset, training_dataset_version)]

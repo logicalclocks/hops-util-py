@@ -52,6 +52,9 @@ class LogicalQueryPlan(object):
 
         Returns:
             None
+
+        Raises:
+            :FeaturegroupNotFound: if the feature could not be found in any of the featuregroups in the metadata
         """
         self.join_str = None
         self.features_str = self.query.feature
@@ -76,6 +79,9 @@ class LogicalQueryPlan(object):
 
         Returns:
             None
+
+        Raises:
+            :FeaturegroupNotFound: if the some of the features could not be found in any of the featuregroups
         """
         self.features_str = ", ".join(self.query.features)
         self.join_str = None

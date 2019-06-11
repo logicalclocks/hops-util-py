@@ -1,0 +1,2573 @@
+{
+  "type": "trainingDatasetDTO",
+  "clusterAnalysis": {
+    "dataPoints": [
+      {
+        "datapointName": "0",
+        "firstDimension": 78204.52,
+        "secondDimension": -12565.405
+      },
+      {
+        "datapointName": "1",
+        "firstDimension": 78204.52,
+        "secondDimension": -12565.405
+      },
+      {
+        "datapointName": "2",
+        "firstDimension": 91231.64,
+        "secondDimension": -10494.159
+      },
+      {
+        "datapointName": "3",
+        "firstDimension": 91231.64,
+        "secondDimension": -10494.159
+      },
+      {
+        "datapointName": "4",
+        "firstDimension": 203770.39,
+        "secondDimension": -31168.95
+      },
+      {
+        "datapointName": "5",
+        "firstDimension": 122227.78,
+        "secondDimension": -18335.736
+      },
+      {
+        "datapointName": "6",
+        "firstDimension": 2130764.5,
+        "secondDimension": -144450.56
+      },
+      {
+        "datapointName": "7",
+        "firstDimension": 434104.72,
+        "secondDimension": -57763.844
+      },
+      {
+        "datapointName": "8",
+        "firstDimension": 434104.72,
+        "secondDimension": -57763.844
+      },
+      {
+        "datapointName": "9",
+        "firstDimension": 434104.72,
+        "secondDimension": -57763.844
+      },
+      {
+        "datapointName": "10",
+        "firstDimension": 434104.72,
+        "secondDimension": -57763.844
+      },
+      {
+        "datapointName": "11",
+        "firstDimension": 150042.48,
+        "secondDimension": -9146.475
+      },
+      {
+        "datapointName": "12",
+        "firstDimension": 69747.31,
+        "secondDimension": -10477.018
+      },
+      {
+        "datapointName": "13",
+        "firstDimension": 156124.03,
+        "secondDimension": -23156.34
+      },
+      {
+        "datapointName": "14",
+        "firstDimension": 156124.03,
+        "secondDimension": -23156.34
+      },
+      {
+        "datapointName": "15",
+        "firstDimension": 156124.03,
+        "secondDimension": -23156.34
+      },
+      {
+        "datapointName": "16",
+        "firstDimension": 72717.23,
+        "secondDimension": -8505.974
+      },
+      {
+        "datapointName": "17",
+        "firstDimension": 539786.44,
+        "secondDimension": -1984.8048
+      },
+      {
+        "datapointName": "18",
+        "firstDimension": 107824.766,
+        "secondDimension": -17799.316
+      },
+      {
+        "datapointName": "19",
+        "firstDimension": 29773.656,
+        "secondDimension": 6663.522
+      },
+      {
+        "datapointName": "20",
+        "firstDimension": 29773.656,
+        "secondDimension": 6663.522
+      },
+      {
+        "datapointName": "21",
+        "firstDimension": 339704.8,
+        "secondDimension": 785.06024
+      },
+      {
+        "datapointName": "22",
+        "firstDimension": 215023.33,
+        "secondDimension": -2350.912
+      },
+      {
+        "datapointName": "23",
+        "firstDimension": 215023.33,
+        "secondDimension": -2350.912
+      },
+      {
+        "datapointName": "24",
+        "firstDimension": 49271.266,
+        "secondDimension": -2202.1067
+      },
+      {
+        "datapointName": "25",
+        "firstDimension": 232874.83,
+        "secondDimension": -42929.68
+      },
+      {
+        "datapointName": "26",
+        "firstDimension": 69665.64,
+        "secondDimension": -7535.5015
+      },
+      {
+        "datapointName": "27",
+        "firstDimension": 69665.64,
+        "secondDimension": -7535.5015
+      },
+      {
+        "datapointName": "28",
+        "firstDimension": 69665.64,
+        "secondDimension": -7535.5015
+      },
+      {
+        "datapointName": "29",
+        "firstDimension": 922562.2,
+        "secondDimension": 100095.336
+      },
+      {
+        "datapointName": "30",
+        "firstDimension": 922562.2,
+        "secondDimension": 100095.336
+      },
+      {
+        "datapointName": "31",
+        "firstDimension": 922562.2,
+        "secondDimension": 100095.336
+      },
+      {
+        "datapointName": "32",
+        "firstDimension": 922562.2,
+        "secondDimension": 100095.336
+      },
+      {
+        "datapointName": "33",
+        "firstDimension": 78000.33,
+        "secondDimension": -8618.6455
+      },
+      {
+        "datapointName": "34",
+        "firstDimension": 45428.094,
+        "secondDimension": -2151.0713
+      },
+      {
+        "datapointName": "35",
+        "firstDimension": 62559.547,
+        "secondDimension": -3914.8943
+      }
+    ],
+    "clusters": [
+      {
+        "datapointName": "0",
+        "cluster": 0
+      },
+      {
+        "datapointName": "1",
+        "cluster": 0
+      },
+      {
+        "datapointName": "2",
+        "cluster": 0
+      },
+      {
+        "datapointName": "3",
+        "cluster": 0
+      },
+      {
+        "datapointName": "4",
+        "cluster": 3
+      },
+      {
+        "datapointName": "5",
+        "cluster": 0
+      },
+      {
+        "datapointName": "6",
+        "cluster": 1
+      },
+      {
+        "datapointName": "7",
+        "cluster": 4
+      },
+      {
+        "datapointName": "8",
+        "cluster": 4
+      },
+      {
+        "datapointName": "9",
+        "cluster": 4
+      },
+      {
+        "datapointName": "10",
+        "cluster": 4
+      },
+      {
+        "datapointName": "11",
+        "cluster": 3
+      },
+      {
+        "datapointName": "12",
+        "cluster": 0
+      },
+      {
+        "datapointName": "13",
+        "cluster": 3
+      },
+      {
+        "datapointName": "14",
+        "cluster": 3
+      },
+      {
+        "datapointName": "15",
+        "cluster": 3
+      },
+      {
+        "datapointName": "16",
+        "cluster": 0
+      },
+      {
+        "datapointName": "17",
+        "cluster": 4
+      },
+      {
+        "datapointName": "18",
+        "cluster": 0
+      },
+      {
+        "datapointName": "19",
+        "cluster": 0
+      },
+      {
+        "datapointName": "20",
+        "cluster": 0
+      },
+      {
+        "datapointName": "21",
+        "cluster": 3
+      },
+      {
+        "datapointName": "22",
+        "cluster": 3
+      },
+      {
+        "datapointName": "23",
+        "cluster": 3
+      },
+      {
+        "datapointName": "24",
+        "cluster": 0
+      },
+      {
+        "datapointName": "25",
+        "cluster": 3
+      },
+      {
+        "datapointName": "26",
+        "cluster": 0
+      },
+      {
+        "datapointName": "27",
+        "cluster": 0
+      },
+      {
+        "datapointName": "28",
+        "cluster": 0
+      },
+      {
+        "datapointName": "29",
+        "cluster": 2
+      },
+      {
+        "datapointName": "30",
+        "cluster": 2
+      },
+      {
+        "datapointName": "31",
+        "cluster": 2
+      },
+      {
+        "datapointName": "32",
+        "cluster": 2
+      },
+      {
+        "datapointName": "33",
+        "cluster": 0
+      },
+      {
+        "datapointName": "34",
+        "cluster": 0
+      },
+      {
+        "datapointName": "35",
+        "cluster": 0
+      }
+    ],
+    "statisticType": "clusterAnalysis"
+  },
+  "created": "2019-06-09T11:36:00Z",
+  "creator": "admin@hopsworks.ai",
+  "dependencies": [],
+  "description": "",
+  "descriptiveStatistics": {
+    "descriptiveStats": [
+      {
+        "featureName": "team_budget",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 8723.292
+          },
+          {
+            "metricName": "stddev",
+            "value": 5238.943
+          },
+          {
+            "metricName": "min",
+            "value": 760.8729
+          },
+          {
+            "metricName": "max",
+            "value": 21319.533
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "average_position",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 50.489
+          },
+          {
+            "metricName": "stddev",
+            "value": 15.306195
+          },
+          {
+            "metricName": "min",
+            "value": 27.1
+          },
+          {
+            "metricName": "max",
+            "value": 80.35
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "sum_player_rating",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 71738.375
+          },
+          {
+            "metricName": "stddev",
+            "value": 118708.75
+          },
+          {
+            "metricName": "min",
+            "value": 15096.327
+          },
+          {
+            "metricName": "max",
+            "value": 719186.3
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "average_attendance",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 8669.394
+          },
+          {
+            "metricName": "stddev",
+            "value": 14232.309
+          },
+          {
+            "metricName": "min",
+            "value": 1038.5237
+          },
+          {
+            "metricName": "max",
+            "value": 92301.086
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "average_player_worth",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 734.5131
+          },
+          {
+            "metricName": "stddev",
+            "value": 1285.6472
+          },
+          {
+            "metricName": "min",
+            "value": 142.29665
+          },
+          {
+            "metricName": "max",
+            "value": 7920.4326
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "sum_player_worth",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 73451.31
+          },
+          {
+            "metricName": "stddev",
+            "value": 128564.73
+          },
+          {
+            "metricName": "min",
+            "value": 14229.664
+          },
+          {
+            "metricName": "max",
+            "value": 792043.25
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "sum_position",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 1009.78
+          },
+          {
+            "metricName": "stddev",
+            "value": 306.1239
+          },
+          {
+            "metricName": "min",
+            "value": 542.0
+          },
+          {
+            "metricName": "max",
+            "value": 1607.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "sum_attendance",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 173387.88
+          },
+          {
+            "metricName": "stddev",
+            "value": 284646.2
+          },
+          {
+            "metricName": "min",
+            "value": 20770.475
+          },
+          {
+            "metricName": "max",
+            "value": 1846021.8
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "average_player_rating",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 717.3837
+          },
+          {
+            "metricName": "stddev",
+            "value": 1187.0875
+          },
+          {
+            "metricName": "min",
+            "value": 150.96327
+          },
+          {
+            "metricName": "max",
+            "value": 7191.8633
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "team_position",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5
+          },
+          {
+            "metricName": "stddev",
+            "value": 14.57738
+          },
+          {
+            "metricName": "min",
+            "value": 1.0
+          },
+          {
+            "metricName": "max",
+            "value": 50.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "sum_player_age",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 2556.84
+          },
+          {
+            "metricName": "stddev",
+            "value": 52.29132
+          },
+          {
+            "metricName": "min",
+            "value": 2434.0
+          },
+          {
+            "metricName": "max",
+            "value": 2700.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      },
+      {
+        "featureName": "average_player_age",
+        "metricValues": [
+          {
+            "metricName": "count",
+            "value": 50.0
+          },
+          {
+            "metricName": "mean",
+            "value": 25.5684
+          },
+          {
+            "metricName": "stddev",
+            "value": 0.5229132
+          },
+          {
+            "metricName": "min",
+            "value": 24.34
+          },
+          {
+            "metricName": "max",
+            "value": 27.0
+          }
+        ],
+        "statisticType": "descriptiveStatistics"
+      }
+    ]
+  },
+  "featureCorrelationMatrix": {
+    "featureCorrelations": [
+      {
+        "featureName": "sum_attendance",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.02363627,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.5932929,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.050843555,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.0508434,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "sum_position",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.07394438,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": -0.54338133,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": -0.5433814,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 0.97596633,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.11956707,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.119566955,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "team_position",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.058723483,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 0.97596633,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": -0.6029558,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": -0.5932929,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": -0.5864697,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": -0.5864697,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 0.97596633,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": -0.5932929,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": -0.6029558,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.0953114,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.095311314,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "sum_player_worth",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.0077467053,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.5433814,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.5433814,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.5864697,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.029155757,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.029155612,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "sum_player_age",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": -0.084361605,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 0.11956704,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.010855612,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.050843555,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.029155757,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.029155757,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 0.11956707,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.050843555,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.010855618,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 0.0953114,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "team_budget",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 0.073944375,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.0073947664,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.023636265,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.0077467095,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.0077467053,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 0.07394438,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.02363627,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.007394771,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 0.058723483,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": -0.084361605,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": -0.08436157,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "sum_player_rating",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.0073947664,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.6029558,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.010855612,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.010855475,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "average_player_worth",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.0077467095,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.54338133,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.54338133,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.5864697,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.029155757,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.029155612,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "average_player_age",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": -0.08436157,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 0.119566925,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.010855475,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.0508434,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.029155612,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.029155612,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 0.119566955,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.0508434,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.010855481,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 0.095311314,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "average_attendance",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.023636265,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.9870134,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.5932929,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.050843555,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.0508434,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "average_position",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.073944375,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": -0.54338133,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": -0.5433814,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": -0.552213,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": 0.97596633,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.11956704,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.119566925,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      },
+      {
+        "featureName": "average_player_rating",
+        "correlationValues": [
+          {
+            "featureName": "team_budget",
+            "correlation": 0.007394771,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_position",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_rating",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_attendance",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_worth",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_worth",
+            "correlation": 0.998223,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_position",
+            "correlation": -0.56020284,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_attendance",
+            "correlation": 0.9822444,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_rating",
+            "correlation": 1.0,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "team_position",
+            "correlation": -0.6029558,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "sum_player_age",
+            "correlation": 0.010855618,
+            "statisticType": "featureCorrelations"
+          },
+          {
+            "featureName": "average_player_age",
+            "correlation": 0.010855481,
+            "statisticType": "featureCorrelations"
+          }
+        ]
+      }
+    ]
+  },
+  "features": [
+    {
+      "name": "team_budget",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "average_position",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "sum_player_rating",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "average_attendance",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "average_player_worth",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "sum_player_worth",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "sum_position",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "sum_attendance",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "average_player_rating",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "team_position",
+      "type": "INT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "sum_player_age",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    },
+    {
+      "name": "average_player_age",
+      "type": "FLOAT",
+      "description": "-",
+      "primary": false,
+      "partition": false
+    }
+  ],
+  "featuresHistogram": {
+    "featureDistributions": [
+      {
+        "featureName": "team_budget",
+        "frequencyDistribution": [
+          {
+            "bin": "760.8729248047",
+            "frequency": 7
+          },
+          {
+            "bin": "1788.8059387207",
+            "frequency": 2
+          },
+          {
+            "bin": "2816.7389526367",
+            "frequency": 3
+          },
+          {
+            "bin": "3844.6719665527",
+            "frequency": 2
+          },
+          {
+            "bin": "4872.6049804688",
+            "frequency": 2
+          },
+          {
+            "bin": "5900.5379943848",
+            "frequency": 2
+          },
+          {
+            "bin": "6928.4710083008",
+            "frequency": 3
+          },
+          {
+            "bin": "7956.4040222168",
+            "frequency": 4
+          },
+          {
+            "bin": "8984.3370361328",
+            "frequency": 4
+          },
+          {
+            "bin": "10012.2700500488",
+            "frequency": 2
+          },
+          {
+            "bin": "11040.2030639648",
+            "frequency": 3
+          },
+          {
+            "bin": "12068.1360778809",
+            "frequency": 8
+          },
+          {
+            "bin": "13096.0690917969",
+            "frequency": 1
+          },
+          {
+            "bin": "14124.0021057129",
+            "frequency": 3
+          },
+          {
+            "bin": "15151.9351196289",
+            "frequency": 1
+          },
+          {
+            "bin": "16179.8681335449",
+            "frequency": 1
+          },
+          {
+            "bin": "17207.8011474609",
+            "frequency": 0
+          },
+          {
+            "bin": "18235.734161377",
+            "frequency": 0
+          },
+          {
+            "bin": "19263.667175293",
+            "frequency": 0
+          },
+          {
+            "bin": "20291.600189209",
+            "frequency": 2
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "average_position",
+        "frequencyDistribution": [
+          {
+            "bin": "27.1000003815",
+            "frequency": 5
+          },
+          {
+            "bin": "29.7625002861",
+            "frequency": 5
+          },
+          {
+            "bin": "32.4250001907",
+            "frequency": 2
+          },
+          {
+            "bin": "35.0875000954",
+            "frequency": 2
+          },
+          {
+            "bin": "37.75",
+            "frequency": 2
+          },
+          {
+            "bin": "40.4124999046",
+            "frequency": 3
+          },
+          {
+            "bin": "43.0749998093",
+            "frequency": 1
+          },
+          {
+            "bin": "45.7374997139",
+            "frequency": 2
+          },
+          {
+            "bin": "48.3999996185",
+            "frequency": 1
+          },
+          {
+            "bin": "51.0624995232",
+            "frequency": 2
+          },
+          {
+            "bin": "53.7249994278",
+            "frequency": 4
+          },
+          {
+            "bin": "56.3874993324",
+            "frequency": 4
+          },
+          {
+            "bin": "59.0499992371",
+            "frequency": 4
+          },
+          {
+            "bin": "61.7124991417",
+            "frequency": 4
+          },
+          {
+            "bin": "64.3749990463",
+            "frequency": 3
+          },
+          {
+            "bin": "67.037498951",
+            "frequency": 0
+          },
+          {
+            "bin": "69.6999988556",
+            "frequency": 1
+          },
+          {
+            "bin": "72.3624987602",
+            "frequency": 3
+          },
+          {
+            "bin": "75.0249986649",
+            "frequency": 1
+          },
+          {
+            "bin": "77.6874985695",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "sum_player_rating",
+        "frequencyDistribution": [
+          {
+            "bin": "15096.3271484375",
+            "frequency": 35
+          },
+          {
+            "bin": "50300.8264160156",
+            "frequency": 6
+          },
+          {
+            "bin": "85505.3256835938",
+            "frequency": 2
+          },
+          {
+            "bin": "120709.8249511719",
+            "frequency": 2
+          },
+          {
+            "bin": "155914.32421875",
+            "frequency": 1
+          },
+          {
+            "bin": "191118.8234863281",
+            "frequency": 1
+          },
+          {
+            "bin": "226323.3227539062",
+            "frequency": 0
+          },
+          {
+            "bin": "261527.8220214844",
+            "frequency": 1
+          },
+          {
+            "bin": "296732.3212890625",
+            "frequency": 0
+          },
+          {
+            "bin": "331936.8205566406",
+            "frequency": 0
+          },
+          {
+            "bin": "367141.3198242188",
+            "frequency": 0
+          },
+          {
+            "bin": "402345.8190917969",
+            "frequency": 1
+          },
+          {
+            "bin": "437550.318359375",
+            "frequency": 0
+          },
+          {
+            "bin": "472754.8176269531",
+            "frequency": 0
+          },
+          {
+            "bin": "507959.3168945312",
+            "frequency": 0
+          },
+          {
+            "bin": "543163.8161621094",
+            "frequency": 0
+          },
+          {
+            "bin": "578368.3154296875",
+            "frequency": 0
+          },
+          {
+            "bin": "613572.8146972656",
+            "frequency": 0
+          },
+          {
+            "bin": "648777.3139648438",
+            "frequency": 0
+          },
+          {
+            "bin": "683981.8132324219",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "average_attendance",
+        "frequencyDistribution": [
+          {
+            "bin": "1038.5236816406",
+            "frequency": 32
+          },
+          {
+            "bin": "5601.6517944336",
+            "frequency": 10
+          },
+          {
+            "bin": "10164.7799072266",
+            "frequency": 2
+          },
+          {
+            "bin": "14727.9080200195",
+            "frequency": 0
+          },
+          {
+            "bin": "19291.0361328125",
+            "frequency": 2
+          },
+          {
+            "bin": "23854.1642456055",
+            "frequency": 1
+          },
+          {
+            "bin": "28417.2923583984",
+            "frequency": 1
+          },
+          {
+            "bin": "32980.4204711914",
+            "frequency": 1
+          },
+          {
+            "bin": "37543.5485839844",
+            "frequency": 0
+          },
+          {
+            "bin": "42106.6766967773",
+            "frequency": 0
+          },
+          {
+            "bin": "46669.8048095703",
+            "frequency": 0
+          },
+          {
+            "bin": "51232.9329223633",
+            "frequency": 0
+          },
+          {
+            "bin": "55796.0610351562",
+            "frequency": 0
+          },
+          {
+            "bin": "60359.1891479492",
+            "frequency": 0
+          },
+          {
+            "bin": "64922.3172607422",
+            "frequency": 0
+          },
+          {
+            "bin": "69485.4453735352",
+            "frequency": 0
+          },
+          {
+            "bin": "74048.5734863281",
+            "frequency": 0
+          },
+          {
+            "bin": "78611.7015991211",
+            "frequency": 0
+          },
+          {
+            "bin": "83174.8297119141",
+            "frequency": 0
+          },
+          {
+            "bin": "87737.957824707",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "average_player_worth",
+        "frequencyDistribution": [
+          {
+            "bin": "142.2966461182",
+            "frequency": 36
+          },
+          {
+            "bin": "531.2034446716",
+            "frequency": 6
+          },
+          {
+            "bin": "920.1102432251",
+            "frequency": 2
+          },
+          {
+            "bin": "1309.0170417786",
+            "frequency": 1
+          },
+          {
+            "bin": "1697.923840332",
+            "frequency": 1
+          },
+          {
+            "bin": "2086.8306388855",
+            "frequency": 1
+          },
+          {
+            "bin": "2475.737437439",
+            "frequency": 1
+          },
+          {
+            "bin": "2864.6442359924",
+            "frequency": 0
+          },
+          {
+            "bin": "3253.5510345459",
+            "frequency": 0
+          },
+          {
+            "bin": "3642.4578330994",
+            "frequency": 0
+          },
+          {
+            "bin": "4031.3646316528",
+            "frequency": 1
+          },
+          {
+            "bin": "4420.2714302063",
+            "frequency": 0
+          },
+          {
+            "bin": "4809.1782287598",
+            "frequency": 0
+          },
+          {
+            "bin": "5198.0850273132",
+            "frequency": 0
+          },
+          {
+            "bin": "5586.9918258667",
+            "frequency": 0
+          },
+          {
+            "bin": "5975.8986244202",
+            "frequency": 0
+          },
+          {
+            "bin": "6364.8054229736",
+            "frequency": 0
+          },
+          {
+            "bin": "6753.7122215271",
+            "frequency": 0
+          },
+          {
+            "bin": "7142.6190200806",
+            "frequency": 0
+          },
+          {
+            "bin": "7531.525818634",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "sum_player_worth",
+        "frequencyDistribution": [
+          {
+            "bin": "14229.6640625",
+            "frequency": 36
+          },
+          {
+            "bin": "53120.343359375",
+            "frequency": 6
+          },
+          {
+            "bin": "92011.02265625",
+            "frequency": 2
+          },
+          {
+            "bin": "130901.701953125",
+            "frequency": 1
+          },
+          {
+            "bin": "169792.38125",
+            "frequency": 1
+          },
+          {
+            "bin": "208683.060546875",
+            "frequency": 1
+          },
+          {
+            "bin": "247573.73984375",
+            "frequency": 1
+          },
+          {
+            "bin": "286464.419140625",
+            "frequency": 0
+          },
+          {
+            "bin": "325355.0984375",
+            "frequency": 0
+          },
+          {
+            "bin": "364245.777734375",
+            "frequency": 0
+          },
+          {
+            "bin": "403136.45703125",
+            "frequency": 1
+          },
+          {
+            "bin": "442027.136328125",
+            "frequency": 0
+          },
+          {
+            "bin": "480917.815625",
+            "frequency": 0
+          },
+          {
+            "bin": "519808.494921875",
+            "frequency": 0
+          },
+          {
+            "bin": "558699.17421875",
+            "frequency": 0
+          },
+          {
+            "bin": "597589.853515625",
+            "frequency": 0
+          },
+          {
+            "bin": "636480.5328125",
+            "frequency": 0
+          },
+          {
+            "bin": "675371.212109375",
+            "frequency": 0
+          },
+          {
+            "bin": "714261.8914062501",
+            "frequency": 0
+          },
+          {
+            "bin": "753152.570703125",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "sum_position",
+        "frequencyDistribution": [
+          {
+            "bin": "542.0",
+            "frequency": 5
+          },
+          {
+            "bin": "595.25",
+            "frequency": 5
+          },
+          {
+            "bin": "648.5",
+            "frequency": 2
+          },
+          {
+            "bin": "701.75",
+            "frequency": 2
+          },
+          {
+            "bin": "755.0",
+            "frequency": 2
+          },
+          {
+            "bin": "808.25",
+            "frequency": 3
+          },
+          {
+            "bin": "861.5",
+            "frequency": 1
+          },
+          {
+            "bin": "914.75",
+            "frequency": 2
+          },
+          {
+            "bin": "968.0",
+            "frequency": 1
+          },
+          {
+            "bin": "1021.25",
+            "frequency": 2
+          },
+          {
+            "bin": "1074.5",
+            "frequency": 4
+          },
+          {
+            "bin": "1127.75",
+            "frequency": 4
+          },
+          {
+            "bin": "1181.0",
+            "frequency": 4
+          },
+          {
+            "bin": "1234.25",
+            "frequency": 4
+          },
+          {
+            "bin": "1287.5",
+            "frequency": 3
+          },
+          {
+            "bin": "1340.75",
+            "frequency": 0
+          },
+          {
+            "bin": "1394.0",
+            "frequency": 1
+          },
+          {
+            "bin": "1447.25",
+            "frequency": 3
+          },
+          {
+            "bin": "1500.5",
+            "frequency": 1
+          },
+          {
+            "bin": "1553.75",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "sum_attendance",
+        "frequencyDistribution": [
+          {
+            "bin": "20770.474609375",
+            "frequency": 32
+          },
+          {
+            "bin": "112033.0383789062",
+            "frequency": 10
+          },
+          {
+            "bin": "203295.6021484375",
+            "frequency": 2
+          },
+          {
+            "bin": "294558.1659179687",
+            "frequency": 0
+          },
+          {
+            "bin": "385820.7296875",
+            "frequency": 2
+          },
+          {
+            "bin": "477083.2934570312",
+            "frequency": 1
+          },
+          {
+            "bin": "568345.8572265625",
+            "frequency": 1
+          },
+          {
+            "bin": "659608.4209960938",
+            "frequency": 1
+          },
+          {
+            "bin": "750870.984765625",
+            "frequency": 0
+          },
+          {
+            "bin": "842133.5485351562",
+            "frequency": 0
+          },
+          {
+            "bin": "933396.1123046875",
+            "frequency": 0
+          },
+          {
+            "bin": "1024658.6760742187",
+            "frequency": 0
+          },
+          {
+            "bin": "1115921.2398437499",
+            "frequency": 0
+          },
+          {
+            "bin": "1207183.8036132811",
+            "frequency": 0
+          },
+          {
+            "bin": "1298446.3673828125",
+            "frequency": 0
+          },
+          {
+            "bin": "1389708.9311523438",
+            "frequency": 0
+          },
+          {
+            "bin": "1480971.494921875",
+            "frequency": 0
+          },
+          {
+            "bin": "1572234.0586914062",
+            "frequency": 0
+          },
+          {
+            "bin": "1663496.6224609374",
+            "frequency": 0
+          },
+          {
+            "bin": "1754759.1862304688",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "average_player_rating",
+        "frequencyDistribution": [
+          {
+            "bin": "150.9632720947",
+            "frequency": 35
+          },
+          {
+            "bin": "503.0082725525",
+            "frequency": 6
+          },
+          {
+            "bin": "855.0532730103",
+            "frequency": 2
+          },
+          {
+            "bin": "1207.098273468",
+            "frequency": 2
+          },
+          {
+            "bin": "1559.1432739258",
+            "frequency": 1
+          },
+          {
+            "bin": "1911.1882743835",
+            "frequency": 1
+          },
+          {
+            "bin": "2263.2332748413",
+            "frequency": 0
+          },
+          {
+            "bin": "2615.2782752991",
+            "frequency": 1
+          },
+          {
+            "bin": "2967.3232757568",
+            "frequency": 0
+          },
+          {
+            "bin": "3319.3682762146",
+            "frequency": 0
+          },
+          {
+            "bin": "3671.4132766724",
+            "frequency": 0
+          },
+          {
+            "bin": "4023.4582771301",
+            "frequency": 1
+          },
+          {
+            "bin": "4375.5032775879",
+            "frequency": 0
+          },
+          {
+            "bin": "4727.5482780457",
+            "frequency": 0
+          },
+          {
+            "bin": "5079.5932785034",
+            "frequency": 0
+          },
+          {
+            "bin": "5431.6382789612",
+            "frequency": 0
+          },
+          {
+            "bin": "5783.6832794189",
+            "frequency": 0
+          },
+          {
+            "bin": "6135.7282798767",
+            "frequency": 0
+          },
+          {
+            "bin": "6487.7732803345",
+            "frequency": 0
+          },
+          {
+            "bin": "6839.8182807922",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "team_position",
+        "frequencyDistribution": [
+          {
+            "bin": "1.0",
+            "frequency": 3
+          },
+          {
+            "bin": "3.45",
+            "frequency": 2
+          },
+          {
+            "bin": "5.9",
+            "frequency": 3
+          },
+          {
+            "bin": "8.35",
+            "frequency": 2
+          },
+          {
+            "bin": "10.8",
+            "frequency": 3
+          },
+          {
+            "bin": "13.25",
+            "frequency": 2
+          },
+          {
+            "bin": "15.7",
+            "frequency": 3
+          },
+          {
+            "bin": "18.15",
+            "frequency": 2
+          },
+          {
+            "bin": "20.6",
+            "frequency": 3
+          },
+          {
+            "bin": "23.05",
+            "frequency": 2
+          },
+          {
+            "bin": "25.5",
+            "frequency": 2
+          },
+          {
+            "bin": "27.95",
+            "frequency": 3
+          },
+          {
+            "bin": "30.4",
+            "frequency": 2
+          },
+          {
+            "bin": "32.85",
+            "frequency": 3
+          },
+          {
+            "bin": "35.3",
+            "frequency": 2
+          },
+          {
+            "bin": "37.75",
+            "frequency": 3
+          },
+          {
+            "bin": "40.2",
+            "frequency": 2
+          },
+          {
+            "bin": "42.65",
+            "frequency": 3
+          },
+          {
+            "bin": "45.1",
+            "frequency": 2
+          },
+          {
+            "bin": "47.55",
+            "frequency": 3
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "sum_player_age",
+        "frequencyDistribution": [
+          {
+            "bin": "2434.0",
+            "frequency": 1
+          },
+          {
+            "bin": "2447.3",
+            "frequency": 1
+          },
+          {
+            "bin": "2460.6",
+            "frequency": 1
+          },
+          {
+            "bin": "2473.9",
+            "frequency": 2
+          },
+          {
+            "bin": "2487.2",
+            "frequency": 2
+          },
+          {
+            "bin": "2500.5",
+            "frequency": 3
+          },
+          {
+            "bin": "2513.8",
+            "frequency": 2
+          },
+          {
+            "bin": "2527.1",
+            "frequency": 6
+          },
+          {
+            "bin": "2540.4",
+            "frequency": 6
+          },
+          {
+            "bin": "2553.7",
+            "frequency": 4
+          },
+          {
+            "bin": "2567.0",
+            "frequency": 8
+          },
+          {
+            "bin": "2580.3",
+            "frequency": 5
+          },
+          {
+            "bin": "2593.6",
+            "frequency": 2
+          },
+          {
+            "bin": "2606.9",
+            "frequency": 2
+          },
+          {
+            "bin": "2620.2",
+            "frequency": 2
+          },
+          {
+            "bin": "2633.5",
+            "frequency": 1
+          },
+          {
+            "bin": "2646.8",
+            "frequency": 0
+          },
+          {
+            "bin": "2660.1",
+            "frequency": 1
+          },
+          {
+            "bin": "2673.4",
+            "frequency": 0
+          },
+          {
+            "bin": "2686.7",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      },
+      {
+        "featureName": "average_player_age",
+        "frequencyDistribution": [
+          {
+            "bin": "24.3400001526",
+            "frequency": 1
+          },
+          {
+            "bin": "24.473000145",
+            "frequency": 1
+          },
+          {
+            "bin": "24.6060001373",
+            "frequency": 1
+          },
+          {
+            "bin": "24.7390001297",
+            "frequency": 2
+          },
+          {
+            "bin": "24.8720001221",
+            "frequency": 2
+          },
+          {
+            "bin": "25.0050001144",
+            "frequency": 3
+          },
+          {
+            "bin": "25.1380001068",
+            "frequency": 2
+          },
+          {
+            "bin": "25.2710000992",
+            "frequency": 6
+          },
+          {
+            "bin": "25.4040000916",
+            "frequency": 6
+          },
+          {
+            "bin": "25.5370000839",
+            "frequency": 4
+          },
+          {
+            "bin": "25.6700000763",
+            "frequency": 8
+          },
+          {
+            "bin": "25.8030000687",
+            "frequency": 5
+          },
+          {
+            "bin": "25.936000061",
+            "frequency": 2
+          },
+          {
+            "bin": "26.0690000534",
+            "frequency": 2
+          },
+          {
+            "bin": "26.2020000458",
+            "frequency": 2
+          },
+          {
+            "bin": "26.3350000381",
+            "frequency": 1
+          },
+          {
+            "bin": "26.4680000305",
+            "frequency": 0
+          },
+          {
+            "bin": "26.6010000229",
+            "frequency": 1
+          },
+          {
+            "bin": "26.7340000153",
+            "frequency": 0
+          },
+          {
+            "bin": "26.8670000076",
+            "frequency": 1
+          }
+        ],
+        "statisticType": "featureDistributions"
+      }
+    ]
+  },
+  "featurestoreId": 1,
+  "featurestoreName": "demo_featurestore_admin000_featurestore",
+  "id": 1,
+  "inodeId": 100901,
+  "jobId": null,
+  "jobName": null,
+  "jobStatus": null,
+  "lastComputed": null,
+  "name": "team_position_prediction",
+  "version": 1,
+  "dataFormat": "tfrecords",
+  "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_1",
+  "size": 0
+}
