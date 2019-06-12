@@ -21,7 +21,7 @@ from hops.featurestore_impl.dao.statistics import Statistics
 from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.exceptions.exceptions import FeaturegroupNotFound, HiveDatabaseNotFound, \
     TrainingDatasetNotFound, CouldNotConvertDataframe, TFRecordSchemaNotFound, FeatureDistributionsNotComputed, \
-    FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed
+    FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed, HiveNotEnabled
 from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
 from hops.featurestore_impl.dao.training_dataset import TrainingDataset
 from hops.featurestore_impl.query_planner.logical_query_plan import LogicalQueryPlan
@@ -202,6 +202,7 @@ def _compute_dataframe_stats(spark_df, name, version=1, descriptive_statistics=T
     features_histograms_data = None
     cluster_analysis_data = None
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
 
     if spark_df.rdd.isEmpty():
         fs_utils._log("Cannot compute statistics on an empty dataframe, the provided dataframe is empty")
@@ -322,6 +323,7 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
 
     """
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     _use_featurestore(spark, featurestore)
     spark.sparkContext.setJobGroup("Fetching Feature",
                                    "Getting feature: {} from the featurestore {}".format(feature, featurestore))
@@ -368,6 +370,7 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
         :ValueError: when the provided write mode does not match the supported write modes (append and overwrite)
     """
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     sc = spark.sparkContext
     sqlContext = SQLContext(sc)
     sqlContext.setConf("hive.exec.dynamic.partition", "true")
@@ -420,6 +423,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
 
     """
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     _use_featurestore(spark, featurestore)
     spark.sparkContext.setJobGroup("Fetching Features",
                                    "Getting features: {} from the featurestore {}".format(features, featurestore))
@@ -471,6 +475,7 @@ def _do_get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1
 
     """
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     _use_featurestore(spark, featurestore)
     spark.sparkContext.setJobGroup("Fetching Featuregroup",
                                    "Getting feature group: {} from the featurestore {}".format(featuregroup,
@@ -510,10 +515,11 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
         hdfs_path = training_dataset.hdfs_path
     # abspath means "hdfs://namenode:port/ is preprended
     abspath = pydoop.path.abspath(hdfs_path)
-
     featureframe = FeatureFrame.get_featureframe(path=abspath, dataframe_type=dataframe_type,
                                                  data_format=data_format, training_dataset=training_dataset_name)
-    return featureframe.read_featureframe()
+    spark = util._find_spark()
+    _verify_hive_enabled(spark)
+    return featureframe.read_featureframe(spark)
 
 
 def _do_create_training_dataset(df, training_dataset, description="", featurestore=None,
@@ -595,6 +601,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                                  training_dataset=training_dataset,
                                                  petastorm_args=petastorm_args)
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
                                    "Saving training dataset in path: {} in format {}".format(hdfs_path, data_format))
     featureframe.write_featureframe()
@@ -676,6 +683,7 @@ def _do_insert_into_training_dataset(
                                                  data_format=data_format, df=spark_df, write_mode=write_mode,
                                                  training_dataset=training_dataset)
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
                                    "Saving training dataset in path: {} in format {}".format(hdfs_path, data_format))
     featureframe.write_featureframe()
@@ -800,6 +808,7 @@ def _do_get_featuregroup_partitions(featuregroup, featurestore=None, featuregrou
         a dataframe with the partitions of the featuregroup
      """
     spark = util._find_spark()
+    _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Fetching Partitions of a Featuregroup",
                                    "Getting partitions for feature group: {} from the featurestore {}".format(
                                        featuregroup, featurestore))
@@ -1128,6 +1137,27 @@ def _do_get_training_dataset_statistics(training_dataset_name, featurestore=None
     features_histogram_json = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM)
     feature_clusters = response_object.get(constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS)
     return Statistics(descriptive_stats_json, correlation_matrix_json, features_histogram_json, feature_clusters)
+
+
+def _verify_hive_enabled(spark):
+    """
+    Verifies that Hive is enabled on the given spark session.
+
+    Args:
+        :spark: the spark session to verfiy
+
+    Returns:
+         None
+
+    Raises:
+        :HiveNotEnabled: when hive is not enabled on the provided spark session
+    """
+    if not fs_utils._is_hive_enabled(spark):
+        raise HiveNotEnabled((
+            "Hopsworks Featurestore Depends on Hive. Hive is not enabled for the current spark session. "
+            "Make sure to enable hive before using the featurestore API."
+            " The current SparkSQL catalog implementation is: {}, it should be: {}".format(
+                fs_utils._get_spark_sql_catalog_impl(spark), constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE)))
 
 
 try:

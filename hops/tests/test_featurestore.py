@@ -1309,7 +1309,7 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_tsv_1",
                                                      dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                                      data_format=constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT)
-        df = featureframe.read_featureframe()
+        df = featureframe.read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1322,7 +1322,7 @@ class TestFeaturestoreSuite(object):
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_parquet_1",
                                       dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                       data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT)\
-            .read_featureframe()
+            .read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1336,7 +1336,7 @@ class TestFeaturestoreSuite(object):
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_avro_1",
                                            dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                            data_format=constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT)\
-            .read_featureframe()
+            .read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1348,7 +1348,7 @@ class TestFeaturestoreSuite(object):
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_orc_1",
                                            dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                            data_format=constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT)\
-            .read_featureframe()
+            .read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1360,7 +1360,7 @@ class TestFeaturestoreSuite(object):
         df = FeatureFrame.get_featureframe(path="./hops/tests/test_resources/mnist",
                                            dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                            data_format=constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT)\
-            .read_featureframe()
+            .read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1375,7 +1375,7 @@ class TestFeaturestoreSuite(object):
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_1",
                                            dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                            data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT)\
-            .read_featureframe()
+            .read_featureframe(spark)
         assert df.count() == df_compare.count()
 
 
@@ -1662,7 +1662,7 @@ class TestFeaturestoreSuite(object):
                                            constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX,
                                       data_format=constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_FORMAT, df=df_1,
                                       write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
-                                      petastorm_args=petastorm_args).write_featureframe()
+                                      petastorm_args=petastorm_args).write_featureframe(spark)
         df_2 = spark.read.parquet(
             "./training_datasets/test_write_hdfs_petastorm" + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX)
         assert df_1.count() == df_2.count()
@@ -2571,3 +2571,21 @@ class TestFeaturestoreSuite(object):
         with pytest.raises(DescriptiveStatisticsNotComputed) as ex:
             core._do_visualize_training_dataset_descriptive_stats("team_position_prediction")
             assert "descriptive statistics have not been computed for this training dataset" in ex.value
+
+
+    def test_is_hive_enabled(self):
+        """ Test _is_hive_enabled """
+        spark = self.spark_session()
+        assert fs_utils._is_hive_enabled(spark)
+
+
+    def test_get_spark_sql_catalog_impl(self):
+        """ Test _get_spark_sql_catalog_impl """
+        spark = self.spark_session()
+        assert fs_utils._get_spark_sql_catalog_impl(spark) == constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE
+
+
+    def test_verify_hive_enabled(self):
+        """ Test _verify_hive_enabled """
+        spark = self.spark_session()
+        core._verify_hive_enabled(spark)

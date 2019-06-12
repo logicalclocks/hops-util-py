@@ -151,6 +151,8 @@ class SPARK_CONFIG:
     SPARK_ARRAY_LONG = "array<long>"
     SPARK_ARRAY_BINARY = "array<binary>"
     SPARK_VECTOR = "vector"
+    SPARK_SQL_CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation"
+    SPARK_SQL_CATALOG_HIVE = "hive"
 
 class MODEL_SERVING:
     MODELS_DATASET = "Models"
