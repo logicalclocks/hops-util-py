@@ -2,6 +2,8 @@
 hops-util-py
 ============
 
+|Downloads| |PypiStatus| |PythonVersions|
+
 `hops-util-py` is a helper library for Hops that facilitates development by hiding the complexity of running applications, discovering services and interacting with HopsFS.
 
 It provides an Experiment API to run Python programs such as TensorFlow, Keras and PyTorch on a Hops Hadoop cluster. A TensorBoard will be started when an Experiment begins and the contents of the logdir saved in your Project.
@@ -219,9 +221,215 @@ Adding Python modules to a Jupyter notebook
     :figclass: align-center
 
 
+API for the Hopsworks Feature Store
+--------------------------------------------------------------------
+Hopsworks has a data management layer for machine learning, called a feature store.
+The feature store enables simple and efficient versioning, sharing, governance and definition of features that can be used to both train machine learning models or to serve inference requests.
+The featurestore serves as a natural interface between data engineering and data science.
+
+**Writing to the featurestore**:
+
+.. code-block:: python
+
+  raw_data = spark.read.format("csv").load(filename)
+  polynomial_features = raw_data.map(lambda x: x^2)
+  from hops import featurestore
+  featurestore.insert_into_featuregroup(polynomial_features, "polynomial_features")
+
+**Reading from the featurestore**:
+
+.. code-block:: python
+
+  from hops import featurestore
+  features_df = featurestore.get_features(["team_budget", "average_attendance", "average_player_age"])
+
+**Integration with Sci-kit Learn**:
+
+.. code-block:: python
+
+  from hops import featurestore
+  train_df = featurestore.get_featuregroup("iris_features", dataframe_type="pandas")
+  x_df = train_df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
+  y_df = train_df[["label"]]
+  X = x_df.values
+  y = y_df.values.ravel()
+  iris_knn = KNeighborsClassifier()
+  iris_knn.fit(X, y)
+
+**Integration with Tensorflow**:
+
+.. code-block:: python
+
+  from hops import featurestore
+  features_df = featurestore.get_features(
+      ["team_budget", "average_attendance", "average_player_age",
+      "team_position", "sum_attendance",
+       "average_player_rating", "average_player_worth", "sum_player_age",
+       "sum_player_rating", "sum_player_worth", "sum_position",
+       "average_position"
+      ]
+  )
+  featurestore.create_training_dataset(features_df, "team_position_prediction", data_format="tfrecords")
+
+  def create_tf_dataset():
+      dataset_dir = featurestore.get_training_dataset_path("team_position_prediction")
+      input_files = tf.gfile.Glob(dataset_dir + "/part-r-*")
+      dataset = tf.data.TFRecordDataset(input_files)
+      tf_record_schema = featurestore.get_training_dataset_tf_record_schema("team_position_prediction")
+      feature_names = ["team_budget", "average_attendance", "average_player_age", "sum_attendance",
+           "average_player_rating", "average_player_worth", "sum_player_age", "sum_player_rating", "sum_player_worth",
+           "sum_position", "average_position"
+          ]
+      label_name = "team_position"
+
+      def decode(example_proto):
+          example = tf.parse_single_example(example_proto, tf_record_schema)
+          x = []
+          for feature_name in feature_names:
+              x.append(example[feature_name])
+          y = [tf.cast(example[label_name], tf.float32)]
+          return x,y
+
+      dataset = dataset.map(decode).shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).repeat(NUM_EPOCHS)
+      return dataset
+  tf_dataset = create_tf_dataset()
+
+**Integration with PyTorch**:
+
+.. code-block:: python
+
+  from hops import featurestore
+  df_train=...
+  featurestore.create_training_dataset(df_train, "MNIST_train_petastorm", data_format="petastorm")
+
+  from petastorm.pytorch import DataLoader
+  train_dataset_path = featurestore.get_training_dataset_path("MNIST_train_petastorm")
+  device = torch.device('cuda' if use_cuda else 'cpu')
+  with DataLoader(make_reader(train_dataset_path, num_epochs=5, hdfs_driver='libhdfs', batch_size=64) as train_loader:
+          model.train()
+          for batch_idx, row in enumerate(train_loader):
+              data, target = row['image'].to(device), row['digit'].to(device)
+
+**Feature Visualizations**:
+
+.. _feature_plots1.png: imgs/feature_plots1.png
+.. figure:: imgs/feature_plots1.png
+    :alt: Visualizing feature distributions
+    :target: `feature_plots1.png`_
+    :align: center
+    :scale: 75 %
+    :figclass: align-center
+
+
+.. _feature_plots2.png: imgs/feature_plots2.png
+.. figure:: imgs/feature_plots2.png
+    :alt: Visualizing feature correlations
+    :target: `feature_plots2.png`_
+    :align: center
+    :scale: 75 %
+    :figclass: align-center
+
+Model Serving API
+--------------------------------------------------------------------
+
+In the `serving` module you can find an API for creating/starting/stopping/updating models being served on Hopsworks as well as making inference requests.
+
+.. code-block:: python
+
+  from hops import serving
+
+  # Tensorflow
+  export_path = work_dir + '/model'
+  builder = tf.saved_model.builder.SavedModelBuilder(export_path
+  ... # tf specific export code
+  serving.export(export_path, "mnist", 1, overwrite=True)
+  model_path="/Models/mnist/"
+  SERVING_NAME="mnist"
+  serving.create_or_update(model_path, "mnist", serving_type="TENSORFLOW", model_version=1)
+  if serving.get_status("mnist") == 'Stopped':
+      serving.start("mnist")
+  data = {"signature_name": 'predict_images', "instances": [np.random.rand(784).tolist()]}
+  response = serving.make_inference_request(SERVING_NAME, data)
+
+   # SkLearn
+  script_path = "Jupyter/Serving/sklearn/iris_flower_classifier.py"
+  serving.export(script_path, "irisClassifier", 1, overwrite=True)
+  if serving.exists("irisClassifier"):
+      serving.delete("irisClassifier")
+  serving.create_or_update(script_path, "irisClassifier", serving_type="SKLEARN", model_version=1)
+  serving.start("irisClassifier")
+  data = {"inputs" : [[random.uniform(1, 8) for i in range(NUM_FEATURES)]]}
+  response = serving.make_inference_request(SERVING_NAME, data)
+
+Kafka API
+--------------------------------------------------------------------
+
+In the `kafka` module you can find an API to interact with kafka topics in Hopsworks.
+
+.. code-block:: python
+
+  from hops import kafka, serving
+  from confluent_kafka import Producer, Consumer, KafkaError
+  TOPIC_NAME = serving.get_kafka_topic(SERVING_NAME) # get inference logs
+  config = kafka.get_kafka_default_config()
+  config['default.topic.config'] = {'auto.offset.reset': 'earliest'}
+  consumer = Consumer(config)
+  topics = [TOPIC_NAME]
+  consumer.subscribe(topics)
+  json_schema = kafka.get_schema(TOPIC_NAME)
+  avro_schema = kafka.convert_json_schema_to_avro(json_schema)
+  msg = consumer.poll(timeout=1.0)
+  value = msg.value()
+  event_dict = kafka.parse_avro_msg(value, avro_schema)
+
+
+HDFS API
+--------------------------------------------------------------------
+
+In the `hdfs` module you can find a high-level API for interacting with the distributed file system
+
+.. code-block:: python
+
+  from hops import hdfs
+  hdfs.ls("Logs/")
+  hdfs.cp("Resources/test.txt", "Logs/")
+  hdfs.mkdir("Logs/test_dir")
+  hdfs.rmr("Logs/test_dir")
+  hdfs.move("Logs/README_dump_test.md", "Logs/README_dump_test2.md")
+  hdfs.chmod("Logs/README.md", 700)
+  hdfs.exists("Logs/")
+  hdfs.copy_to_hdfs("test.txt", "Resources", overwrite=True)
+  hdfs.copy_to_local("Resources/test.txt", overwrite=True)
+
+Experiment API
+--------------------------------------------------------------------
+
+In the `experiment` module you can find an API for launching reproducible machine learning experiments.
+Standalone experiments, distributed experiments, hyperparameter tuning and many more are supported.
+
+.. code-block:: python
+
+  from hops import experiment
+  log_dir, best_params = experiment.differential_evolution(
+      train_fn,
+      search_dict,
+      name='team_position_prediction_hyperparam_search',
+      description='Evolutionary search through the search space of hyperparameters with parallel executors to find the best parameters',
+      local_logdir=True,
+      population=4,
+      generations = 1
+  )
+
 
 References
 --------------
 
 - https://github.com/logicalclocks/hops-examples/blob/master/tensorflow/notebooks/Plotting/data_visualizations.ipynb
 - https://github.com/jupyter-incubator/sparkmagic/blob/master/examples/Magics%20in%20IPython%20Kernel.ipynb
+
+.. |Downloads| image:: https://pepy.tech/badge/hops
+   :target: https://pepy.tech/project/hops
+.. |PypiStatus| image:: https://img.shields.io/pypi/v/hops.svg
+    :target: https://pypi.org/project/hops
+.. |PythonVersions| image:: https://img.shields.io/pypi/pyversions/hops.svg
+    :target: https://travis-ci.org/hops
