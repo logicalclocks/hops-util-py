@@ -61,3 +61,10 @@ class DescriptiveStatisticsNotComputed(Exception):
     This exception will be raised if the user tries to visualize feature clusters
     for a feature group or training dataset for which the clusters have not been computed
     """
+
+
+class HiveNotEnabled(Exception):
+    """
+    This exception will be raised if the user tries to peform featurestore operations using SparkSQL when
+    hive is not enabled.
+    """

@@ -881,3 +881,29 @@ def _matplotlib_magic_reminder():
 
     """
     _log("Remember to add %%matplotlib inline when doing visualizations in Jupyter notebooks")
+
+
+def _is_hive_enabled(spark):
+    """
+    Checks whether Hive is enabled for a given spark session\
+
+    Args:
+         :spark: the spark session to verify
+
+    Returns:
+        true if hive is enabled, otherwise false
+    """
+    return _get_spark_sql_catalog_impl(spark) == constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE
+
+
+def _get_spark_sql_catalog_impl(spark):
+    """
+    Gets the sparkSQL catalog implementatin of a given spark session
+
+    Args:
+         :spark: the spark session to get the SQL catalog implementation of
+
+    Returns:
+        the sparkSQL catalog implementation of the spark session
+    """
+    return dict(spark.sparkContext._conf.getAll())[constants.SPARK_CONFIG.SPARK_SQL_CATALOG_IMPLEMENTATION]

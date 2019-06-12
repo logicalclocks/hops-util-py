@@ -110,9 +110,12 @@ class AvroFeatureFrame(FeatureFrame):
         super(AvroFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in avro format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -120,7 +123,6 @@ class AvroFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(self.path)
         elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
@@ -155,9 +157,12 @@ class ORCFeatureFrame(FeatureFrame):
         super(ORCFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in orc format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -165,7 +170,6 @@ class ORCFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(self.path)
         elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
@@ -200,9 +204,12 @@ class TFRecordsFeatureFrame(FeatureFrame):
 
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
-         Reads a training dataset in tfrecords format from HopsFS
+        Reads a training dataset in tfrecords format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -210,7 +217,6 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -258,9 +264,12 @@ class NumpyFeatureFrame(FeatureFrame):
         super(NumpyFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in numpy format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -269,7 +278,6 @@ class NumpyFeatureFrame(FeatureFrame):
               :TrainingDatasetNotFound: if the requested training dataset could not be found
               :CouldNotConvertDataframe: if the numpy dataset could not be converted to a spark dataframe
         """
-        spark = util._find_spark()
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
             raise TrainingDatasetNotFound("Could not find a training dataset in file {}".format(
                 self.path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
@@ -340,9 +348,12 @@ class HDF5FeatureFrame(FeatureFrame):
         super(HDF5FeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in hdf5 format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -351,7 +362,6 @@ class HDF5FeatureFrame(FeatureFrame):
               :TrainingDatasetNotFound: if the requested training dataset could not be found
               :CouldNotConvertDataframe: if the hdf5 dataset could not be converted to a spark dataframe
         """
-        spark = util._find_spark()
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
             raise TrainingDatasetNotFound("Could not find a training dataset in file {}".format(
                 self.path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
@@ -428,9 +438,12 @@ class PetastormFeatureFrame(FeatureFrame):
         super(PetastormFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in petastorm format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -438,7 +451,6 @@ class PetastormFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.parquet(self.path)
         elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
@@ -451,9 +463,12 @@ class PetastormFeatureFrame(FeatureFrame):
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
-    def write_featureframe(self):
+    def write_featureframe(self, spark):
         """
         Writes a dataframe of data as a training dataset on HDFS in the petastorm format
+
+        Args:
+            :spark: the spark session
 
         Returns:
             None
@@ -461,7 +476,6 @@ class PetastormFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if not petastorm schema was provided
         """
-        spark = util._find_spark()
         if constants.PETASTORM_CONFIG.SCHEMA in self.petastorm_args:
             schema = self.petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
             del self.petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
@@ -489,9 +503,12 @@ class ImageFeatureFrame(FeatureFrame):
         super(ImageFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in image format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -499,7 +516,6 @@ class ImageFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(self.path)
         elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
@@ -542,9 +558,12 @@ class ParquetFeatureFrame(FeatureFrame):
         super(ParquetFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in Parquet format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -552,7 +571,6 @@ class ParquetFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.parquet(self.path)
         elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
@@ -589,9 +607,12 @@ class TSVFeatureFrame(FeatureFrame):
         super(TSVFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in TSV format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -599,7 +620,6 @@ class TSVFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
                 constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
@@ -644,9 +664,12 @@ class CSVFeatureFrame(FeatureFrame):
         super(CSVFeatureFrame, self).__init__(**kwargs)
 
 
-    def read_featureframe(self):
+    def read_featureframe(self, spark):
         """
         Reads a training dataset in CSV format from HopsFS
+
+        Args:
+            :spark: the spark session
 
         Returns:
             dataframe with the data of the training dataset
@@ -654,7 +677,6 @@ class CSVFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        spark = util._find_spark()
         if hdfs.exists(self.path):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
                 constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(

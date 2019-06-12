@@ -348,6 +348,7 @@ def sql(query, featurestore=None, dataframe_type="spark"):
     if featurestore is None:
         featurestore = project_featurestore()
     spark = util._find_spark()
+    core._verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Running SQL query against feature store",
                                    "Running query: {} on the featurestore {}".format(query, featurestore))
     core._use_featurestore(spark, featurestore)
