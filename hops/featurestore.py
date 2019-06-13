@@ -1074,8 +1074,8 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
     """
     Gets the partitions of a featuregroup
 
-     Example usage:
-     >>> partitions = featurestore.get_featuregroup_partitions("trx_summary_features")
+    Example usage:
+    >>> partitions = featurestore.get_featuregroup_partitions("trx_summary_features")
     >>> #You can also explicitly define version, featurestore and type of the returned dataframe:
     >>> featurestore.get_featuregroup_partitions("trx_summary_features",
     >>>                                          featurestore=featurestore.project_featurestore(),

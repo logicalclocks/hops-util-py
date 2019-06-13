@@ -39,7 +39,8 @@ setup(
             'pytest',
         ],
         'spark': ['pyspark==2.4.0'],
-        'plotting': ['matplotlib', 'seaborn']
+        'plotting': ['matplotlib', 'seaborn'],
+        'pynvm': ['nvidia-ml-py']
     },
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
