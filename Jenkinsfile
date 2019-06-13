@@ -61,9 +61,9 @@ pipeline {
 
         if [ `printf '%s\n' "\$version" "\$current_version" | sort -V | tail -1` == \$current_version ];
         then
-          scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py;
-        else
           echo "Ignored"
+        else
+          scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py;
         fi
         """
       }
