@@ -22,10 +22,7 @@ def exists(serving_name):
     Example use-case:
 
     >>> from hops import serving
-    >>> if serving.exist(serving_name):
-    >>>    serving.create_or_update(...., update=True)
-    >>> else:
-    >>>    serving.create_or_update(...., update=False)
+    >>> serving.exist(serving_name)
 
     Args:
         :serving_name: the name of the serving

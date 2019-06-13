@@ -35,13 +35,13 @@ ADD hops /hops/hops
 RUN python3.6 -m pip install pip --upgrade
 RUN python3.6 -m pip install wheel
 RUN python3.6 -m venv /hops_venv3.6
-RUN /hops_venv3.6/bin/pip3.6 install -e /hops/[docs,tf,test,spark,plotting] # install dependencies
+RUN /hops_venv3.6/bin/pip3.6 install -e /hops/[docs,tf,test,spark,plotting,pynvml] # install dependencies
 RUN /hops_venv3.6/bin/pip3.6 uninstall -y hops # uninstall hops since we will use the latest source when running tests
 
 # Set up Python2 environment
 RUN virtualenv /hops_venv2.7
 RUN python2.7 -m pip install pip --upgrade
-RUN /hops_venv2.7/bin/pip2.7 install -e /hops/[docs,tf,test,spark,plotting] # install dependencies
+RUN /hops_venv2.7/bin/pip2.7 install -e /hops/[docs,tf,test,spark,plotting,pynvml] # install dependencies
 RUN /hops_venv2.7/bin/pip2.7 uninstall -y hops # uninstall hops since we will use the latest source when running tests
 
 # Clean up temporary files and make room for mounted hops dir
