@@ -12,9 +12,9 @@ pipeline {
         sh """
         if [ ! -d $WORKSPACE/../hops-util-py-env ];
         then
-          virtualenv --python=/usr/bin/python $WORKSPACE/../hops-util-py-env    
+          virtualenv --python=/usr/bin/python $WORKSPACE/../hops-util-py-env
         fi
-	$WORKSPACE/../hops-util-py-env/bin/pip install twine sphinx sphinx-autobuild recommonmark sphinx_rtd_theme jupyter_sphinx_theme hops
+	$WORKSPACE/../hops-util-py-env/bin/pip install twine sphinx sphinx-autobuild recommonmark sphinx_rtd_theme jupyter_sphinx_theme hops readme_renderer[md]
         rm -rf dist/*
         """
       }
