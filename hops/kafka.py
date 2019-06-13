@@ -51,8 +51,9 @@ Similarly, you can define a pyspark kafka consumer as follows, using the spark s
 import os
 from hops import constants, tls, util, hdfs
 import json
+import sys
 
-# avro only officially supported in python 2.7
+# for backwards compatibility
 try:
     from ast import literal_eval
     from io import BytesIO
@@ -161,7 +162,12 @@ def convert_json_schema_to_avro(json_schema):
     Returns:
          the avro schema
     """
-    return avro.schema.parse(literal_eval(json.dumps(json_schema["contents"])))
+    if sys.version_info > (3, 0): # for python 3
+        return avro.schema.Parse(literal_eval(json.dumps(json_schema["contents"])))
+    else: # for python 2
+        return avro.schema.parse(literal_eval(json.dumps(json_schema["contents"])))
+
+
 
 
 class KafkaTopicDTO(object):
