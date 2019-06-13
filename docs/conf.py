@@ -47,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'hops-util-py'
-copyright = '2018, Logical Clocks AB'
+copyright = '2019, Logical Clocks AB'
 author = 'Logical Clocks AB'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -169,9 +169,9 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-autodoc_mock_imports = ["pyspark", "pydoop", "pydoop.hdfs", "jks", "IPython", "IPython.core.display", "tensorflow", "hopsfacets"]
+autodoc_mock_imports = ["pyspark", "pydoop", "pydoop.hdfs", "jks", "IPython", "IPython.core.display", "tensorflow", "hopsfacets", "pynvml"]
 
-exclude_patterns = ["distribute/"]
+exclude_patterns = ["distribute/", "featurestore_impl"]
 
 autodoc_default_options = {
     'members': None,
