@@ -32,9 +32,9 @@ Sample usage:
 >>>                   versioned_resources=[notebook]
 
 
--------------
+------------------------
 Development Instructions
--------------
+------------------------
 
 For development details such as how to test and build docs, see this reference: Development_.
 
