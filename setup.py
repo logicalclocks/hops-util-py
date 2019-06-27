@@ -52,7 +52,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     long_description=read('README.rst'),
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Topic :: Utilities',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2.7',
