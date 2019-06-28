@@ -39,6 +39,9 @@ class Reservations:
       if self.remaining() == 0:
         #Sort the cluster_spec based on ip so adjacent workers end up on same machine
         self.reservations["cluster"]["worker"].sort(key=lambda x:str(x.split(':')[0]))
+        chief = self.reservations["cluster"]["worker"][0]
+        self.reservations["cluster"]["chief"] = [chief]
+        del self.reservations["cluster"]["worker"][0]
         self.check_done = True
 
   def done(self):
