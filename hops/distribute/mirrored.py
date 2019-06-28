@@ -126,7 +126,10 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
 
             task_index = _find_index(host_port, cluster)
 
-            cluster["task"] = {"type": "worker", "index": task_index}
+            if task_index == -1:
+                cluster["task"] = {"type": "chief", "index": 0}
+            else:
+                cluster["task"] = {"type": "worker", "index": task_index}
 
             print(cluster)
 
@@ -228,3 +231,4 @@ def _find_index(host_port, cluster_spec):
             return index
         else:
             index = index + 1
+    return -1
