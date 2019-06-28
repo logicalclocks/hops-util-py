@@ -197,7 +197,7 @@ def _start_or_stop_serving_rest(serving_id, action):
 
 def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", model_version=1,
                              batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
-                             update = False):
+                             instances = 1, update = False):
     """
     Creates or updates a serving in Hopsworks
 
@@ -213,6 +213,8 @@ def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", mod
         :model_version: version of the model to serve
         :batching_enabled: boolean flag whether to enable batching for the inference requests
         :update: boolean flag whether to update existing serving, otherwise it will try to create a new serving
+        :instances: the number of serving instances (the more instances the more inference requests can
+        be served in parallel)
 
     Returns:
           None
@@ -222,16 +224,16 @@ def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", mod
         serving_id = get_id(serving_name)
     artifact_path = hdfs._expand_path(artifact_path)
     _validate_user_serving_input(artifact_path, serving_name, serving_type, model_version, batching_enabled,
-                                 num_partitions, num_replicas)
+                                 num_partitions, num_replicas, instances)
     artifact_path = hdfs.get_plain_path(artifact_path)
     print("Creating a serving for model {} ...".format(serving_name))
     _create_or_update_serving_rest(artifact_path, serving_name, serving_type, model_version, batching_enabled,
-                                   topic_name, num_partitions, num_replicas, serving_id)
+                                   topic_name, num_partitions, num_replicas, serving_id, instances)
     print("Serving for model {} successfully created".format(serving_name))
 
 
 def _validate_user_serving_input(model_path, model_name, serving_type, model_version, batching_enabled,
-                                 num_partitions, num_replicas):
+                                 num_partitions, num_replicas, instances):
     """
     Validate user input on the client side before sending REST call to Hopsworks (additional validation will be done
     in the backend)
@@ -244,6 +246,8 @@ def _validate_user_serving_input(model_path, model_name, serving_type, model_ver
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
         :num_partitions: kafka partitions
         :num_replicas: kafka replicas
+        :instances: the number of serving instances (the more instances the more inference requests can
+                    be served in parallel)
 
     Returns:
         None
@@ -273,11 +277,14 @@ def _validate_user_serving_input(model_path, model_name, serving_type, model_ver
         if not isinstance(batching_enabled, bool):
             raise ValueError("Batching enabled must be a boolean, the provided value "
                              "is not: {}".format(batching_enabled))
+    if not isinstance(instances, int):
+        raise ValueError("The number of serving instances must be an integer, "
+                         "the provided version is not: {}".format(instances))
 
 
 def _create_or_update_serving_rest(model_path, model_name, serving_type, model_version,
-                                   batching_enabled = None,
-                                   topic_name=None,  num_partitions = None, num_replicas = None, serving_id = None):
+                                   batching_enabled = None, topic_name=None,  num_partitions = None,
+                                   num_replicas = None, serving_id = None, instances=1):
     """
     Makes a REST request to Hopsworks for creating or updating a model serving instance
 
@@ -291,6 +298,8 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
         :num_partitions: kafka partitions
         :num_replicas: kafka replicas
         :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
+        :instances: the number of serving instances (the more instances the more inference requests can
+        be served in parallel)
 
     Returns:
         None
@@ -307,7 +316,8 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
             constants.REST_CONFIG.JSON_KAFKA_TOPIC_NAME: topic_name,
             constants.REST_CONFIG.JSON_KAFKA_NUM_PARTITIONS: num_partitions,
             constants.REST_CONFIG.JSON_KAFKA_NUM_REPLICAS: num_replicas
-        }
+        },
+        constants.REST_CONFIG.JSON_SERVING_REQUESTED_INSTANCES: instances,
     }
     if serving_id is not None:
         json_contents[constants.REST_CONFIG.JSON_SERVING_ID] = serving_id
