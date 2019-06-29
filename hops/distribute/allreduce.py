@@ -135,35 +135,35 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr):
 
             os.environ["TF_CONFIG"] = json.dumps(cluster)
 
-            if task_index == 0:
+            if task_index == -1:
                 hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'collective_all_reduce')
                 pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
                 hopshdfs._init_logger()
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
             gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
-            if task_index == 0:
+            if task_index == -1:
                 hopshdfs.log(gpu_str)
             print(gpu_str)
             print('-------------------------------------------------------')
             print('Started running task \n')
-            if task_index == 0:
+            if task_index == -1:
                 hopshdfs.log('Started running task')
             task_start = datetime.datetime.now()
 
             retval = map_fun()
-            if task_index == 0:
+            if task_index == -1:
                 if retval:
                     _handle_return(retval, hdfs_exec_logdir)
             task_end = datetime.datetime.now()
             time_str = 'Finished task - took ' + util._time_diff(task_start, task_end)
             print('\n' + time_str)
             print('-------------------------------------------------------')
-            if task_index == 0:
+            if task_index == -1:
                 hopshdfs.log(time_str)
         except:
             raise
         finally:
-            if task_index == 0:
+            if task_index == -1:
                 if local_logdir:
                     local_tb = tensorboard.local_logdir_path
                     util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
