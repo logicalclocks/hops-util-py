@@ -463,12 +463,9 @@ class PetastormFeatureFrame(FeatureFrame):
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
-    def write_featureframe(self, spark):
+    def write_featureframe(self):
         """
         Writes a dataframe of data as a training dataset on HDFS in the petastorm format
-
-        Args:
-            :spark: the spark session
 
         Returns:
             None
@@ -476,6 +473,7 @@ class PetastormFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if not petastorm schema was provided
         """
+        spark = util._find_spark()
         if constants.PETASTORM_CONFIG.SCHEMA in self.petastorm_args:
             schema = self.petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
             del self.petastorm_args[constants.PETASTORM_CONFIG.SCHEMA]
