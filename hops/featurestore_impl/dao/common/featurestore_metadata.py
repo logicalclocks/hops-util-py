@@ -1,7 +1,11 @@
 from hops import constants
-from hops.featurestore_impl.dao.training_dataset import TrainingDataset
-from hops.featurestore_impl.dao.featuregroup import Featuregroup
-from hops.featurestore_impl.dao.featurestore import Featurestore
+from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
+from hops.featurestore_impl.dao.featuregroups.featuregroup import Featuregroup
+from hops.featurestore_impl.dao.featurestore.featurestore import Featurestore
+from hops.featurestore_impl.dao.settings.featurestore_settings import FeaturestoreSettings
+from hops.featurestore_impl.dao.storageconnectors.hopsfs_connector import HopsfsStorageConnector
+from hops.featurestore_impl.dao.storageconnectors.jdbc_connector import JDBCStorageConnector
+from hops.featurestore_impl.dao.storageconnectors.s3_connector import S3StorageConnector
 from hops.featurestore_impl.util import fs_utils
 
 class FeaturestoreMetadata(object):
@@ -17,12 +21,15 @@ class FeaturestoreMetadata(object):
         Args:
             :metadata_json: JSON metadata about the featurestore returned from Hopsworks REST API
         """
-        featuregroups, training_datasets, features_to_featuregroups, featurestore = \
+        featuregroups, training_datasets, features_to_featuregroups, featurestore, settings, storage_connectors = \
             self._parse_featurestore_metadata(metadata_json)
         self.featuregroups = featuregroups
         self.training_datasets = training_datasets
         self.features_to_featuregroups = features_to_featuregroups
         self.featurestore = featurestore
+        self.settings = settings
+        self.storage_connectors = storage_connectors
+        constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS = settings.training_dataset_formats
 
 
     def _parse_featurestore_metadata(self, metadata_json):
@@ -40,6 +47,7 @@ class FeaturestoreMetadata(object):
         featuregroups = {}
         training_datasets = {}
         features_to_featuregroups = {}
+        storage_connectors = {}
         for fg in metadata_json[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
             featuregroups[fs_utils._get_table_name(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_NAME],
                                                      fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION])] = \
@@ -53,5 +61,19 @@ class FeaturestoreMetadata(object):
             training_datasets[fs_utils._get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
                                                          td[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION])] = \
                 TrainingDataset(td)
+
+        settings = FeaturestoreSettings(metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS])
+        for sc in metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE_STORAGE_CONNECTORS]:
+            if sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_TYPE] == \
+                    settings.jdbc_connector_type:
+                storage_connectors[sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_NAME]] = \
+                    JDBCStorageConnector(sc)
+            if sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_TYPE] == \
+                    settings.s3_connector_type:
+                storage_connectors[sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_NAME]] = S3StorageConnector(sc)
+            if sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_TYPE] == \
+                    settings.hopsfs_connector_type:
+                storage_connectors[sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_NAME]] = \
+                    HopsfsStorageConnector(sc)
         featurestore = Featurestore(metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE])
-        return featuregroups, training_datasets, features_to_featuregroups, featurestore
+        return featuregroups, training_datasets, features_to_featuregroups, featurestore, settings, storage_connectors

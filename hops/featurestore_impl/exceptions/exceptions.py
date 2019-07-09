@@ -68,3 +68,12 @@ class HiveNotEnabled(Exception):
     This exception will be raised if the user tries to peform featurestore operations using SparkSQL when
     hive is not enabled.
     """
+
+class StatisticsComputationError(Exception):
+    """
+    This exception will be raised if there is an error computing the statistics of a feature group or
+    training dataset
+    """
+
+class StorageConnectorNotFound(Exception):
+    """This exception will be raised if a requested storage connector cannot be found"""

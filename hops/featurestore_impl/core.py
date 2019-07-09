@@ -16,23 +16,27 @@ Module hierarchy of featurestore implementation:
              ----visualizations
 """
 
+import json
+
+import pydoop.hdfs as pydoop
+
 from hops import constants, util, hdfs
-from hops.featurestore_impl.dao.statistics import Statistics
-from hops.featurestore_impl.rest import rest_rpc
+from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
+from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
+from hops.featurestore_impl.dao.featuregroups.featuregroup import Featuregroup
+from hops.featurestore_impl.dao.stats.statistics import Statistics
 from hops.featurestore_impl.exceptions.exceptions import FeaturegroupNotFound, HiveDatabaseNotFound, \
     TrainingDatasetNotFound, CouldNotConvertDataframe, TFRecordSchemaNotFound, FeatureDistributionsNotComputed, \
-    FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed, HiveNotEnabled
-from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
-from hops.featurestore_impl.dao.training_dataset import TrainingDataset
-from hops.featurestore_impl.query_planner.logical_query_plan import LogicalQueryPlan
+    FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed, HiveNotEnabled, \
+    StorageConnectorNotFound
+from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
+from hops.featurestore_impl.query_planner import query_planner
 from hops.featurestore_impl.query_planner.f_query import FeatureQuery, FeaturesQuery
 from hops.featurestore_impl.query_planner.fg_query import FeaturegroupQuery
-from hops.featurestore_impl.query_planner import query_planner
+from hops.featurestore_impl.query_planner.logical_query_plan import LogicalQueryPlan
+from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.util import fs_utils
-from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
 from hops.featurestore_impl.visualizations import statistics_plots
-import pydoop.hdfs as pydoop
-import json
 
 # for backwards compatibility
 try:
@@ -302,6 +306,37 @@ def _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version):
                                                                               featurestore))
 
 
+def _do_get_storage_connector(storage_connector_name, featurestore):
+    """
+    Looks up the metadata of a storage connector given a name
+
+    Args:
+        :storage_connector_name: the storage connector name
+        :featurestore: the featurestore to query
+
+    Returns:
+        the id of the featuregroup
+
+    Raises:
+        :FeaturegroupNotFound: when the requested featuregroup could not be found in the metadata
+    """
+    metadata = _get_featurestore_metadata(featurestore, update_cache=False)
+    if metadata is None or featurestore != metadata.featurestore:
+        metadata = _get_featurestore_metadata(featurestore, update_cache=True)
+    try:
+        return metadata.storage_connectors[storage_connector_name]
+    except:
+        try:
+            # Retry with updated metadata
+            metadata = _get_featurestore_metadata(featurestore, update_cache=True)
+        except KeyError:
+            storage_connector_names = list(map(lambda sc: sc.name, metadata.storage_connectors))
+        raise StorageConnectorNotFound("Could not find the requested storage connector with name: {} " \
+                                      ", among the list of available storage connectors: {}".format(
+            storage_connector_name,
+            storage_connector_names))
+
+
 def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregroup=None, featuregroup_version=1,
                     dataframe_type="spark"):
     """
@@ -508,14 +543,18 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
                                                             training_dataset_version)
-    hdfs_path = training_dataset.hdfs_path + \
-                constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
     data_format = training_dataset.data_format
-    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-        hdfs_path = training_dataset.hdfs_path
-    # abspath means "hdfs://namenode:port/ is preprended
-    abspath = pydoop.path.abspath(hdfs_path)
-    featureframe = FeatureFrame.get_featureframe(path=abspath, dataframe_type=dataframe_type,
+    if training_dataset.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
+        hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path + \
+                    constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
+            hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path
+        # abspath means "hdfs://namenode:port/ is preprended
+        path = pydoop.path.abspath(hdfs_path)
+    else:
+        path = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket
+
+    featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
                                                  data_format=data_format, training_dataset=training_dataset_name)
     spark = util._find_spark()
     _verify_hive_enabled(spark)
@@ -524,9 +563,10 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
 
 def _do_create_training_dataset(df, training_dataset, description="", featurestore=None,
                                 data_format="tfrecords", training_dataset_version=1,
-                                job_name=None, dependencies=[], descriptive_statistics=True, feature_correlation=True,
+                                job_name=None, descriptive_statistics=True, feature_correlation=True,
                                 feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                                corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True):
+                                corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True,
+                                storage_connector = None):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -539,8 +579,6 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         :data_format: the format of the materialized training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :job_name: the name of the job to compute the training dataset
-        :dependencies: list of the datasets that this training dataset depends on (e.g input datasets to the
-                        feature engineering job)
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
                                 for the featuregroup
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
@@ -555,6 +593,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         :petastorm_args: a dict containing petastorm parameters for serializing a dataset in the
                          petastorm format. Required parameters are: 'schema'
         :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
+        :storage_connector: the storage connector where the training dataset is stored
 
     Returns:
         None
@@ -570,8 +609,9 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             "to save it to the Feature Store, error: {}".format(
                 str(e)))
 
-    fs_utils._validate_metadata(training_dataset, spark_df.dtypes, dependencies, description)
-
+    if storage_connector is None:
+        storage_connector = _do_get_storage_connector(fs_utils._do_get_project_training_datasets_sink(), featurestore)
+    fs_utils._validate_metadata(training_dataset, spark_df.dtypes, description)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, training_dataset, version=training_dataset_version,
@@ -582,33 +622,164 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             num_clusters=num_clusters)
     features_schema = _parse_spark_features_schema(spark_df.schema, None)
     featurestore_id = _get_featurestore_id(featurestore)
+    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
+    hopsfs_connector_id = None
+    s3_connector_id = None
+    if storage_connector.type == featurestore_metadata.settings.hopsfs_connector_type:
+        external = False
+        hopsfs_connector_id = storage_connector.id
+    else:
+        external = True
+        s3_connector_id = storage_connector.id
+    training_dataset_type, training_dataset_type_dto = \
+        fs_utils._get_training_dataset_type_info(featurestore_metadata, external)
     td_json = rest_rpc._create_training_dataset_rest(
         training_dataset, featurestore_id, description, training_dataset_version,
-        data_format, job_name, dependencies, features_schema,
-        feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data)
-    hdfs_path = pydoop.path.abspath(td_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH])
-    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        try:
-            tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
-            fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
-        except Exception as e:
-            fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+        data_format, job_name, features_schema, feature_corr_data, training_dataset_desc_stats_data,
+        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_type_dto,
+    featurestore_metadata.settings, hopsfs_connector_id=hopsfs_connector_id, s3_connector_id=s3_connector_id)
+    td = TrainingDataset(td_json)
+    if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
+        path = pydoop.path.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+            try:
+                tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
+                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+            except Exception as e:
+                fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
 
-    featureframe = FeatureFrame.get_featureframe(path=hdfs_path +
-                                                      constants.DELIMITERS.SLASH_DELIMITER + training_dataset,
-                                                 data_format=data_format, df=spark_df,
-                                                 write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                                 training_dataset=training_dataset,
-                                                 petastorm_args=petastorm_args)
+        featureframe = FeatureFrame.get_featureframe(path=path +
+                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+                                                     data_format=data_format, df=spark_df,
+                                                     write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
+                                                     training_dataset=td.name,
+                                                     petastorm_args=petastorm_args)
+    else:
+        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket
+        featureframe = FeatureFrame.get_featureframe(path=path +
+                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+                                                     data_format=data_format, df=spark_df,
+                                                     write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
+                                                     training_dataset=td.name,
+                                                     petastorm_args=petastorm_args)
     spark = util._find_spark()
-    _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
-                                   "Saving training dataset in path: {} in format {}".format(hdfs_path, data_format))
+                                   "Saving training dataset in path: {} in format {}".format(path, data_format))
     featureframe.write_featureframe()
     spark.sparkContext.setJobGroup("", "")
     # update metadata cache
     _get_featurestore_metadata(featurestore, update_cache=True)
     fs_utils._log("Training Dataset created successfully")
+
+
+def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spark_df = None, featuregroup_version=1,
+                                  featurestore=None, descriptive_statistics=True,
+                                  feature_correlation=True, feature_histograms=True, cluster_analysis=True,
+                                  stat_columns=None, num_bins=20, num_clusters=5, corr_method='pearson'):
+    """
+    Args:
+         :featuregroup_name: name of the featuregroup to update the statistics for
+         :featurestore_metadata: metadata of the featurestore
+         :spark_df: if not None, use this dataframe to compute the statistics, otherwise read the feature group
+         :featuregroup_version: the version of the featuregroup (defaults to 1)
+         :featurestore: the featurestore where the featuregroup resides (defaults to the project's featurestore)
+         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
+                                 for the featuregroup
+         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
+                              in the featuregroup
+         :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+         :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
+                           featuregroup
+         :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+         :num_bins: number of bins to use for computing histograms
+         :num_clusters: the number of clusters to use in clustering analysis (k-means)
+         :corr_method: the method to compute feature correlation with (pearson or spearman)
+
+    Returns:
+         DTO of the created feature group
+    """
+    if featurestore is None:
+        featurestore = fs_utils._do_get_project_featurestore()
+
+    if spark_df is None:
+        spark_df = _do_get_featuregroup(featuregroup_name, featurestore, featuregroup_version,
+                                        dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
+
+    fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
+
+    feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
+        _compute_dataframe_stats(spark_df,
+                                 featuregroup_name, version=featuregroup_version,
+                                 descriptive_statistics=descriptive_statistics,
+                                 feature_correlation=feature_correlation,
+                                 feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
+                                 stat_columns=stat_columns,
+                                 num_bins=num_bins, corr_method=corr_method,
+                                 num_clusters=num_clusters)
+    featuregroup_id = fg.id
+    featurestore_id = featurestore_metadata.featurestore.id
+    featuregroup_type, featuregroup_type_dto = fs_utils._get_featuregroup_type_info(
+        featurestore_metadata,
+        on_demand=(fg.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE))
+    featuregroup = Featuregroup(rest_rpc._update_featuregroup_stats_rest(
+        featuregroup_id, featurestore_id, featuregroup_name, featuregroup_version, feature_corr_data,
+        featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data, featuregroup_type,
+        featuregroup_type_dto))
+    return featuregroup
+
+
+
+def _do_update_training_dataset_stats(training_dataset_name, featurestore_metadata, spark_df = None, featurestore=None,
+                                      training_dataset_version=1, descriptive_statistics=True, feature_correlation=True,
+                                      feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
+                                      corr_method='pearson', num_clusters=5):
+    """
+    Args:
+         :training_dataset_name: the training dataset to update the statistics for
+         :featurestore_metadata: metadata of the feature store
+         :spark_df: if not None, use this dataframe to compute the statistics, otherwise read the training dataset
+         :featurestore: the featurestore where the training dataset resides (defaults to the project's featurestore)
+         :training_dataset_version: the version of the training dataset (defaults to 1)
+         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for
+                                 the featuregroup
+         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
+                              in the featuregroup
+         :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+         :cluster_analysis:   a boolean flag whether to compute cluster analysis for the numeric columns in
+                           the featuregroup
+         :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+         :num_bins: number of bins to use for computing histograms
+         :corr_method: the method to compute feature correlation with (pearson or spearman)
+         :num_clusters: the number of clusters to use in clustering analysis (k-means)
+
+    Returns:
+         DTO of the created training dataset
+    """
+    if spark_df is None:
+        spark_df = _do_get_training_dataset(training_dataset_name, featurestore_metadata,
+                             training_dataset_version=training_dataset_version,
+                             dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
+    training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
+                                                            training_dataset_name, training_dataset_version)
+    feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
+        _compute_dataframe_stats(
+            spark_df, training_dataset_name, version=training_dataset_version,
+            descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
+            feature_histograms=feature_histograms, cluster_analysis=cluster_analysis, stat_columns=stat_columns,
+            num_bins=num_bins, corr_method=corr_method,
+            num_clusters=num_clusters)
+    features_schema = _parse_spark_features_schema(spark_df.schema, None)
+    training_dataset_id = training_dataset.id
+    featurestore_id = featurestore_metadata.featurestore.id
+    training_dataset_type, training_dataset_type_dto = \
+        fs_utils._get_training_dataset_type_info(featurestore_metadata,
+                                             external=(training_dataset.training_dataset_type ==
+                                                       featurestore_metadata.settings.external_training_dataset_type))
+    td = TrainingDataset(rest_rpc._update_training_dataset_stats_rest(
+        training_dataset_name, training_dataset_id, featurestore_id, training_dataset_version,
+        features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
+        cluster_analysis_data, training_dataset_type, training_dataset_type_dto))
+    return td;
 
 
 def _do_insert_into_training_dataset(
@@ -654,38 +825,38 @@ def _do_insert_into_training_dataset(
 
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
-    training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
-                                                            training_dataset_name, training_dataset_version)
-    feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
-        _compute_dataframe_stats(
-            spark_df, training_dataset_name, version=training_dataset_version,
-            descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
-            feature_histograms=feature_histograms, cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-            num_bins=num_bins, corr_method=corr_method,
-            num_clusters=num_clusters)
-    features_schema = _parse_spark_features_schema(spark_df.schema, None)
-    training_dataset_id = _get_training_dataset_id(featurestore, training_dataset_name, training_dataset_version)
-    featurestore_id = _get_featurestore_id(featurestore)
-    td = TrainingDataset(rest_rpc._update_training_dataset_stats_rest(
-        training_dataset_name, training_dataset_id, featurestore_id, training_dataset_version,
-        features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
-        cluster_analysis_data))
-    hdfs_path = pydoop.path.abspath(td.hdfs_path)
-    data_format = training_dataset.data_format
-    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
-        try:
-            tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed)[1]
-            fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, hdfs_path)
-        except Exception as e:
-            fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
-    featureframe = FeatureFrame.get_featureframe(path=hdfs_path +
-                                                      constants.DELIMITERS.SLASH_DELIMITER + training_dataset_name,
-                                                 data_format=data_format, df=spark_df, write_mode=write_mode,
-                                                 training_dataset=training_dataset)
+
+    td = _do_update_training_dataset_stats(training_dataset_name, featurestore_metadata, spark_df=spark_df,
+                                      featurestore=featurestore, training_dataset_version=training_dataset_version,
+                                      descriptive_statistics=descriptive_statistics,
+                                      feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                      cluster_analysis=cluster_analysis, stat_columns=stat_columns,num_bins=num_bins,
+                                      corr_method=corr_method, num_clusters=num_clusters)
+    data_format = td.data_format
+    if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
+        path = pydoop.path.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+            try:
+                tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
+                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+            except Exception as e:
+                fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+
+        featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
+                                                     data_format=data_format, df=spark_df,
+                                                     write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
+                                                     training_dataset=td.name)
+    else:
+        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket
+        featureframe = FeatureFrame.get_featureframe(path=path +
+                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+                                                     data_format=data_format, df=spark_df,
+                                                     write_mode=write_mode,
+                                                     training_dataset=td.name)
     spark = util._find_spark()
     _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
-                                   "Saving training dataset in path: {} in format {}".format(hdfs_path, data_format))
+                                   "Saving training dataset in path: {} in format {}".format(path, data_format))
     featureframe.write_featureframe()
     spark.sparkContext.setJobGroup("", "")
 
@@ -748,7 +919,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
                                                             training_dataset_version)
-    hdfs_path = training_dataset.hdfs_path + \
+    hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
     data_format = training_dataset.data_format
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
@@ -756,7 +927,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
         hdfs_path = hdfs_path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-        hdfs_path = training_dataset.hdfs_path
+        hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path
     # abspath means "hdfs://namenode:port/ is preprended
     abspath = pydoop.path.abspath(hdfs_path)
     return abspath
@@ -787,7 +958,7 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(
                 training_dataset.data_format))
-    hdfs_path = pydoop.path.abspath(training_dataset.hdfs_path)
+    hdfs_path = pydoop.path.abspath(training_dataset.hopsfs_training_dataset.hdfs_store_path)
     tf_record_json_schema = json.loads(hdfs.load(
         hdfs_path + constants.DELIMITERS.SLASH_DELIMITER +
         constants.FEATURE_STORE.TRAINING_DATASET_TF_RECORD_SCHEMA_FILE_NAME))

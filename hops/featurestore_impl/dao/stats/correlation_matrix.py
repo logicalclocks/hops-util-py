@@ -1,5 +1,5 @@
 from hops import constants
-from hops.featurestore_impl.dao.feature_correlation import FeatureCorrelation
+from hops.featurestore_impl.dao.stats.feature_correlation import FeatureCorrelation
 
 
 class CorrelationMatrix(object):

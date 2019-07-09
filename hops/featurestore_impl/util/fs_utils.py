@@ -592,7 +592,7 @@ def _convert_dataframe_to_spark(dataframe):
             type(dataframe)))
 
 
-def _validate_metadata(name, dtypes, dependencies, description):
+def _validate_metadata(name, dtypes, description):
     """
     Function for validating metadata when creating new feature groups and training datasets.
     Raises and assertion exception if there is some error in the metadata.
@@ -600,7 +600,6 @@ def _validate_metadata(name, dtypes, dependencies, description):
     Args:
         :name: the name of the feature group/training dataset
         :dtypes: the dtypes in the provided spark dataframe
-        :dependencies: the list of data dependencies
         :description: the description
 
     Returns:
@@ -622,10 +621,6 @@ def _validate_metadata(name, dtypes, dependencies, description):
             raise ValueError("Name of feature column cannot be empty, cannot exceed 767 characters,"
                              " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
                              "feature name: {} is not valid".format(dtype[0]))
-
-    if not len(set(dependencies)) == len(dependencies):
-        dependencies_str = ",".join(dependencies)
-        raise ValueError("The list of data dependencies contains duplicates: {}".format(dependencies_str))
 
     if len(description) > 2000:
         raise ValueError(
@@ -857,6 +852,19 @@ def _do_get_project_featurestore():
     return featurestore_name
 
 
+def _do_get_project_training_datasets_sink():
+    """
+    Gets the project's default location for storing training datasets in HopsFS
+
+    Returns:
+        the project's default hopsfs location for storing training datasets
+
+    """
+    project_name = hdfs.project_name()
+    training_datasets_sink = project_name.lower() + constants.FEATURE_STORE.TRAINING_DATASETS_SUFFIX
+    return training_datasets_sink
+
+
 def _visualization_validation_warning():
     """
     Checks whether the user is trying to do visualization inside a livy session and prints a warning message
@@ -907,3 +915,43 @@ def _get_spark_sql_catalog_impl(spark):
         the sparkSQL catalog implementation of the spark session
     """
     return dict(spark.sparkContext._conf.getAll())[constants.SPARK_CONFIG.SPARK_SQL_CATALOG_IMPLEMENTATION]
+
+
+def _get_featuregroup_type_info(featurestore_metadata, on_demand = False):
+    """
+    Gets the type information of a feature group that the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+         :on_demand: whether it is an on-demand featuregroup or not
+
+    Returns:
+        the type information of the feature group, tuple of (type, dtotype)
+    """
+    if on_demand:
+        featuregroup_type = featurestore_metadata.settings.on_demand_featuregroup_type
+        featuregroup_type_dto = featurestore_metadata.settings.on_demand_featuregroup_dto_type
+    else:
+        featuregroup_type = featurestore_metadata.settings.cached_featuregroup_type
+        featuregroup_type_dto = featurestore_metadata.settings.cached_featuregroup_dto_type
+    return featuregroup_type, featuregroup_type_dto
+
+
+def _get_training_dataset_type_info(featurestore_metadata, external=False):
+    """
+    Gets the type information of a training datasetthat the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+         :external: whether it is an external featuregroup or not
+
+    Returns:
+        the type information of the training dataset, tuple of (type, dtotype)
+    """
+    if external:
+        training_dataset_type = featurestore_metadata.settings.external_training_dataset_type
+        training_dataset_type_dto = featurestore_metadata.settings.external_training_dataset_dto_type
+    else:
+        training_dataset_type = featurestore_metadata.settings.hopsfs_training_dataset_type
+        training_dataset_type_dto = featurestore_metadata.settings.hopsfs_training_dataset_dto_type
+    return training_dataset_type, training_dataset_type_dto

@@ -10,26 +10,26 @@ HDFS/integration with hopsworks is not tested. The tests are structured as follo
 """
 
 # Regular imports (do not need to be mocked and are not dependent on mocked imports)
-import tensorflow as tf
-import pytest
-import mock
+import json
 import logging
-from petastorm.unischema import Unischema, UnischemaField
-from petastorm.codecs import ScalarCodec
-from pyspark.sql import SQLContext, SparkSession, DataFrame
-from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, ArrayType
-import pandas as pd
-import numpy as np
-import pyspark
+import os
+import shutil
 from random import choice
 from string import ascii_uppercase
-import json
-import os
-import h5py
-import shutil
 
-# Mocked imports and modules that depends on mocked imports
-from hops.featurestore_impl.dao.statistics import Statistics
+import h5py
+import mock
+import numpy as np
+import pandas as pd
+import pyspark
+import pytest
+import tensorflow as tf
+from petastorm.codecs import ScalarCodec
+from petastorm.unischema import Unischema, UnischemaField
+from pyspark.sql import SQLContext, SparkSession, DataFrame
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, ArrayType
+
+from hops.featurestore_impl.dao.stats.statistics import Statistics
 
 orig_import = __import__
 pydoop_mock = mock.Mock()
@@ -56,7 +56,7 @@ if (sys.version_info > (3, 0)):
         from hops import hdfs, featurestore, constants, util, tls
         from hops.featurestore_impl.util import fs_utils
         from hops.featurestore_impl import core
-        from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
+        from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
         from hops.featurestore_impl.dao.featuregroup import Featuregroup
         from hops.featurestore_impl.dao.training_dataset import TrainingDataset
         from hops.featurestore_impl.dao.feature import Feature
@@ -77,7 +77,7 @@ else:
         from hops import hdfs, featurestore, constants, util, tls
         from hops.featurestore_impl.util import fs_utils
         from hops.featurestore_impl import core
-        from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
+        from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
         from hops.featurestore_impl.dao.featuregroup import Featuregroup
         from hops.featurestore_impl.dao.training_dataset import TrainingDataset
         from hops.featurestore_impl.dao.feature import Feature
@@ -515,43 +515,31 @@ class TestFeaturestoreSuite(object):
         """ Test the validate_metadata() function"""
         fs_utils._validate_metadata("test",
                                 [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                ["input1", "input2"],
                                         "description")
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test-",
                                     [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
                                             "description")
             assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                     [],
-                                    ["input1", "input2"],
                                             "description")
             assert "Cannot create a feature group from an empty spark dataframe" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                     [('team_budget-', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
                                             "description")
             assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                     [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
                                             "description")
             assert "Name of feature column cannot be empty" in ex.value
-        with pytest.raises(ValueError) as ex:
-            fs_utils._validate_metadata("test",
-                                    [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input1"],
-                                            "description")
-            assert "The list of data dependencies contains duplicates" in ex.value
         description = ''.join(choice(ascii_uppercase) for i in range(3000))
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                     [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input1"],
                                     description)
             assert "Feature group/Training dataset description should " \
                    "not exceed the maximum length of 2000 characters" in ex.value
@@ -1872,7 +1860,6 @@ class TestFeaturestoreSuite(object):
             constants.REST_CONFIG.JSON_TRAINING_DATASET_CREATOR: "admin@kth.se",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_CREATED: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION: "",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES: [],
             constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES: [],
             constants.REST_CONFIG.JSON_TRAINING_DATASET_LAST_COMPUTED: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_INODE_ID: "-",

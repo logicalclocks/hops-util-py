@@ -1,5 +1,5 @@
 from hops import constants
-from hops.featurestore_impl.dao.histogram_bin import HistogramBin
+from hops.featurestore_impl.dao.stats.histogram_bin import HistogramBin
 
 
 class FeatureHistogram(object):

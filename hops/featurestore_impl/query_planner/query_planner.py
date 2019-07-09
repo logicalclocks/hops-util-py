@@ -4,7 +4,7 @@ Query Planner functions for inferring how to perform user queries to the feature
 
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl.exceptions.exceptions import FeatureNotFound, FeatureNameCollisionError, InferJoinKeyError, \
-    TrainingDatasetNotFound
+    TrainingDatasetNotFound, FeaturegroupNotFound
 
 
 def _find_featuregroup_that_contains_feature(featuregroups, feature):
@@ -195,3 +195,34 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
             training_dataset_version,
             training_dataset_names))
 
+
+
+def _find_featuregroup(featuregroups, featuregroup_name, featuregroup_version):
+    """
+    A helper function to look for a training dataset name and version in a list of training datasets
+
+    Args:
+        :featuregroups: a list of featuregroup metadata in the feature store
+        :featuregroup_name: name of the feature group
+        :featuregroup_version: version of the feature group
+
+    Returns:
+        The feature group if it finds it, otherwise exception
+
+    Raises:
+        :TrainingDatasetNotFound: if the requested training dataset could not be found
+    """
+    try:
+        return featuregroups[fs_utils._get_table_name(featuregroup_name, featuregroup_version)]
+    except KeyError:
+        featuregroup_names = list(map(lambda fg: fs_utils._get_table_name(fg.name, fg.version),
+                                      featuregroups.values()))
+        raise FeaturegroupNotFound("Could not find the requested feature group with name: {} " \
+                                      "and version: {} among the list of available feature groups: {}".format(
+            featuregroup_name,
+            featuregroup_version,
+            featuregroup_names))
+
+
+def _find_training_dataset_sink(sink_name, storage_connectors):
+    pass
