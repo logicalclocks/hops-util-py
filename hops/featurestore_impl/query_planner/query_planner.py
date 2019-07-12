@@ -222,7 +222,3 @@ def _find_featuregroup(featuregroups, featuregroup_name, featuregroup_version):
             featuregroup_name,
             featuregroup_version,
             featuregroup_names))
-
-
-def _find_training_dataset_sink(sink_name, storage_connectors):
-    pass

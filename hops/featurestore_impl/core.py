@@ -552,12 +552,13 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
         # abspath means "hdfs://namenode:port/ is preprended
         path = pydoop.path.abspath(hdfs_path)
     else:
-        path = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket
+        path = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket \
+                + constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(training_dataset.name,
+                                                                                  training_dataset.version)
 
     featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
                                                  data_format=data_format, training_dataset=training_dataset_name)
     spark = util._find_spark()
-    _verify_hive_enabled(spark)
     return featureframe.read_featureframe(spark)
 
 
@@ -655,7 +656,8 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                                      training_dataset=td.name,
                                                      petastorm_args=petastorm_args)
     else:
-        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket
+        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket + \
+               constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(td.name, td.version)
         featureframe = FeatureFrame.get_featureframe(path=path +
                                                           constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
@@ -847,7 +849,8 @@ def _do_insert_into_training_dataset(
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
                                                      training_dataset=td.name)
     else:
-        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket
+        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket + \
+               constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(td.name, td.version)
         featureframe = FeatureFrame.get_featureframe(path=path +
                                                           constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,

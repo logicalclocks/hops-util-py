@@ -389,8 +389,6 @@ def _update_training_dataset_stats_rest(
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA: features_schema,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_METADATA: False,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_UPDATE_STATS: True,
                      constants.REST_CONFIG.JSON_TYPE: training_dataset_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type
                      }
