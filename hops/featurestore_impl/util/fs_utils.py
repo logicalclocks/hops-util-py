@@ -11,7 +11,7 @@ import pandas as pd
 import math
 import re
 import os
-
+import pydoop.hdfs as pydoop
 
 # for backwards compatibility
 try:
@@ -955,3 +955,30 @@ def _get_training_dataset_type_info(featurestore_metadata, external=False):
         training_dataset_type = featurestore_metadata.settings.hopsfs_training_dataset_type
         training_dataset_type_dto = featurestore_metadata.settings.hopsfs_training_dataset_dto_type
     return training_dataset_type, training_dataset_type_dto
+
+
+def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, data_format):
+    """
+    Utility function for getting the hopsfs path of a training dataset in the feature store
+
+    Args:
+        :training_dataset_name: name of the training dataset
+        :hdfs_store_path: the hdfs path to the dataset where all the training datasets are stored
+        :data_format: data format of the training datataset
+
+    Return:
+        the hdfs path to the training dataset
+    """
+    hdfs_path = hdfs_store_path + \
+                constants.DELIMITERS.SLASH_DELIMITER + training_dataset_name
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
+        hdfs_path = hdfs_store_path
+    # abspath means "hdfs://namenode:port/ is preprended
+    path = pydoop.path.abspath(hdfs_path)
+    return path
+
+
+def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket):
+    path = bucket + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name,
+                                                                           training_dataset_version)
+    return path

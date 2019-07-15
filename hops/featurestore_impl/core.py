@@ -543,21 +543,18 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
                                                             training_dataset_version)
-    data_format = training_dataset.data_format
     if training_dataset.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path + \
-                    constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
-        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-            hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path
-        # abspath means "hdfs://namenode:port/ is preprended
-        path = pydoop.path.abspath(hdfs_path)
+        path = fs_utils._get_hopsfs_training_dataset_path(training_dataset.name,
+                                                          training_dataset.hopsfs_training_dataset.hdfs_store_path,
+                                                          training_dataset.data_format)
     else:
-        path = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket \
-                + constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(training_dataset.name,
-                                                                                  training_dataset.version)
+        path = fs_utils._get_external_training_dataset_path(
+            training_dataset.name, training_dataset.version,
+            _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket)
 
     featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
-                                                 data_format=data_format, training_dataset=training_dataset_name)
+                                                 data_format=training_dataset.data_format,
+                                                 training_dataset=training_dataset_name)
     spark = util._find_spark()
     return featureframe.read_featureframe(spark)
 
