@@ -8,6 +8,7 @@ import time
 import threading
 import os
 from pynvml import *
+import fnmatch
 
 def _get_gpu_info():
     """
@@ -39,7 +40,7 @@ def _get_gpu_info():
             except:
                 pass
     elif _count_rocm_gpus() > 0 and not 'HIP_VISIBLE_DEVICES' in os.environ:
-        return subprocess.check_output(["/opt/rocm/bin/rocm-smi", "--showallinfo"]).decode("utf-8")
+        return subprocess.check_output(["/opt/rocm/bin/rocm-smi", "--showallinfo"], shell=True).decode("utf-8")
     else:
         return '\nCould not find any GPUs accessible for the container\n'
 
@@ -81,7 +82,7 @@ def _get_rocm_gpu_util():
     """
     gpu_str = ''
     try:
-        gpu_info = subprocess.check_output(["/opt/rocm/bin/rocm-smi", "--showuse"]).decode("utf-8")
+        gpu_info = subprocess.check_output(["/opt/rocm/bin/rocm-smi", "--showuse"], shell=True).decode("utf-8")
     except Exception as err:
         print(err)
         return gpu_str
@@ -95,13 +96,16 @@ def _print_periodic_gpu_utilization():
 
     """
     t = threading.currentThread()
-    rocm_gpu = _count_rocm_gpus()
     nvidia_gpu = _count_nvidia_gpus()
+    rocm_gpu = 0
+    # rocm-smi does not ignore GPUs and will show all of them so rely on environment variable
+    if nvidia_gpu == 0:
+        rocm_gpu = _count_rocm_gpus()
     while getattr(t, "do_run", True):
         time.sleep(10)
         if nvidia_gpu > 0:
             print(_get_nvidia_gpu_util())
-        elif rocm_gpu > 0 and not 'HIP_VISIBLE_DEVICES' in os.environ:
+        elif rocm_gpu > 0:
             print(_get_rocm_gpu_util())
 
 def _count_nvidia_gpus():
@@ -118,25 +122,26 @@ def _count_nvidia_gpus():
             pass
 
 def _count_rocm_gpus():
-    """ Get the number of GPUs available in the environment and consequently by the application
-    Assuming there is one GPU in the environment
-    >>> from hops import devices
-    >>> devices.get_num_gpus()
-    >>> 1
-    Returns:
-        Number of GPUs available in the environment
-    """
     try:
-        gpu_info = subprocess.check_output(["/opt/rocm/bin/rocm-smi -i | grep GPU"]).decode("utf-8")
-        gpu_info = gpu_info.split('\n')
+        if 'EXECUTOR_GPUS' in os.environ: # Exported 0 on driver and num_gpus on executor
+            return int(os.environ['EXECUTOR_GPUS'])
+        elif os.path.exists('/opt/rocm/bin/rocm-smi') and os.path.exists('/sys/module/amdgpu/drivers/pci:amdgpu'):
+            num_gpus = 0
+            root = '/sys/module/amdgpu/drivers/pci:amdgpu'
+            contents =  os.listdir(root)
+            gpu_pci_folders = fnmatch.filter(contents, '*:*:*.*')
+            for gpu_pci_folder in gpu_pci_folders:
+                if os.path.exists(root + '/' + gpu_pci_folder + '/drm'):
+                    drm = os.listdir(root + '/' + gpu_pci_folder + '/drm')
+                    cards = fnmatch.filter(drm, 'card*')
+                    num_gpus = num_gpus + len(cards)
+            return num_gpus
+        else:
+            return 0
     except Exception as err:
-        return 0
+        print(err)
+    return 0
 
-    count = 0
-    for line in gpu_info:
-        if len(line) > 0:
-            count += 1
-    return count
 
 def get_num_gpus():
     """ Get the number of GPUs available in the environment and consequently by the application
@@ -149,7 +154,10 @@ def get_num_gpus():
     """
     try:
         num_nvidia_gpus = _count_nvidia_gpus()
-        num_rocm_gpus = _count_rocm_gpus()
+        num_rocm_gpus = 0
+        # rocm-smi does not ignore GPUs and will show all of them so rely on environment variable
+        if num_nvidia_gpus == 0:
+            num_rocm_gpus = _count_rocm_gpus()
         return max(num_rocm_gpus, num_nvidia_gpus)
     except Exception as err:
         return 0
