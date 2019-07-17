@@ -15,7 +15,6 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
-        'hopsfacets',
         'pyjks',
         'pathlib',
         'pyhopshive[hive]',

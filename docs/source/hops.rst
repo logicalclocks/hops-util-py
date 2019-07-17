@@ -28,14 +28,6 @@ hops.experiment module
    :undoc-members:
    :show-inheritance:
 
-hops.facets module
-------------------
-
-.. automodule:: hops.facets
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 hops.featurestore module
 ------------------------
 
