@@ -143,7 +143,7 @@ and
     >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2",
     >>>                                  description="trx_summary_features without the column count_trx",
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
-    >>>                                  job_name=None, descriptive_statistics=False,
+    >>>                                  jobs=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
     >>>                                  stat_columns=None)
     >>>
@@ -166,7 +166,7 @@ and
     >>> # You can override the default configuration if necessary:
     >>> featurestore.create_training_dataset(dataset_df, "TestDataset", description="",
     >>>                                      featurestore=featurestore.project_featurestore(), data_format="csv",
-    >>>                                      training_dataset_version=1, job_name=None,
+    >>>                                      training_dataset_version=1, jobs=[],
     >>>                                      descriptive_statistics=False, feature_correlation=False,
     >>>                                      feature_histograms=False, cluster_analysis=False, stat_columns=None)
     >>>
@@ -506,7 +506,7 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
 
 
 def create_featuregroup(df, featuregroup, primary_key=None, description="", featurestore=None,
-                        featuregroup_version=1, job_name=None,
+                        featuregroup_version=1, jobs=[],
                         descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                         corr_method='pearson', num_clusters=5, partition_by=[], on_demand=False):
@@ -524,7 +524,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>> featurestore.create_featuregroup(trx_summary_df1, "trx_summary_features_2_2",
     >>>                                  description="trx_summary_features without the column count_trx",
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
-    >>>                                  job_name=None, descriptive_statistics=False,
+    >>>                                  jobs=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
     >>>                                  stat_columns=None, partition_by=[], on_demand=False)
 
@@ -536,7 +536,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         :description: a description of the featuregroup
         :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
-        :job_name: the name of the job to compute the featuregroup
+        :jobs: list of Hopsworks jobs linked to the feature group
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the
                                  featuregroup
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in
@@ -571,8 +571,8 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         featurestore = project_featurestore()
     if primary_key is None:
         primary_key = fs_utils._get_default_primary_key(spark_df)
-    if job_name is None:
-        job_name = util.get_job_name()
+    if util.get_job_name() is not None:
+        jobs.append(util.get_job_name())
 
     fs_utils._validate_primary_key(spark_df, primary_key)
     features_schema = core._parse_spark_features_schema(spark_df.schema, primary_key, partition_by)
@@ -587,7 +587,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     featurestore_metadata = core._get_featurestore_metadata(featurestore, update_cache=False)
     featurestore_id = core._get_featurestore_id(featurestore)
     featuregroup_type, featuregroup_type_dto = fs_utils._get_featuregroup_type_info(featurestore_metadata, on_demand)
-    rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, job_name,
+    rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                        features_schema, feature_corr_data, featuregroup_desc_stats_data,
                                        features_histogram_data, cluster_analysis_data, featuregroup_type,
                                        featuregroup_type_dto)
@@ -800,7 +800,7 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
 
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
                             data_format="tfrecords", training_dataset_version=1,
-                            job_name=None, descriptive_statistics=True, feature_correlation=True,
+                            jobs=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                             corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True, sink=None):
     """
@@ -840,6 +840,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                          petastorm format. Required parameters are: 'schema'
         :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
         :external: boolean flag whether it is an external training dataset or stored in HopsFS
+        :jobs: list of Hopsworks jobs linked to the training dataset
 
     Returns:
         None
@@ -848,11 +849,11 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         featurestore = project_featurestore()
     if sink is None:
         sink = project_training_datasets_sink()
-    if job_name is None:
-        job_name = util.get_job_name()
+    if util.get_job_name() is not None:
+        jobs.append(util.get_job_name())
     storage_connector = core._do_get_storage_connector(sink, featurestore)
     core._do_create_training_dataset(df, training_dataset, description, featurestore, data_format,
-                                     training_dataset_version, job_name, descriptive_statistics,
+                                     training_dataset_version, jobs, descriptive_statistics,
                                      feature_correlation, feature_histograms, cluster_analysis, stat_columns,
                                      num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector)
 

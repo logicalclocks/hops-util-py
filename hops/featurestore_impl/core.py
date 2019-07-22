@@ -561,7 +561,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
 
 def _do_create_training_dataset(df, training_dataset, description="", featurestore=None,
                                 data_format="tfrecords", training_dataset_version=1,
-                                job_name=None, descriptive_statistics=True, feature_correlation=True,
+                                jobs=[], descriptive_statistics=True, feature_correlation=True,
                                 feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                                 corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True,
                                 storage_connector = None):
@@ -576,7 +576,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         :featurestore: the featurestore that the training dataset is linked to
         :data_format: the format of the materialized training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
-        :job_name: the name of the job to compute the training dataset
+        :jobs: list of job names linked to the training dataset
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
                                 for the featuregroup
         :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
@@ -633,7 +633,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         fs_utils._get_training_dataset_type_info(featurestore_metadata, external)
     td_json = rest_rpc._create_training_dataset_rest(
         training_dataset, featurestore_id, description, training_dataset_version,
-        data_format, job_name, features_schema, feature_corr_data, training_dataset_desc_stats_data,
+        data_format, jobs, features_schema, feature_corr_data, training_dataset_desc_stats_data,
         features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_type_dto,
     featurestore_metadata.settings, hopsfs_connector_id=hopsfs_connector_id, s3_connector_id=s3_connector_id)
     td = TrainingDataset(td_json)
@@ -720,10 +720,12 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
     featuregroup_type, featuregroup_type_dto = fs_utils._get_featuregroup_type_info(
         featurestore_metadata,
         on_demand=(fg.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE))
+    jobs = []
+    if util.get_job_name() is not None:
+        jobs.append(util.get_job_name())
     featuregroup = Featuregroup(rest_rpc._update_featuregroup_stats_rest(
-        featuregroup_id, featurestore_id, featuregroup_name, featuregroup_version, feature_corr_data,
-        featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data, featuregroup_type,
-        featuregroup_type_dto))
+        featuregroup_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
+        cluster_analysis_data, featuregroup_type, featuregroup_type_dto, jobs))
     return featuregroup
 
 
@@ -774,10 +776,12 @@ def _do_update_training_dataset_stats(training_dataset_name, featurestore_metada
         fs_utils._get_training_dataset_type_info(featurestore_metadata,
                                              external=(training_dataset.training_dataset_type ==
                                                        featurestore_metadata.settings.external_training_dataset_type))
+    jobs = []
+    if util.get_job_name() is not None:
+        jobs.append(util.get_job_name())
     td = TrainingDataset(rest_rpc._update_training_dataset_stats_rest(
-        training_dataset_name, training_dataset_id, featurestore_id, training_dataset_version,
-        features_schema, feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
-        cluster_analysis_data, training_dataset_type, training_dataset_type_dto))
+        training_dataset_id, featurestore_id, feature_corr_data, training_dataset_desc_stats_data,
+        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_type_dto, jobs))
     return td;
 
 

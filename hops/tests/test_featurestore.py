@@ -1861,7 +1861,6 @@ class TestFeaturestoreSuite(object):
             constants.REST_CONFIG.JSON_TRAINING_DATASET_CREATED: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION: "",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES: [],
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_LAST_COMPUTED: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_INODE_ID: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_ID: "-",
             constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME: "-",

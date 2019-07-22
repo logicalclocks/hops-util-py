@@ -134,8 +134,31 @@ def _get_featurestore_metadata(featurestore):
                 resource_url, featurestore, response.status, response.reason, error_code, error_msg, user_msg))
     return response_object
 
+def _pre_process_jobs_list(jobNames):
+    """
+    Convert list of jobNames to list of JobDTOs that is expected by the backend
 
-def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, job_name,
+    Args:
+        :jobNames: list of job names
+
+    Returns:
+        list of job dtos
+    """
+    jobs_dtos = []
+    for jobName in jobNames:
+        jobs_dtos.append({
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_NAME: jobName,
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_ID: None,
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_LAST_COMPUTED: None,
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_STATUS: None,
+            constants.REST_CONFIG.JSON_FEATURESTORE_ID: None,
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_FEATUREGROUP_ID: None,
+            constants.REST_CONFIG.JSON_FEATURESTORE_JOB_TRAINING_DATASET_ID: None,
+        })
+    return jobs_dtos
+
+
+def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                               features_schema, feature_corr_data, featuregroup_desc_stats_data,
                               features_histogram_data, cluster_analysis_data, featuregroup_type,
                               featuregroup_dto_type):
@@ -147,7 +170,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
         :featurestore_id: id of the featurestore where the featuregroup resides
         :description:  a description of the featuregroup
         :featuregroup_version: the version of the featuregroup (defaults to 1)
-        :job_name: the name of the job to compute the featuregroup
+        :jobs: list of Hopsworks Jobs linked to the feature group
         :features_schema: the schema of the featuregroup
         :feature_corr_data: json-string with the feature correlation matrix of the featuregroup
         :featuregroup_desc_stats_data: json-string with the descriptive statistics of the featurergroup
@@ -165,7 +188,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
     json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION: description,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME: job_name,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: features_schema,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
@@ -204,24 +227,22 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
     return response_object
 
 
-def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, featuregroup,
-                                    featuregroup_version, feature_corr,
+def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_corr,
                                     featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data,
-                                    featuregroup_type, featuregroup_dto_type):
+                                    featuregroup_type, featuregroup_dto_type, jobs):
     """
     Makes a REST call to hopsworks appservice for updating the statistics of a particular featuregroup
 
     Args:
         :featuregroup_id: id of the featuregroup
         :featurestore_id: id of the featurestore where the featuregroup resides
-        :featuregroup: the featuregroup to update statistics for
-        :featuregroup_version: the version of the featuregroup
         :feature_corr: the feature correlation matrix
         :featuregroup_desc_stats_data: the descriptive statistics of the featuregroup
         :features_histogram_data: the histograms of the features in the featuregroup
         :cluster_analysis_data: the clusters from cluster analysis on the featuregroup
         :featuregroup_type: type of the featuregroup (on-demand or cached)
         :featuregroup_dto_type: type of the JSON DTO for the backend
+        :jobs: a list of jobs for updating the feature group stats
 
     Returns:
         The REST response
@@ -229,16 +250,11 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, featuregro
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBNAME: None,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_METADATA: False,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_UPDATE_STATS: True,
+    json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: [],
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
                      }
@@ -277,7 +293,7 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, featuregro
 
 
 def _create_training_dataset_rest(training_dataset, featurestore_id, description, training_dataset_version,
-                                  data_format, job_name, features_schema_data,
+                                  data_format, jobs, features_schema_data,
                                   feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
                                   cluster_analysis_data, training_dataset_type, training_dataset_dto_type,
                                   settings, hopsfs_connector_id = None, s3_connector_id = None):
@@ -290,7 +306,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
         :description: a description of the training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :data_format: the format of the training dataset
-        :job_name: the name of the job to compute the training dataset
+        :jobs: list of Hopsworks jobs linked to the training dataset
         :features_schema_data: the schema of the training dataset
         :feature_corr_data: json-string with the feature correlation matrix of the training dataset
         :cluster_analysis_data: the clusters from cluster analysis on the dataset
@@ -311,7 +327,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
     json_contents = {constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME: training_dataset,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION: training_dataset_version,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION: description,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME: job_name,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBS: _pre_process_jobs_list(jobs),
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA: features_schema_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURE_CORRELATION: feature_corr_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_DESC_STATS: training_dataset_desc_stats_data,
@@ -356,25 +372,22 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
 
 
 def _update_training_dataset_stats_rest(
-        training_dataset, training_dataset_id, featurestore_id, training_dataset_version, features_schema,
-        feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data,
-        training_dataset_type, training_dataset_dto_type):
+        training_dataset_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data,
+        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_dto_type, jobs):
     """
     A helper function that makes a REST call to hopsworks for updating the stats and schema metadata about a
     training dataset
 
     Args:
-        :training_dataset: the name of the training dataset
         :training_dataset_id: id of the training dataset
         :featurestore_id: id of the featurestore that the training dataset is linked to
-        :training_dataset_version: the version of the training dataset (defaults to 1)
-        :features_schema: the schema of the training dataset
         :feature_corr_data:  json-string with the feature correlation matrix of the training dataset
         :featuregroup_desc_stats_data: json-string with the descriptive statistics of the training dataset
         :features_histogram_data: list of json-strings with histogram data for the features in the training dataset
         :cluster_analysis_data: the clusters from cluster analysis on the dataset
         :training_dataset_type: type of the training dataset (external or hopsfs)
         :training_dataset_dto_type: type of the JSON DTO for the backend
+        :jobs: list of jobs for updating the training dataset stats
 
     Returns:
         the HTTP response
@@ -382,16 +395,13 @@ def _update_training_dataset_stats_rest(
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    json_contents = {constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME: training_dataset,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION: training_dataset_version,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
+    json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_SCHEMA: features_schema,
                      constants.REST_CONFIG.JSON_TYPE: training_dataset_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type
-                     }
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBS: _pre_process_jobs_list(jobs)}
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
