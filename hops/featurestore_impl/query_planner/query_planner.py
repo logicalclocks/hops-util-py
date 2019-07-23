@@ -1,7 +1,7 @@
 """
 Query Planner functions for inferring how to perform user queries to the featurestore
 """
-
+from hops import constants
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl.exceptions.exceptions import FeatureNotFound, FeatureNameCollisionError, InferJoinKeyError, \
     TrainingDatasetNotFound, FeaturegroupNotFound

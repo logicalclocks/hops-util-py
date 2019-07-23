@@ -226,7 +226,7 @@ def project_training_datasets_sink():
     return fs_utils._do_get_project_training_datasets_sink()
 
 
-def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark"):
+def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark", jdbc_args={}):
     """
     Gets a featuregroup from a featurestore as a spark dataframe
 
@@ -244,6 +244,8 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
         :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :jdbc_args: a dict of argument_name -> value with jdbc connection string arguments to be filled in
+                    dynamically at runtime for fetching on-demand feature groups
 
     Returns:
         a dataframe with the contents of the featuregroup
@@ -251,10 +253,21 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
     """
     if featurestore is None:
         featurestore = project_featurestore()
-    return core._do_get_featuregroup(featuregroup, featurestore, featuregroup_version, dataframe_type)
+
+    try: # Try with cached metadata
+        return core._do_get_featuregroup(featuregroup,
+                                         core._get_featurestore_metadata(featurestore, update_cache=False),
+                                         featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args)
+    except: # Try again after updating the cache
+        return core._do_get_featuregroup(featuregroup,
+                                         core._get_featurestore_metadata(featurestore, update_cache=True),
+                                         featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args)
 
 
-def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_version=1, dataframe_type="spark"):
+def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_version=1, dataframe_type="spark",
+                jdbc_args = {}):
     """
     Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries
     hopsworks metastore to see if the feature exists in any of the featuregroups in the featurestore.
@@ -277,6 +290,9 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         :featuregroup: (Optional) the featuregroup where the feature resides
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :jdbc_args: a dict of argument_name -> value with jdbc connection string arguments to
+                    be filled in dynamically at runtime for fetching on-demand feature group in-case the feature
+                    belongs to a dynamic feature group
 
     Returns:
         A dataframe with the feature
@@ -285,14 +301,17 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     try:  # try with cached metadata
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=False),
                                     featurestore=featurestore, featuregroup=featuregroup,
-                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type,
+                                    jdbc_args=jdbc_args)
     except:  # Try again after updating cache
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=True),
                                     featurestore=featurestore, featuregroup=featuregroup,
-                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type)
+                                    featuregroup_version=featuregroup_version, dataframe_type=dataframe_type,
+                                    jdbc_args=jdbc_args)
 
 
-def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark"):
+def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark",
+                 jdbc_args = {}):
     """
     Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
     metastore to find where the features are stored. It will try to construct the query first from the cached metadata,
@@ -316,6 +335,8 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :join_key: (Optional) column name to join on
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :jdbc_args: a dict of featuregroup_version -> dict of argument_name -> value with jdbc connection string arguments to
+                    be filled in dynamically at runtime for fetching on-demand feature groups
 
     Returns:
         A dataframe with all the features
@@ -327,13 +348,13 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
                                      core._get_featurestore_metadata(featurestore, update_cache=False),
                                      featurestore=featurestore,
                                      featuregroups_version_dict=featuregroups_version_dict,
-                                     join_key=join_key, dataframe_type=dataframe_type)
+                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args)
         # Try again after updating cache
     except:
         return core._do_get_features(features, core._get_featurestore_metadata(featurestore, update_cache=True),
                                      featurestore=featurestore,
                                      featuregroups_version_dict=featuregroups_version_dict,
-                                     join_key=join_key, dataframe_type=dataframe_type)
+                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args)
 
 
 def sql(query, featurestore=None, dataframe_type="spark"):
@@ -415,22 +436,25 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     try:
-        spark_df = fs_utils._convert_dataframe_to_spark(df)
-    except Exception as e:
-        raise CouldNotConvertDataframe(
-            "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to "
-            "the Feature Store, error: {}".format(str(e)))
-    if featurestore is None:
-        featurestore = project_featurestore()
-
-    update_featuregroup_stats(featuregroup, featuregroup_version=featuregroup_version, featurestore=featurestore,
-                              descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
-                              feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                              stat_columns=stat_columns, num_bins=num_bins, num_clusters=num_clusters,
-                              corr_method=corr_method)
-
-    core._write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version, mode)
-    fs_utils._log("Insertion into feature group was successful")
+        # Try with cached metadata
+        core._do_insert_into_featuregroup(df, featuregroup,
+                                          core._get_featurestore_metadata(featurestore, update_cache=False),
+                                          featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                          mode=mode, descriptive_statistics=descriptive_statistics,
+                                          feature_correlation=feature_correlation,
+                                          feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
+                                          stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
+                                          num_clusters=num_clusters)
+    except:
+        # Retry with updated cache
+        core._do_insert_into_featuregroup(df, featuregroup,
+                                          core._get_featurestore_metadata(featurestore, update_cache=True),
+                                          featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                          mode=mode, descriptive_statistics=descriptive_statistics,
+                                          feature_correlation=feature_correlation,
+                                          feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
+                                          stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
+                                          num_clusters=num_clusters)
 
 
 def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=True,
@@ -504,15 +528,55 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
                                                                 featurestore, str(e)))
 
 
+def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, featurestore=None,
+                                  description="", featuregroup_version=1):
+    """
+    Creates a new on-demand feature group in the feature store by registering SQL and an associated JDBC connector
+
+    Args:
+        :sql_query: the SQL query to fetch the on-demand feature group
+        :featuregroup: the name of the on-demand feature group
+        :jdbc_connector_name: the name of the JDBC connector to apply the SQL query to get the on-demand feature group
+        :featurestore: name of the feature store to register the feature group
+        :description: description of the feature group
+        :featuregroup_version: version of the feature group
+
+    Returns:
+        None
+
+    Raises:
+        :ValueError: in case required inputs are missing
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    if sql_query is None:
+        raise ValueError("SQL Query for an on-demand Feature Group cannot be None")
+    if jdbc_connector_name is None:
+        raise ValueError("Storage Connector for an on-demand Feature Group cannot be None")
+    jdbc_connector = get_storage_connector(jdbc_connector_name, featurestore)
+    featurestore_metadata = core._get_featurestore_metadata(featurestore, update_cache=False)
+    if jdbc_connector.type != featurestore_metadata.settings.jdbc_connector_type:
+        raise ValueError("OnDemand Feature groups can only be linked to JDBC Storage Connectors, the provided "
+                         "connector is of type: {}".format(jdbc_connector.type))
+    featurestore_id = core._get_featurestore_id(featurestore)
+    featuregroup_type, featuregroup_type_dto = fs_utils._get_on_demand_featuregroup_type_info(featurestore_metadata)
+    rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
+                                       None, None, None, None, None, featuregroup_type, featuregroup_type_dto,
+                                       sql_query, jdbc_connector.id)
+    # update metadata cache
+    core._get_featurestore_metadata(featurestore, update_cache=True)
+    fs_utils._log("Feature group created successfully")
+
 
 def create_featuregroup(df, featuregroup, primary_key=None, description="", featurestore=None,
                         featuregroup_version=1, jobs=[],
                         descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                        corr_method='pearson', num_clusters=5, partition_by=[], on_demand=False):
+                        corr_method='pearson', num_clusters=5, partition_by=[]):
     """
-    Creates a new featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call to create
-    the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly created table)
+    Creates a new cached featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call
+    to create the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly
+    created table)
 
     Example usage:
 
@@ -526,7 +590,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
-    >>>                                  stat_columns=None, partition_by=[], on_demand=False)
+    >>>                                  stat_columns=None, partition_by=[])
 
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
@@ -549,7 +613,6 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         :num_clusters: the number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
         :partition_by: a list of columns to partition_by, defaults to the empty list
-        :on_demand: whether it is an on-demand feature group
 
     Returns:
         None
@@ -586,11 +649,11 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
             num_clusters=num_clusters)
     featurestore_metadata = core._get_featurestore_metadata(featurestore, update_cache=False)
     featurestore_id = core._get_featurestore_id(featurestore)
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_featuregroup_type_info(featurestore_metadata, on_demand)
+    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                        features_schema, feature_corr_data, featuregroup_desc_stats_data,
                                        features_histogram_data, cluster_analysis_data, featuregroup_type,
-                                       featuregroup_type_dto)
+                                       featuregroup_type_dto, None, None)
     core._write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version,
                                   constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
     # update metadata cache
@@ -856,6 +919,31 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                                      training_dataset_version, jobs, descriptive_statistics,
                                      feature_correlation, feature_histograms, cluster_analysis, stat_columns,
                                      num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector)
+
+
+def get_storage_connectors(featurestore = None):
+    """
+    Retrieves the names of all storage connectors in the feature store
+
+    Example usage:
+
+    >>> featurestore.get_storage_connectors()
+    >>> # By default the query will be for the project's feature store but you can also explicitly specify the
+    >>> # featurestore:
+    >>> featurestore.get_storage_connector(featurestore=featurestore.project_featurestore())
+
+    Args:
+        :featurestore: the featurestore to query (default's to project's feature store)
+
+    Returns:
+        the storage connector with the given name
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        return core._do_get_storage_connectors(core._get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        return core._do_get_storage_connectors(core._get_featurestore_metadata(featurestore, update_cache=True))
 
 
 def get_storage_connector(storage_connector_name, featurestore = None):
@@ -1139,7 +1227,16 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
      """
     if featurestore is None:
         featurestore = project_featurestore()
-    return core._do_get_featuregroup_partitions(featuregroup, featurestore, featuregroup_version, dataframe_type)
+    try:
+        # Try with cached metadata
+        return core._do_get_featuregroup_partitions(featuregroup,
+                                                    core._get_featurestore_metadata(featurestore, update_cache=False),
+                                                    featurestore, featuregroup_version, dataframe_type)
+    except:
+        # Retry with updated cache
+        return core._do_get_featuregroup_partitions(featuregroup,
+                                                    core._get_featurestore_metadata(featurestore, update_cache=True),
+                                                    featurestore, featuregroup_version, dataframe_type)
 
 
 def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16, 12),

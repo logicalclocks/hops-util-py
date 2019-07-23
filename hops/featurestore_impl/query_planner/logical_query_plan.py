@@ -61,6 +61,10 @@ class LogicalQueryPlan(object):
         if self.query.featuregroup != None:
             self.featuregroups_str =  fs_utils._get_table_name(self.query.featuregroup,
                                                                  self.query.featuregroup_version)
+            self.featuregroups = [self.query.featurestore_metadata.featuregroups[
+                                 fs_utils._get_table_name(self.query.featuregroup,
+                                                          self.query.featuregroup_version)
+                             ]]
         else:
             featuregroups_parsed = self.query.featurestore_metadata.featuregroups
             if len(featuregroups_parsed.values()) == 0:
@@ -70,6 +74,7 @@ class LogicalQueryPlan(object):
             featuregroup_matched = query_planner._find_feature(self.query.feature, self.query.featurestore,
                                                                featuregroups_parsed.values())
             self.featuregroups_str = fs_utils._get_table_name(featuregroup_matched.name, featuregroup_matched.version)
+            self.featuregroups = [featuregroup_matched]
 
         fs_utils._log("Logical query plan for getting 1 feature from the featurestore created successfully")
 
@@ -91,6 +96,13 @@ class LogicalQueryPlan(object):
                 self.query.featuregroups_version_dict[0][constants.REST_CONFIG.JSON_FEATUREGROUP_NAME],
                 self.query.featuregroups_version_dict[0][constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]
             )
+            featuregroups = [self.query.featurestore_metadata.featuregroups[
+                                 fs_utils._get_table_name(
+                                     self.query.featuregroups_version_dict[0][constants.REST_CONFIG.JSON_FEATUREGROUP_NAME],
+                                     self.query.featuregroups_version_dict[0][constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]
+                                 )
+                             ]]
+            self.featuregroups = featuregroups
 
         if len(self.query.featuregroups_version_dict) > 1:
             if self.query.join_key != None:
@@ -104,6 +116,8 @@ class LogicalQueryPlan(object):
                 self.join_str = query_planner._get_join_str(featuregroups, self.query.join_key)
                 self.featuregroups_str = fs_utils._get_table_name(featuregroups[0].name,
                                                                   featuregroups[0].version)
+                self.featuregroups = featuregroups
+
             else:
                 featuregroups_parsed = self.query.featurestore_metadata.featuregroups
                 if len(featuregroups_parsed.values()) == 0:
@@ -117,6 +131,8 @@ class LogicalQueryPlan(object):
                 self.join_str = query_planner._get_join_str(featuregroups_filtered, join_col)
                 self.featuregroups_str = fs_utils._get_table_name(featuregroups_filtered[0].name,
                                                                   featuregroups_filtered[0].version)
+                self.featuregroups = featuregroups
+
         if len(self.query.featuregroups_version_dict) == 0:
             featuregroups_parsed = self.query.featurestore_metadata.featuregroups
             if len(featuregroups_parsed.values()) == 0:
@@ -141,6 +157,7 @@ class LogicalQueryPlan(object):
                 self.join_str = query_planner._get_join_str(feature_featuregroups, join_col)
                 self.featuregroups_str = fs_utils._get_table_name(feature_featuregroups[0].name,
                                                                     feature_featuregroups[0].version)
+            self.featuregroups = feature_featuregroups
 
         fs_utils._log(
             "Logical query plan for getting {} features from the featurestore created successfully".format(

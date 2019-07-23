@@ -917,23 +917,33 @@ def _get_spark_sql_catalog_impl(spark):
     return dict(spark.sparkContext._conf.getAll())[constants.SPARK_CONFIG.SPARK_SQL_CATALOG_IMPLEMENTATION]
 
 
-def _get_featuregroup_type_info(featurestore_metadata, on_demand = False):
+def _get_on_demand_featuregroup_type_info(featurestore_metadata):
     """
-    Gets the type information of a feature group that the backend expects
+    Gets the type information for an on-demand feature group that the backend expects
 
     Args:
          :featurestore_metadata: metadata of the featurestore
-         :on_demand: whether it is an on-demand featuregroup or not
 
     Returns:
         the type information of the feature group, tuple of (type, dtotype)
     """
-    if on_demand:
-        featuregroup_type = featurestore_metadata.settings.on_demand_featuregroup_type
-        featuregroup_type_dto = featurestore_metadata.settings.on_demand_featuregroup_dto_type
-    else:
-        featuregroup_type = featurestore_metadata.settings.cached_featuregroup_type
-        featuregroup_type_dto = featurestore_metadata.settings.cached_featuregroup_dto_type
+    featuregroup_type = featurestore_metadata.settings.on_demand_featuregroup_type
+    featuregroup_type_dto = featurestore_metadata.settings.on_demand_featuregroup_dto_type
+    return featuregroup_type, featuregroup_type_dto
+
+
+def _get_cached_featuregroup_type_info(featurestore_metadata):
+    """
+    Gets the type information for a cached feature group that the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the type information of the feature group, tuple of (type, dtotype)
+    """
+    featuregroup_type = featurestore_metadata.settings.cached_featuregroup_type
+    featuregroup_type_dto = featurestore_metadata.settings.cached_featuregroup_dto_type
     return featuregroup_type, featuregroup_type_dto
 
 
@@ -979,6 +989,17 @@ def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, da
 
 
 def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket):
+    """
+    Utility function for getting the S3 path of a training dataset in the feature store
+
+    Args:
+        :training_dataset_name: name of the training dataset
+        :training_dataset_version: version of the training dataset
+        :bucket: the s3 bucket
+
+    Returns:
+        the s3 path to the training dataset
+    """
     path = bucket + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name,
                                                                            training_dataset_version)
     return path

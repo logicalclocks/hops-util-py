@@ -161,7 +161,7 @@ def _pre_process_jobs_list(jobNames):
 def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                               features_schema, feature_corr_data, featuregroup_desc_stats_data,
                               features_histogram_data, cluster_analysis_data, featuregroup_type,
-                              featuregroup_dto_type):
+                              featuregroup_dto_type, sql_query, jdbc_connector_id):
     """
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
@@ -178,6 +178,8 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
         :cluster_analysis_data: cluster analysis for the featuregroup
         :featuregroup_type: type of the featuregroup (on-demand or cached)
         :featuregroup_dto_type: type of the JSON DTO for the backend
+        :sql_query: SQL Query for On-demand feature groups
+        :jdbc_connector_id: id of the jdbc_connector for on-demand feature groups
 
     Returns:
         The HTTP response
@@ -196,6 +198,8 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY: sql_query,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID: jdbc_connector_id
                      }
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}

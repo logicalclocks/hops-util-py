@@ -153,6 +153,9 @@ class SPARK_CONFIG:
     SPARK_VECTOR = "vector"
     SPARK_SQL_CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation"
     SPARK_SQL_CATALOG_HIVE = "hive"
+    SPARK_JDBC_FORMAT= "jdbc"
+    SPARK_JDBC_URL= "url"
+    SPARK_JDBC_DBTABLE= "dbtable"
 
 class MODEL_SERVING:
     MODELS_DATASET = "Models"
@@ -252,6 +255,12 @@ class FEATURE_STORE:
     DATAFRAME_TYPE_NUMPY = "numpy"
     DATAFRAME_TYPE_PYTHON = "python"
     DATAFRAME_TYPE_PANDAS = "pandas"
+    JDBC_TRUSTSTORE_ARG = "sslTrustStore"
+    JDBC_TRUSTSTORE_PW_ARG = "trustStorePassword"
+    JDBC_KEYSTORE_ARG = "sslKeyStore"
+    JDBC_KEYSTORE_PW_ARG = "keyStorePassword"
+    IMPORT_HOPS_UTIL_FEATURESTORE_HELPER = "import io.hops.util.featurestore.FeaturestoreHelper"
+
 
 class PETASTORM_CONFIG:
     """
@@ -506,3 +515,6 @@ class DELIMITERS:
     TAB_DELIMITER = "\t"
     COLON_DELIMITER = ":"
     AMPERSAND_DELIMITER = "&"
+    SEMI_COLON_DELIMITER = ";"
+    JDBC_CONNECTION_STRING_VALUE_DELIMITER = "="
+    JDBC_CONNECTION_STRING_DELIMITER = ";"

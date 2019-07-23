@@ -77,3 +77,22 @@ class StatisticsComputationError(Exception):
 
 class StorageConnectorNotFound(Exception):
     """This exception will be raised if a requested storage connector cannot be found"""
+
+
+class CannotInsertIntoOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.insert_into_featuregroup(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+class CannotUpdateStatisticsOfOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.update_featuregroup_stats(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+class CannotGetPartitionsOfOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.get_featuregroup_partitions(fg1)
+    where fg1 is an on-demand feature group
+    """
