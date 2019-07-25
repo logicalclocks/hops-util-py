@@ -131,7 +131,7 @@ class LogicalQueryPlan(object):
                 self.join_str = query_planner._get_join_str(featuregroups_filtered, join_col)
                 self.featuregroups_str = fs_utils._get_table_name(featuregroups_filtered[0].name,
                                                                   featuregroups_filtered[0].version)
-                self.featuregroups = featuregroups
+                self.featuregroups = featuregroups_filtered
 
         if len(self.query.featuregroups_version_dict) == 0:
             featuregroups_parsed = self.query.featurestore_metadata.featuregroups

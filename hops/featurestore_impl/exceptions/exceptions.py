@@ -96,3 +96,15 @@ class CannotGetPartitionsOfOnDemandFeatureGroup(Exception):
     This exception will be raised if the user calls featurestore.get_featuregroup_partitions(fg1)
     where fg1 is an on-demand feature group
     """
+
+class NumpyDatasetFormatNotSupportedForExternalTrainingDatasets(Exception):
+    """
+    This exception will be raised if the user tries to create an external training dataset with the .npy format.
+    .npy datasets are not supported for external training datasets.
+    """
+
+class HDF5DatasetFormatNotSupportedForExternalTrainingDatasets(Exception):
+    """
+    This exception will be raised if the user tries to create an external training dataset with the .npy format.
+    .npy datasets are not supported for external training datasets.
+    """

@@ -451,6 +451,7 @@ class REST_CONFIG:
     HOPSWORKS_SERVING_RESOURCE = "serving"
     HOPSWORKS_INFERENCE_RESOURCE = "inference"
     HOPSWORKS_MODELS_RESOURCE = "models"
+    HOPSWORKS_USERS_RESOURCE = "serving"
 
 
     HOPSWORKS_KAFKA_RESOURCE = "kafka"
@@ -518,3 +519,13 @@ class DELIMITERS:
     SEMI_COLON_DELIMITER = ";"
     JDBC_CONNECTION_STRING_VALUE_DELIMITER = "="
     JDBC_CONNECTION_STRING_DELIMITER = ";"
+
+
+class S3_CONFIG:
+    """
+    String constants for S3
+    """
+    S3_FILE_PREFIX = "s3a://"
+    S3_ACCESS_KEY_ENV = "fs.s3a.access.key"
+    S3_SECRET_KEY_ENV = "fs.s3a.secret.key"
+    S3_TRAINING_DATASETS_FOLDER = "TRAINING_DATASETS"

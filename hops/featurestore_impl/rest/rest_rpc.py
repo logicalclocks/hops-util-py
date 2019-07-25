@@ -197,10 +197,12 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY: sql_query,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID: jdbc_connector_id
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type
                      }
+    if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
+        json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
+        json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID] = jdbc_connector_id
+
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST

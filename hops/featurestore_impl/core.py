@@ -497,7 +497,7 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
             "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to "
             "the Feature Store, error: {}".format(str(e)))
 
-    _do_update_featuregroup_stats(featuregroup_name, featuregroup_version=featuregroup_version,
+    _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, featuregroup_version=featuregroup_version,
                                   featurestore=featurestore,
                                   descriptive_statistics=descriptive_statistics,
                                   feature_correlation=feature_correlation,
@@ -569,7 +569,10 @@ def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
     featurestore_id = _get_featurestore_id(featurestore)
     response_object = rest_rpc._delete_table_contents(featuregroup_id, featurestore_id)
     # update metadata cache since clearing featuregroup will update its id.
-    _get_featurestore_metadata(featurestore, update_cache=True)
+    try:
+        _get_featurestore_metadata(featurestore, update_cache=True)
+    except:
+        pass
     return response_object
 
 
@@ -732,7 +735,7 @@ def _do_get_cached_featuregroup(featuregroup_name, featurestore=None, featuregro
 
 
 def _do_get_training_dataset(training_dataset_name, featurestore_metadata, training_dataset_version=1,
-                             dataframe_type="spark"):
+                             dataframe_type="spark", featurestore=None):
     """
     Reads a training dataset into a spark dataframe
 
@@ -745,6 +748,8 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
     Returns:
         A spark dataframe with the given training dataset data
     """
+    if featurestore is None:
+        featurestore = fs_utils._do_get_project_featurestore()
 
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
@@ -754,13 +759,16 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
                                                           training_dataset.hopsfs_training_dataset.hdfs_store_path,
                                                           training_dataset.data_format)
     else:
-        path = fs_utils._get_external_training_dataset_path(
-            training_dataset.name, training_dataset.version,
-            _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name).bucket)
+        s3_connector = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name,
+                                                 featurestore)
+        fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
+        path = fs_utils._get_external_training_dataset_path(training_dataset.name, training_dataset.version,
+            s3_connector.bucket)
 
     featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
                                                  data_format=training_dataset.data_format,
-                                                 training_dataset=training_dataset_name)
+                                                 training_dataset = training_dataset
+                                                 )
     spark = util._find_spark()
     return featureframe.read_featureframe(spark)
 
@@ -805,6 +813,8 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
     Raises:
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
+    if featurestore is None:
+        featurestore = fs_utils._do_get_project_featurestore()
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
     except Exception as e:
@@ -856,16 +866,17 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                                           constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                                     training_dataset=td.name,
+                                                     training_dataset=td,
                                                      petastorm_args=petastorm_args)
     else:
-        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket + \
-               constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(td.name, td.version)
-        featureframe = FeatureFrame.get_featureframe(path=path +
-                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+        s3_connector = _do_get_storage_connector(td.external_training_dataset.s3_connector_name, featurestore)
+        fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
+        path = fs_utils._get_external_training_dataset_path(td.name, td.version,
+                                                            s3_connector.bucket)
+        featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                                     training_dataset=td.name,
+                                                     training_dataset=td,
                                                      petastorm_args=petastorm_args)
     spark = util._find_spark()
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
@@ -873,7 +884,10 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
     featureframe.write_featureframe()
     spark.sparkContext.setJobGroup("", "")
     # update metadata cache
-    _get_featurestore_metadata(featurestore, update_cache=True)
+    try:
+        _get_featurestore_metadata(featurestore, update_cache=True)
+    except:
+        pass
     fs_utils._log("Training Dataset created successfully")
 
 
@@ -1060,15 +1074,16 @@ def _do_insert_into_training_dataset(
         featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
-                                                     training_dataset=td.name)
+                                                     training_dataset=td)
     else:
-        path = _do_get_storage_connector(td.external_training_dataset.s3_connector_name).bucket + \
-               constants.DELIMITERS.SLASH_DELIMITER + fs_utils._get_table_name(td.name, td.version)
-        featureframe = FeatureFrame.get_featureframe(path=path +
-                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+        s3_connector = _do_get_storage_connector(td.external_training_dataset.s3_connector_name, featurestore)
+        fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
+        path = fs_utils._get_external_training_dataset_path(td.name, td.version,
+                                                            s3_connector.bucket)
+        featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=write_mode,
-                                                     training_dataset=td.name)
+                                                     training_dataset=td)
     spark = util._find_spark()
     _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",

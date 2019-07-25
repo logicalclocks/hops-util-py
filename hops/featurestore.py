@@ -564,7 +564,10 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
                                        None, None, None, None, None, featuregroup_type, featuregroup_type_dto,
                                        sql_query, jdbc_connector.id)
     # update metadata cache
-    core._get_featurestore_metadata(featurestore, update_cache=True)
+    try:
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+    except:
+        pass
     fs_utils._log("Feature group created successfully")
 
 
@@ -657,7 +660,10 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     core._write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version,
                                   constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
     # update metadata cache
-    core._get_featurestore_metadata(featurestore, update_cache=True)
+    try:
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+    except:
+        pass
     fs_utils._log("Feature group created successfully")
 
 
@@ -853,7 +859,8 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
         return core._do_get_training_dataset(training_dataset,
                                              core._get_featurestore_metadata(featurestore, update_cache=False),
                                              training_dataset_version=training_dataset_version,
-                                             dataframe_type=dataframe_type)
+                                             dataframe_type=dataframe_type,
+                                             featurestore=featurestore)
     except:
         return core._do_get_training_dataset(training_dataset,
                                              core._get_featurestore_metadata(featurestore, update_cache=True),
@@ -879,7 +886,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     >>>                                      training_dataset_version=1,
     >>>                                      descriptive_statistics=False, feature_correlation=False,
     >>>                                      feature_histograms=False, cluster_analysis=False, stat_columns=None,
-    >>>                                      external = False)
+    >>>                                      sink = None)
 
     Args:
         :df: the dataframe to create the training dataset from
@@ -902,7 +909,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         :petastorm_args: a dict containing petastorm parameters for serializing a dataset in the
                          petastorm format. Required parameters are: 'schema'
         :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
-        :external: boolean flag whether it is an external training dataset or stored in HopsFS
+        :sink: name of storage connector to store the training dataset
         :jobs: list of Hopsworks jobs linked to the training dataset
 
     Returns:

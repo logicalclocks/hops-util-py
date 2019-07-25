@@ -1000,6 +1000,26 @@ def _get_external_training_dataset_path(training_dataset_name, training_dataset_
     Returns:
         the s3 path to the training dataset
     """
-    path = bucket + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name,
-                                                                           training_dataset_version)
+    path = ""
+    if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
+        path = constants.S3_CONFIG.S3_FILE_PREFIX
+    path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + constants.S3_CONFIG.S3_TRAINING_DATASETS_FOLDER \
+           + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name, training_dataset_version)
     return path
+
+
+def _setup_s3_credentials_for_spark(access_key, secret_key, spark):
+    """
+    Registers the access key and secret key environment variables for writing to S3 with Spark
+
+    Args:
+        :access_key: the S3 access key ID
+        :secret_key: the S3 secret key
+        :spark: the spark session
+
+    Returns:
+        None
+    """
+    sc = spark.sparkContext
+    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_ACCESS_KEY_ENV, access_key)
+    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SECRET_KEY_ENV, secret_key)
