@@ -1043,6 +1043,7 @@ def _do_insert_into_training_dataset(
     Raises:
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
+    print("insert_into_training_dataset")
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
     except Exception as e:
@@ -1088,6 +1089,7 @@ def _do_insert_into_training_dataset(
     _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
                                    "Saving training dataset in path: {} in format {}".format(path, data_format))
+    print("Writing Feature Frame, data format: {}".format(data_format))
     featureframe.write_featureframe()
     spark.sparkContext.setJobGroup("", "")
 

@@ -255,6 +255,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
         """
+        print("write feature frame, write_mode: {}".format(self.write_mode))
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
                 "Append is not supported for training datasets stored in tf-records format, only overwrite, "

@@ -536,6 +536,9 @@ def _return_dataframe_type(dataframe, dataframe_type):
 
     Returns:
         The dataframe converted to either spark, pandas, numpy or python.
+
+    Raises:
+        :CouldNotConvertDataframe: if the dataframe type is not supported
     """
     if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK:
         return dataframe
@@ -545,6 +548,8 @@ def _return_dataframe_type(dataframe, dataframe_type):
         return np.array(dataframe.collect())
     if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
         return dataframe.collect()
+
+    raise CouldNotConvertDataframe("DataFrame type not supported")
 
 
 def _convert_dataframe_to_spark(dataframe):

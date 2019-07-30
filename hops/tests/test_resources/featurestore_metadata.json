@@ -1,18 +1,21 @@
 {
+  "featurestore": {
+    "featurestoreId": 67,
+    "featurestoreName": "demo_featurestore_admin000_featurestore",
+    "featurestoreDescription": "Featurestore database for project: demo_featurestore_admin000",
+    "created": "2019-07-31T08:58:14Z",
+    "hdfsStorePath": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db",
+    "projectName": "demo_featurestore_admin000",
+    "projectId": 119,
+    "inodeId": 100255
+  },
   "featuregroups": [
     {
+      "type": "cachedFeaturegroupDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-12T17:16:27Z",
-      "creator": "admin@kth.se",
-      "dependencies": [
-        {
-          "path": "/Projects/demo_featurestore_admin000/TestJob/data/games.csv",
-          "modification": "2019-02-12T17:14:34.243Z",
-          "inodeId": 100296,
-          "dir": false
-        }
-      ],
-      "description": "Features of average season scores for football teams",
+      "created": "2019-07-31T08:59:45Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "Features of games",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
       "features": [
@@ -39,32 +42,36 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 1,
-      "inodeId": 100401,
-      "jobId": 1,
-      "jobName": "featurestore_tour_job",
-      "jobStatus": "Succeeded",
-      "lastComputed": "2019-02-12T17:14:53Z",
-      "name": "games_features",
-      "version": 1,
-      "hdfsStorePaths": [
-        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
-      ]
-    },
-    {
-      "clusterAnalysis": null,
-      "created": "2019-02-12T17:19:12Z",
-      "creator": "admin@kth.se",
-      "dependencies": [
+      "id": 13,
+      "jobs": [
         {
-          "path": "/Projects/demo_featurestore_admin000/TestJob/data/season_scores.csv",
-          "modification": "2019-02-12T17:14:34.805Z",
-          "inodeId": 100298,
-          "dir": false
+          "jobId": 37,
+          "jobName": "featurestore_tour_job",
+          "lastComputed": "2019-07-31T08:58:28Z",
+          "jobStatus": "Succeeded",
+          "featurestoreId": 67,
+          "featuregroupId": 13
         }
       ],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1",
+      "name": "games_features",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
+      ],
+      "hiveTableId": 1,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100339,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:01:15Z",
+      "creator": "admin@hopsworks.ai",
       "description": "Features of average season scores for football teams",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -92,32 +99,36 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 2,
-      "inodeId": 100416,
-      "jobId": 1,
-      "jobName": "featurestore_tour_job",
-      "jobStatus": "Succeeded",
-      "lastComputed": "2019-02-12T17:14:53Z",
-      "name": "season_scores_features",
-      "version": 1,
-      "hdfsStorePaths": [
-        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/season_scores_features_1"
-      ]
-    },
-    {
-      "clusterAnalysis": null,
-      "created": "2019-02-12T17:21:45Z",
-      "creator": "admin@kth.se",
-      "dependencies": [
+      "id": 14,
+      "jobs": [
         {
-          "path": "/Projects/demo_featurestore_admin000/TestJob/data/attendances.csv",
-          "modification": "2019-02-12T17:14:33.124Z",
-          "inodeId": 100295,
-          "dir": false
+          "jobId": 37,
+          "jobName": "featurestore_tour_job",
+          "lastComputed": "2019-07-31T08:58:28Z",
+          "jobStatus": "Succeeded",
+          "featurestoreId": 67,
+          "featuregroupId": 14
         }
       ],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/season_scores_features_1",
+      "name": "season_scores_features",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/season_scores_features_1"
+      ],
+      "hiveTableId": 2,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100354,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:02:21Z",
+      "creator": "admin@hopsworks.ai",
       "description": "Features of average attendance of games of football teams",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -145,32 +156,36 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 3,
-      "inodeId": 100515,
-      "jobId": 1,
-      "jobName": "featurestore_tour_job",
-      "jobStatus": "Succeeded",
-      "lastComputed": "2019-02-12T17:14:53Z",
-      "name": "attendances_features",
-      "version": 1,
-      "hdfsStorePaths": [
-        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_1"
-      ]
-    },
-    {
-      "clusterAnalysis": null,
-      "created": "2019-02-12T17:25:05Z",
-      "creator": "admin@kth.se",
-      "dependencies": [
+      "id": 15,
+      "jobs": [
         {
-          "path": "/Projects/demo_featurestore_admin000/TestJob/data/players.csv",
-          "modification": "2019-02-12T17:14:34.762Z",
-          "inodeId": 100297,
-          "dir": false
+          "jobId": 37,
+          "jobName": "featurestore_tour_job",
+          "lastComputed": "2019-07-31T08:58:28Z",
+          "jobStatus": "Succeeded",
+          "featurestoreId": 67,
+          "featuregroupId": 15
         }
       ],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_1",
+      "name": "attendances_features",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_1"
+      ],
+      "hiveTableId": 3,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100449,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:03:43Z",
+      "creator": "admin@hopsworks.ai",
       "description": "Aggregate features of players football teams",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -226,32 +241,36 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 4,
-      "inodeId": 100614,
-      "jobId": 1,
-      "jobName": "featurestore_tour_job",
-      "jobStatus": "Succeeded",
-      "lastComputed": "2019-02-12T17:14:53Z",
-      "name": "players_features",
-      "version": 1,
-      "hdfsStorePaths": [
-        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/players_features_1"
-      ]
-    },
-    {
-      "clusterAnalysis": null,
-      "created": "2019-02-12T17:25:45Z",
-      "creator": "admin@kth.se",
-      "dependencies": [
+      "id": 16,
+      "jobs": [
         {
-          "path": "/Projects/demo_featurestore_admin000/TestJob/data/teams.csv",
-          "modification": "2019-02-12T17:14:34.847Z",
-          "inodeId": 100299,
-          "dir": false
+          "jobId": 37,
+          "jobName": "featurestore_tour_job",
+          "lastComputed": "2019-07-31T08:58:28Z",
+          "jobStatus": "Succeeded",
+          "featurestoreId": 67,
+          "featuregroupId": 16
         }
       ],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/players_features_1",
+      "name": "players_features",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/players_features_1"
+      ],
+      "hiveTableId": 4,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100544,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:04:01Z",
+      "creator": "admin@hopsworks.ai",
       "description": "Features of football teams",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -279,27 +298,485 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 5,
-      "inodeId": 100713,
-      "jobId": 1,
-      "jobName": "featurestore_tour_job",
-      "jobStatus": "Succeeded",
-      "lastComputed": "2019-02-12T17:14:53Z",
+      "id": 17,
+      "jobs": [
+        {
+          "jobId": 37,
+          "jobName": "featurestore_tour_job",
+          "lastComputed": "2019-07-31T08:58:28Z",
+          "jobStatus": "Succeeded",
+          "featurestoreId": 67,
+          "featuregroupId": 17
+        }
+      ],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_1",
       "name": "teams_features",
       "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
       "hdfsStorePaths": [
         "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_1"
-      ]
+      ],
+      "hiveTableId": 5,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100639,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "onDemandFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:11:46Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 18,
+      "jobs": [],
+      "name": "games_features_on_demand_tour",
+      "version": 1,
+      "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
+      "jdbcConnectorId": 1,
+      "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
+      "query": "SELECT * FROM games_features_1 WHERE score > 1"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:15:04Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "a spanish version of teams_features",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "equipo_id",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "equipo_posicion",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "equipo_presupuesto",
+          "type": "float",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 27,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_spanish_1",
+      "name": "teams_features_spanish",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_spanish_1"
+      ],
+      "hiveTableId": 12,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 101334,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "onDemandFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:12:09Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 21,
+      "jobs": [],
+      "name": "games_features_on_demand",
+      "version": 1,
+      "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
+      "jdbcConnectorId": 1,
+      "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
+      "query": "SELECT * FROM games_features_1 WHERE score > 1"
+    },
+    {
+      "type": "onDemandFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:12:27Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 22,
+      "jobs": [],
+      "name": "players_features_on_demand",
+      "version": 1,
+      "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
+      "jdbcConnectorId": 1,
+      "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
+      "query": "SELECT average_player_age as average_player_age_on_dmd, average_player_worth as average_player_worth_on_dmd, team_id FROM players_features_1"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:12:49Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "a spanish version of teams_features",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "equipo_id",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "equipo_posicion",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "equipo_presupuesto",
+          "type": "float",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 23,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_spanish_2",
+      "name": "teams_features_spanish",
+      "version": 2,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/teams_features_spanish_2"
+      ],
+      "hiveTableId": 8,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100735,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:14:36Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "games_features partitioned by score",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "away_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        },
+        {
+          "name": "home_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "score",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": true
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 26,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_partitioned_1",
+      "name": "games_features_partitioned",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_partitioned_1"
+      ],
+      "hiveTableId": 11,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 101295,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:13:08Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "games_features partitioned by score and away_team_id",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "away_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        },
+        {
+          "name": "home_team_id",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": true
+        },
+        {
+          "name": "score",
+          "type": "int",
+          "description": "-",
+          "primary": false,
+          "partition": true
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 25,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_double_partitioned_1",
+      "name": "games_features_double_partitioned",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_double_partitioned_1"
+      ],
+      "hiveTableId": 10,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 100763,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:15:48Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "test featuregroup created from pandas dataframe",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "average_attendance_test",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_age_test",
+          "type": "double",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        },
+        {
+          "name": "team_budget_test",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 29,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/pandas_test_example_1",
+      "name": "pandas_test_example",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/pandas_test_example_1"
+      ],
+      "hiveTableId": 14,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 101358,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:16:03Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "test featuregroup created from numpy matrix",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "col_0",
+          "type": "double",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        },
+        {
+          "name": "col_1",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "col_2",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 31,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/numpy_test_example_1",
+      "name": "numpy_test_example",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/numpy_test_example_1"
+      ],
+      "hiveTableId": 16,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 101382,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:16:18Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "test featuregroup created from python 2D list",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "col_0",
+          "type": "double",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        },
+        {
+          "name": "col_1",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "col_2",
+          "type": "double",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 33,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/python_test_example_1",
+      "name": "python_test_example",
+      "version": 1,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/python_test_example_1"
+      ],
+      "hiveTableId": 18,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 101406,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
+    },
+    {
+      "type": "cachedFeaturegroupDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T10:02:22Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "average_attendance",
+          "type": "float",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "float",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "team_id",
+          "type": "int",
+          "description": "-",
+          "primary": true,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 34,
+      "jobs": [],
+      "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_2",
+      "name": "attendances_features",
+      "version": 2,
+      "featuregroupType": "CACHED_FEATURE_GROUP",
+      "hdfsStorePaths": [
+        "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/attendances_features_2"
+      ],
+      "hiveTableId": 19,
+      "hiveTableType": "MANAGED_TABLE",
+      "inodeId": 103024,
+      "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
     }
   ],
   "trainingDatasets": [
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:11:50Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:17:11Z",
+      "creator": "admin@hopsworks.ai",
       "description": "",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -390,25 +867,26 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 1,
-      "inodeId": 101473,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 9,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_1",
       "name": "team_position_prediction",
       "version": 1,
       "dataFormat": "tfrecords",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 101417,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:06Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:17:49Z",
+      "creator": "admin@hopsworks.ai",
       "description": "a dataset with features for football teams, used for training a model to predict league-position",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -433,7 +911,6 @@
           "description": "-",
           "primary": false,
           "partition": false
-
         },
         {
           "name": "average_attendance",
@@ -500,25 +977,26 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 2,
-      "inodeId": 101484,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 10,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_csv_1",
       "name": "team_position_prediction_csv",
       "version": 1,
       "dataFormat": "csv",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_csv_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 101824,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:17Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:18:15Z",
+      "creator": "admin@hopsworks.ai",
       "description": "a dataset with features for football teams, used for training a model to predict league-position",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -609,25 +1087,26 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 3,
-      "inodeId": 101494,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 11,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_tsv_1",
       "name": "team_position_prediction_tsv",
       "version": 1,
       "dataFormat": "tsv",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_tsv_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 101918,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:28Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:18:38Z",
+      "creator": "admin@hopsworks.ai",
       "description": "a dataset with features for football teams, used for training a model to predict league-position",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -718,25 +1197,26 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 4,
-      "inodeId": 101504,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 12,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_parquet_1",
       "name": "team_position_prediction_parquet",
       "version": 1,
       "dataFormat": "parquet",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_parquet_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102012,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:40Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:19:04Z",
+      "creator": "admin@hopsworks.ai",
       "description": "a dataset with features for football teams, used for training a model to predict league-position",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -827,25 +1307,246 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 5,
-      "inodeId": 101514,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 13,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_orc_1",
+      "name": "team_position_prediction_orc",
+      "version": 1,
+      "dataFormat": "orc",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_orc_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102108,
+      "size": 0
+    },
+    {
+      "type": "hopsfsTrainingDatasetDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:19:30Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 14,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_avro_1",
+      "name": "team_position_prediction_avro",
+      "version": 1,
+      "dataFormat": "avro",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_avro_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102202,
+      "size": 0
+    },
+    {
+      "type": "hopsfsTrainingDatasetDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:19:54Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 15,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_hdf5_1",
       "name": "team_position_prediction_hdf5",
       "version": 1,
       "dataFormat": "hdf5",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_hdf5_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102296,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:45Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:20:04Z",
+      "creator": "admin@hopsworks.ai",
       "description": "a dataset with features for football teams, used for training a model to predict league-position",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -936,25 +1637,136 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 6,
-      "inodeId": 101516,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 16,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_npy_1",
       "name": "team_position_prediction_npy",
       "version": 1,
       "dataFormat": "npy",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_npy_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102298,
       "size": 0
     },
     {
+      "type": "hopsfsTrainingDatasetDTO",
       "clusterAnalysis": null,
-      "created": "2019-02-14T15:12:51Z",
-      "creator": "admin@kth.se",
-      "dependencies": [],
+      "created": "2019-07-31T09:20:12Z",
+      "creator": "admin@hopsworks.ai",
+      "description": "a dataset with features for football teams, used for training a model to predict league-position",
+      "descriptiveStatistics": null,
+      "featureCorrelationMatrix": null,
+      "features": [
+        {
+          "name": "team_budget",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_worth",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_position",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_attendance",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_rating",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "team_position",
+          "type": "INT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "sum_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        },
+        {
+          "name": "average_player_age",
+          "type": "FLOAT",
+          "description": "-",
+          "primary": false,
+          "partition": false
+        }
+      ],
+      "featuresHistogram": null,
+      "featurestoreId": 67,
+      "featurestoreName": "demo_featurestore_admin000_featurestore",
+      "id": 17,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_petastorm_1",
+      "name": "team_position_prediction_petastorm",
+      "version": 1,
+      "dataFormat": "petastorm",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
+      "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_petastorm_1",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102300,
+      "size": 0
+    },
+    {
+      "type": "hopsfsTrainingDatasetDTO",
+      "clusterAnalysis": null,
+      "created": "2019-07-31T09:20:40Z",
+      "creator": "admin@hopsworks.ai",
       "description": "",
       "descriptiveStatistics": null,
       "featureCorrelationMatrix": null,
@@ -1045,28 +1857,152 @@
         }
       ],
       "featuresHistogram": null,
-      "featurestoreId": 1,
+      "featurestoreId": 67,
       "featurestoreName": "demo_featurestore_admin000_featurestore",
-      "id": 7,
-      "inodeId": 101518,
-      "jobId": null,
-      "jobName": null,
-      "jobStatus": null,
-      "lastComputed": null,
+      "id": 18,
+      "jobs": [],
+      "location": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_2",
       "name": "team_position_prediction",
       "version": 2,
       "dataFormat": "tfrecords",
+      "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
       "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_2",
+      "hopsfsConnectorId": 1,
+      "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+      "inodeId": 102396,
       "size": 0
     }
   ],
-  "featurestore": {
-    "featurestoreId": 1,
-    "featurestoreName": "demo_featurestore_admin000_featurestore",
-    "featurestoreDescription": "Featurestore database for project: demo_featurestore_admin000",
-    "hdfsStorePath": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db",
-    "projectName": "demo_featurestore_admin000",
-    "projectId": 1,
-    "inodeId": 107809
-  }
+  "settings": {
+    "cachedFeaturegroupDescriptionMaxLength": 256,
+    "cachedFeaturegroupDtoType": "cachedFeaturegroupDTO",
+    "cachedFeaturegroupFeatureDescriptionMaxLength": 256,
+    "cachedFeaturegroupFeatureNameMaxLength": 767,
+    "cachedFeaturegroupNameMaxLength": 767,
+    "cachedFeaturegroupType": "CACHED_FEATURE_GROUP",
+    "externalTrainingDatasetDtoType": "externalTrainingDatasetDTO",
+    "externalTrainingDatasetNameMaxLength": 256,
+    "externalTrainingDatasetType": "EXTERNAL_TRAINING_DATASET",
+    "featuregroupType": "FEATURE GROUP",
+    "featurestoreRegex": "^[a-zA-Z0-9_]+$",
+    "featurestoreStatisticsMaxCorrelations": 50,
+    "featurestoreUtil4jArgsDataset": "Resources",
+    "featurestoreUtil4jExecutable": "hdfs:///user/spark/hops-examples-featurestore-util4j-1.0.0-SNAPSHOT.jar",
+    "featurestoreUtil4jMainClass": "io.hops.examples.featurestore_util4j.Main",
+    "featurestoreUtilPythonExecutable": "hdfs:///user/spark/featurestore_util.py",
+    "featurestoreUtilPythonMainClass": "org.apache.spark.deploy.PythonRunner",
+    "hopsfsConnectorDtoType": "featurestoreHopsfsConnectorDTO",
+    "hopsfsConnectorType": "HopsFS",
+    "hopsfsTrainingDatasetDtoType": "hopsfsTrainingDatasetDTO",
+    "hopsfsTrainingDatasetNameMaxLength": 256,
+    "hopsfsTrainingDatasetType": "HOPSFS_TRAINING_DATASET",
+    "jdbcConnectorDtoType": "featurestoreJdbcConnectorDTO",
+    "jdbcConnectorType": "JDBC",
+    "jdbcStorageConnectorArgumentsMaxLength": 2000,
+    "jdbcStorageConnectorConnectionstringMaxLength": 5000,
+    "onDemandFeaturegroupDescriptionMaxLength": 1000,
+    "onDemandFeaturegroupDtoType": "onDemandFeaturegroupDTO",
+    "onDemandFeaturegroupFeatureDescriptionMaxLength": 10000,
+    "onDemandFeaturegroupFeatureNameMaxLength": 1000,
+    "onDemandFeaturegroupNameMaxLength": 1000,
+    "onDemandFeaturegroupSqlQueryMaxLength": 11000,
+    "onDemandFeaturegroupType": "ON_DEMAND_FEATURE_GROUP",
+    "s3BucketTrainingDatasetsFolder": "TRAINING_DATASETS",
+    "s3ConnectorDtoType": "featurestoreS3ConnectorDTO",
+    "s3ConnectorType": "S3",
+    "s3StorageConnectorAccesskeyMaxLength": 1000,
+    "s3StorageConnectorBucketMaxLength": 5000,
+    "s3StorageConnectorSecretkeyMaxLength": 1000,
+    "storageConnectorDescriptionMaxLength": 1000,
+    "storageConnectorNameMaxLength": 1000,
+    "suggestedFeatureTypes": [
+      "None",
+      "TINYINT",
+      "SMALLINT",
+      "INT",
+      "BIGINT",
+      "FLOAT",
+      "DOUBLE",
+      "DECIMAL",
+      "TIMESTAMP",
+      "DATE",
+      "STRING",
+      "BOOLEAN",
+      "BINARY",
+      "ARRAY <TINYINT>",
+      "ARRAY <SMALLINT>",
+      "ARRAY <INT>",
+      "ARRAY <BIGINT>",
+      "ARRAY <FLOAT>",
+      "ARRAY <DOUBLE>",
+      "ARRAY <DECIMAL>",
+      "ARRAY <TIMESTAMP>",
+      "ARRAY <DATE>",
+      "ARRAY <STRING>",
+      "ARRAY <BOOLEAN>",
+      "ARRAY <BINARY>",
+      "ARRAY <ARRAY <FLOAT> >",
+      "ARRAY <ARRAY <INT> >",
+      "ARRAY <ARRAY <STRING> >",
+      "MAP <FLOAT, FLOAT>",
+      "MAP <FLOAT, STRING>",
+      "MAP <FLOAT, INT>",
+      "MAP <FLOAT, BINARY>",
+      "MAP <INT, INT>",
+      "MAP <INT, STRING>",
+      "MAP <INT, BINARY>",
+      "MAP <INT, FLOAT>",
+      "MAP <INT, ARRAY <FLOAT> >",
+      "STRUCT < label: STRING, index: INT >",
+      "UNIONTYPE < STRING, INT>"
+    ],
+    "trainingDatasetDataFormats": [
+      "csv",
+      "tfrecords",
+      "parquet",
+      "tsv",
+      "hdf5",
+      "npy",
+      "orc",
+      "avro",
+      "image",
+      "petastorm"
+    ],
+    "trainingDatasetDescriptionMaxLength": 10000,
+    "trainingDatasetFeatureDescriptionMaxLength": 10000,
+    "trainingDatasetFeatureNameMaxLength": 1000,
+    "trainingDatasetType": "TRAINING DATASET"
+  },
+  "storageConnectors": [
+    {
+      "type": "featurestoreJdbcConnectorDTO",
+      "description": "JDBC connection to Hopsworks Project Feature Store Hive Database",
+      "featurestoreId": 67,
+      "id": 1,
+      "name": "demo_featurestore_admin000_featurestore",
+      "storageConnectorType": "JDBC",
+      "arguments": "sslTrustStore,trustStorePassword,sslKeyStore,keyStorePassword",
+      "connectionString": "jdbc:hive2://10.0.2.15:9085/demo_featurestore_admin000_featurestore;auth=noSasl;ssl=true;twoWay=true;"
+    },
+    {
+      "type": "featurestoreJdbcConnectorDTO",
+      "description": "JDBC connection to Hopsworks Project Hive Warehouse",
+      "featurestoreId": 67,
+      "id": 2,
+      "name": "demo_featurestore_admin000",
+      "storageConnectorType": "JDBC",
+      "arguments": "sslTrustStore,trustStorePassword,sslKeyStore,keyStorePassword",
+      "connectionString": "jdbc:hive2://10.0.2.15:9085/demo_featurestore_admin000;auth=noSasl;ssl=true;twoWay=true;"
+    },
+    {
+      "type": "featurestoreHopsfsConnectorDTO",
+      "description": "HopsFS backend for storing Training Datasets of the Hopsworks Feature Store",
+      "featurestoreId": 67,
+      "id": 1,
+      "name": "demo_featurestore_admin000_Training_Datasets",
+      "storageConnectorType": "HopsFS",
+      "datasetName": "demo_featurestore_admin000_Training_Datasets",
+      "hopsfsPath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets"
+    }
+  ]
 }

@@ -199,7 +199,7 @@ def _find_training_dataset(training_datasets, training_dataset, training_dataset
 
 def _find_featuregroup(featuregroups, featuregroup_name, featuregroup_version):
     """
-    A helper function to look for a training dataset name and version in a list of training datasets
+    A helper function to look for a feature group name and version in a list of feature groups
 
     Args:
         :featuregroups: a list of featuregroup metadata in the feature store
@@ -210,7 +210,7 @@ def _find_featuregroup(featuregroups, featuregroup_name, featuregroup_version):
         The feature group if it finds it, otherwise exception
 
     Raises:
-        :TrainingDatasetNotFound: if the requested training dataset could not be found
+        :FeaturegroupNotFound: if the requested feature group could not be found
     """
     try:
         return featuregroups[fs_utils._get_table_name(featuregroup_name, featuregroup_version)]

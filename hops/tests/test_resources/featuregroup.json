@@ -1,277 +1,292 @@
 {
-  "type": "featuregroupDTO",
+  "type": "cachedFeaturegroupDTO",
   "clusterAnalysis": {
     "dataPoints": [
       {
         "datapointName": "0",
-        "firstDimension": -29.264389,
-        "secondDimension": -26.574423
+        "firstDimension": -49.909733,
+        "secondDimension": -4.19589
       },
       {
         "datapointName": "1",
-        "firstDimension": -42.468998,
-        "secondDimension": 11.561569
+        "firstDimension": -45.885376,
+        "secondDimension": -19.957819
       },
       {
         "datapointName": "2",
-        "firstDimension": -19.38664,
-        "secondDimension": -20.376434
+        "firstDimension": -38.804977,
+        "secondDimension": -36.520153
       },
       {
         "datapointName": "3",
-        "firstDimension": -21.123789,
-        "secondDimension": -12.777223
+        "firstDimension": -48.554096,
+        "secondDimension": -25.142023
       },
       {
         "datapointName": "4",
-        "firstDimension": -40.807064,
-        "secondDimension": -7.1989565
+        "firstDimension": -4.5657916,
+        "secondDimension": -38.333805
       },
       {
         "datapointName": "5",
-        "firstDimension": -36.810482,
-        "secondDimension": -14.868135
+        "firstDimension": -4.120768,
+        "secondDimension": -14.264011
       },
       {
         "datapointName": "6",
-        "firstDimension": -25.129387,
-        "secondDimension": -2.81771
+        "firstDimension": -15.360649,
+        "secondDimension": -11.937227
       },
       {
         "datapointName": "7",
-        "firstDimension": -42.208473,
-        "secondDimension": -23.380253
+        "firstDimension": -7.112257,
+        "secondDimension": -14.461041
       },
       {
         "datapointName": "8",
-        "firstDimension": -49.64324,
-        "secondDimension": 8.474471
+        "firstDimension": 2.1918375,
+        "secondDimension": -49.908962
       },
       {
         "datapointName": "9",
-        "firstDimension": -52.890095,
-        "secondDimension": -8.920524
+        "firstDimension": -30.779097,
+        "secondDimension": -51.07886
       },
       {
         "datapointName": "10",
-        "firstDimension": -52.890095,
-        "secondDimension": -8.920524
+        "firstDimension": -18.590628,
+        "secondDimension": -38.255844
       },
       {
         "datapointName": "11",
-        "firstDimension": -53.237885,
-        "secondDimension": 5.814791
+        "firstDimension": -21.953465,
+        "secondDimension": -18.381575
       },
       {
         "datapointName": "12",
-        "firstDimension": -51.455605,
-        "secondDimension": 4.9123683
+        "firstDimension": -31.657015,
+        "secondDimension": -38.083744
       },
       {
         "datapointName": "13",
-        "firstDimension": -61.393528,
-        "secondDimension": -10.214672
+        "firstDimension": -0.32577854,
+        "secondDimension": -11.008999
       },
       {
         "datapointName": "14",
-        "firstDimension": -16.668093,
-        "secondDimension": -15.033279
+        "firstDimension": -5.534106,
+        "secondDimension": -23.37228
       },
       {
         "datapointName": "15",
-        "firstDimension": -53.364258,
-        "secondDimension": -16.565908
+        "firstDimension": -19.930288,
+        "secondDimension": -3.2230198
       },
       {
         "datapointName": "16",
-        "firstDimension": -43.39022,
-        "secondDimension": 7.5482545
+        "firstDimension": 0.003848786,
+        "secondDimension": -47.04801
       },
       {
         "datapointName": "17",
-        "firstDimension": -25.99044,
-        "secondDimension": 2.0980272
+        "firstDimension": -35.720085,
+        "secondDimension": -22.293356
       },
       {
         "datapointName": "18",
-        "firstDimension": -16.69818,
-        "secondDimension": -19.497805
+        "firstDimension": 0.003848786,
+        "secondDimension": -47.04801
       },
       {
         "datapointName": "19",
-        "firstDimension": -29.702436,
-        "secondDimension": -25.232685
+        "firstDimension": -28.581985,
+        "secondDimension": -8.801286
       },
       {
         "datapointName": "20",
-        "firstDimension": -65.90038,
-        "secondDimension": -19.178
+        "firstDimension": -12.60765,
+        "secondDimension": -37.861782
       },
       {
         "datapointName": "21",
-        "firstDimension": -52.056137,
-        "secondDimension": -25.113716
+        "firstDimension": -8.664566,
+        "secondDimension": -6.518777
       },
       {
         "datapointName": "22",
-        "firstDimension": -43.37518,
-        "secondDimension": 9.780518
+        "firstDimension": -45.97878,
+        "secondDimension": -33.987583
       },
       {
         "datapointName": "23",
-        "firstDimension": -17.925056,
-        "secondDimension": 4.7339134
+        "firstDimension": -29.559422,
+        "secondDimension": -38.97829
       },
       {
         "datapointName": "24",
-        "firstDimension": -41.653072,
-        "secondDimension": -0.05095669
+        "firstDimension": -19.394129,
+        "secondDimension": -41.313828
       },
       {
         "datapointName": "25",
-        "firstDimension": -40.24867,
-        "secondDimension": 9.3174095
+        "firstDimension": -28.64654,
+        "secondDimension": -7.803851
       },
       {
         "datapointName": "26",
-        "firstDimension": -34.025738,
-        "secondDimension": 3.9266667
+        "firstDimension": -2.5714655,
+        "secondDimension": -38.20245
       },
       {
         "datapointName": "27",
-        "firstDimension": -57.78384,
-        "secondDimension": -5.322729
+        "firstDimension": -14.195664,
+        "secondDimension": -13.894882
       },
       {
         "datapointName": "28",
-        "firstDimension": -26.458574,
-        "secondDimension": -1.0247613
+        "firstDimension": -49.84518,
+        "secondDimension": -5.193325
       },
       {
         "datapointName": "29",
-        "firstDimension": -30.46118,
-        "secondDimension": 2.1218212
+        "firstDimension": -2.1909962,
+        "secondDimension": -13.135222
       },
       {
         "datapointName": "30",
-        "firstDimension": -8.551554,
-        "secondDimension": -1.1780078
+        "firstDimension": -46.40181,
+        "secondDimension": -11.978339
       },
       {
         "datapointName": "31",
-        "firstDimension": -9.004644,
-        "secondDimension": -2.0685337
+        "firstDimension": -24.250835,
+        "secondDimension": -43.63708
       },
       {
         "datapointName": "32",
-        "firstDimension": -26.515755,
-        "secondDimension": -16.766743
+        "firstDimension": -43.051846,
+        "secondDimension": -32.793118
       },
       {
         "datapointName": "33",
-        "firstDimension": -21.081652,
-        "secondDimension": 0.73249614
+        "firstDimension": -40.835007,
+        "secondDimension": -20.62687
       },
       {
         "datapointName": "34",
-        "firstDimension": -64.112076,
-        "secondDimension": -15.557827
+        "firstDimension": -7.5572805,
+        "secondDimension": -38.530834
       },
       {
         "datapointName": "35",
-        "firstDimension": -53.26797,
-        "secondDimension": 1.3502654
+        "firstDimension": -13.540259,
+        "secondDimension": -38.924896
       },
       {
         "datapointName": "36",
-        "firstDimension": -54.70849,
-        "secondDimension": -17.005222
+        "firstDimension": -0.7419532,
+        "secondDimension": -20.05159
       },
       {
         "datapointName": "37",
-        "firstDimension": -48.872448,
-        "secondDimension": -9.834843
+        "firstDimension": -21.065683,
+        "secondDimension": -46.432354
       },
       {
         "datapointName": "38",
-        "firstDimension": -30.08933,
-        "secondDimension": -12.671564
+        "firstDimension": -22.986332,
+        "secondDimension": -2.4226155
       },
       {
         "datapointName": "39",
-        "firstDimension": -18.88842,
-        "secondDimension": -12.78912
+        "firstDimension": -48.03766,
+        "secondDimension": -33.121502
       },
       {
         "datapointName": "40",
-        "firstDimension": -43.02739,
-        "secondDimension": -4.954797
+        "firstDimension": -38.988777,
+        "secondDimension": -48.58351
       },
       {
         "datapointName": "41",
-        "firstDimension": -38.674004,
-        "secondDimension": -29.649624
+        "firstDimension": -44.77809,
+        "secondDimension": -51.969875
       },
       {
         "datapointName": "42",
-        "firstDimension": -51.998955,
-        "secondDimension": -9.371735
+        "firstDimension": -27.068388,
+        "secondDimension": -16.715088
       },
       {
         "datapointName": "43",
-        "firstDimension": -14.387593,
-        "secondDimension": -8.348388
+        "firstDimension": -42.912872,
+        "secondDimension": -49.84365
       },
       {
         "datapointName": "44",
-        "firstDimension": -16.26013,
-        "secondDimension": -20.839542
+        "firstDimension": -22.52459,
+        "secondDimension": -24.460323
       },
       {
         "datapointName": "45",
-        "firstDimension": -42.892002,
-        "secondDimension": 15.135569
+        "firstDimension": -4.8050227,
+        "secondDimension": -4.2611995
       },
       {
         "datapointName": "46",
-        "firstDimension": -46.643105,
-        "secondDimension": -14.369336
+        "firstDimension": -33.909557,
+        "secondDimension": -34.22536
       },
       {
         "datapointName": "47",
-        "firstDimension": -61.444683,
-        "secondDimension": -21.434057
+        "firstDimension": -40.80616,
+        "secondDimension": -5.5996685
       },
       {
         "datapointName": "48",
-        "firstDimension": -39.468857,
-        "secondDimension": -11.282239
+        "firstDimension": -0.031856354,
+        "secondDimension": -31.023375
+      },
+      {
+        "datapointName": "49",
+        "firstDimension": -17.122599,
+        "secondDimension": -15.089348
+      },
+      {
+        "datapointName": "50",
+        "firstDimension": -5.082226,
+        "secondDimension": -30.354324
+      },
+      {
+        "datapointName": "51",
+        "firstDimension": -41.980267,
+        "secondDimension": -48.78054
       }
     ],
     "clusters": [
       {
         "datapointName": "0",
-        "cluster": 0
-      },
-      {
-        "datapointName": "1",
         "cluster": 3
       },
       {
+        "datapointName": "1",
+        "cluster": 2
+      },
+      {
         "datapointName": "2",
-        "cluster": 0
+        "cluster": 2
       },
       {
         "datapointName": "3",
-        "cluster": 1
+        "cluster": 2
       },
       {
         "datapointName": "4",
-        "cluster": 2
+        "cluster": 0
       },
       {
         "datapointName": "5",
-        "cluster": 2
+        "cluster": 1
       },
       {
         "datapointName": "6",
@@ -279,31 +294,31 @@
       },
       {
         "datapointName": "7",
-        "cluster": 4
+        "cluster": 1
       },
       {
         "datapointName": "8",
-        "cluster": 3
+        "cluster": 0
       },
       {
         "datapointName": "9",
-        "cluster": 2
+        "cluster": 4
       },
       {
         "datapointName": "10",
-        "cluster": 2
+        "cluster": 0
       },
       {
         "datapointName": "11",
-        "cluster": 2
+        "cluster": 1
       },
       {
         "datapointName": "12",
-        "cluster": 2
+        "cluster": 4
       },
       {
         "datapointName": "13",
-        "cluster": 4
+        "cluster": 1
       },
       {
         "datapointName": "14",
@@ -311,43 +326,43 @@
       },
       {
         "datapointName": "15",
-        "cluster": 4
+        "cluster": 1
       },
       {
         "datapointName": "16",
-        "cluster": 3
-      },
-      {
-        "datapointName": "17",
-        "cluster": 1
-      },
-      {
-        "datapointName": "18",
-        "cluster": 1
-      },
-      {
-        "datapointName": "19",
         "cluster": 0
       },
       {
-        "datapointName": "20",
-        "cluster": 4
+        "datapointName": "17",
+        "cluster": 2
       },
       {
-        "datapointName": "21",
-        "cluster": 4
+        "datapointName": "18",
+        "cluster": 0
       },
       {
-        "datapointName": "22",
+        "datapointName": "19",
         "cluster": 3
       },
       {
-        "datapointName": "23",
+        "datapointName": "20",
+        "cluster": 0
+      },
+      {
+        "datapointName": "21",
         "cluster": 1
       },
       {
-        "datapointName": "24",
+        "datapointName": "22",
         "cluster": 2
+      },
+      {
+        "datapointName": "23",
+        "cluster": 4
+      },
+      {
+        "datapointName": "24",
+        "cluster": 0
       },
       {
         "datapointName": "25",
@@ -355,109 +370,113 @@
       },
       {
         "datapointName": "26",
-        "cluster": 3
+        "cluster": 0
       },
       {
         "datapointName": "27",
-        "cluster": 2
+        "cluster": 1
       },
       {
         "datapointName": "28",
-        "cluster": 1
+        "cluster": 3
       },
       {
         "datapointName": "29",
-        "cluster": 3
+        "cluster": 1
       },
       {
         "datapointName": "30",
-        "cluster": 1
-      },
-      {
-        "datapointName": "31",
-        "cluster": 1
-      },
-      {
-        "datapointName": "32",
-        "cluster": 0
-      },
-      {
-        "datapointName": "33",
-        "cluster": 1
-      },
-      {
-        "datapointName": "34",
-        "cluster": 4
-      },
-      {
-        "datapointName": "35",
-        "cluster": 2
-      },
-      {
-        "datapointName": "36",
-        "cluster": 4
-      },
-      {
-        "datapointName": "37",
-        "cluster": 2
-      },
-      {
-        "datapointName": "38",
-        "cluster": 1
-      },
-      {
-        "datapointName": "39",
-        "cluster": 1
-      },
-      {
-        "datapointName": "40",
-        "cluster": 2
-      },
-      {
-        "datapointName": "41",
-        "cluster": 0
-      },
-      {
-        "datapointName": "42",
-        "cluster": 2
-      },
-      {
-        "datapointName": "43",
-        "cluster": 1
-      },
-      {
-        "datapointName": "44",
-        "cluster": 0
-      },
-      {
-        "datapointName": "45",
         "cluster": 3
       },
       {
-        "datapointName": "46",
+        "datapointName": "31",
         "cluster": 4
+      },
+      {
+        "datapointName": "32",
+        "cluster": 2
+      },
+      {
+        "datapointName": "33",
+        "cluster": 2
+      },
+      {
+        "datapointName": "34",
+        "cluster": 0
+      },
+      {
+        "datapointName": "35",
+        "cluster": 0
+      },
+      {
+        "datapointName": "36",
+        "cluster": 1
+      },
+      {
+        "datapointName": "37",
+        "cluster": 4
+      },
+      {
+        "datapointName": "38",
+        "cluster": 3
+      },
+      {
+        "datapointName": "39",
+        "cluster": 2
+      },
+      {
+        "datapointName": "40",
+        "cluster": 4
+      },
+      {
+        "datapointName": "41",
+        "cluster": 4
+      },
+      {
+        "datapointName": "42",
+        "cluster": 3
+      },
+      {
+        "datapointName": "43",
+        "cluster": 4
+      },
+      {
+        "datapointName": "44",
+        "cluster": 2
+      },
+      {
+        "datapointName": "45",
+        "cluster": 1
+      },
+      {
+        "datapointName": "46",
+        "cluster": 2
       },
       {
         "datapointName": "47",
-        "cluster": 4
+        "cluster": 3
       },
       {
         "datapointName": "48",
-        "cluster": 2
+        "cluster": 0
+      },
+      {
+        "datapointName": "49",
+        "cluster": 1
+      },
+      {
+        "datapointName": "50",
+        "cluster": 0
+      },
+      {
+        "datapointName": "51",
+        "cluster": 4
       }
     ],
     "statisticType": "clusterAnalysis"
   },
-  "created": "2019-06-09T10:41:17Z",
+  "created": "2019-07-31T08:59:45Z",
   "creator": "admin@hopsworks.ai",
-  "dependencies": [
-    {
-      "path": "/Projects/demo_featurestore_admin000/TestJob/data/games.csv",
-      "modification": "2019-06-09T10:39:19.352Z",
-      "inodeId": 100354,
-      "dir": false
-    }
-  ],
   "description": "Features of games",
   "descriptiveStatistics": {
     "descriptiveStats": [
@@ -890,17 +909,28 @@
       }
     ]
   },
-  "featurestoreId": 1,
+  "featurestoreId": 67,
   "featurestoreName": "demo_featurestore_admin000_featurestore",
-  "id": 1,
-  "inodeId": 100493,
-  "jobId": 1,
-  "jobName": "featurestore_tour_job",
-  "jobStatus": "Succeeded",
-  "lastComputed": "2019-06-09T10:39:45Z",
+  "id": 13,
+  "jobs": [
+    {
+      "jobId": 37,
+      "jobName": "featurestore_tour_job",
+      "lastComputed": "2019-07-31T08:58:28Z",
+      "jobStatus": "Succeeded",
+      "featurestoreId": 67,
+      "featuregroupId": 13
+    }
+  ],
+  "location": "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1",
   "name": "games_features",
   "version": 1,
+  "featuregroupType": "CACHED_FEATURE_GROUP",
   "hdfsStorePaths": [
     "hdfs://10.0.2.15:8020/apps/hive/warehouse/demo_featurestore_admin000_featurestore.db/games_features_1"
-  ]
+  ],
+  "hiveTableId": 1,
+  "hiveTableType": "MANAGED_TABLE",
+  "inodeId": 100339,
+  "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"
 }

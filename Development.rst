@@ -26,6 +26,7 @@ and a python 2.7 environment at :code:`/hops_venv2.7`. Moreover, the commands be
     cd /hops/docker # once inside docker
     ./run_tests.sh 3.6 # for python 3.6
     ./run_tests.sh 2.7 # for python 2.7
+    ./run_tests.sh 3.6 -s # run tests with verbose flag
 
     # Alternatively you can skip the bash scripts and write the commands yourself (this gives you more control):
     cd /hops #inside the container
@@ -82,6 +83,7 @@ To run unit tests locally:
     pytest -m prepare # run test setups before parallel execution. **Note**: Feature store test suite is best run sequentially, otherwise race-conditions might cause errors.
     pytest -v hops -n 5 # Run tests in parallel with 5 workers. (Run prepare first)
     pytest -v hops -n auto #Run with automatically selected number of workers
+    pytest -v hops -s # run with printouts (stdout)
 
 Documentation
 -------------
