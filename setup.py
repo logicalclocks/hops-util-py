@@ -37,7 +37,7 @@ setup(
             'mock',
             'pytest',
         ],
-        'spark': ['pyspark==2.4.0'],
+        'spark': ['pyspark==2.4.3'],
         'plotting': ['matplotlib', 'seaborn'],
         'pynvm': ['nvidia-ml-py']
     },
