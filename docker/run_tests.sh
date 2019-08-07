@@ -21,5 +21,5 @@ echo "Running Unit Tests with Python ${PYTHON_VER}"
 source /hops_venv${PYTHON_VER}/bin/activate
 cd /hops
 pip install -e .
-pytest -v hops
+pytest -v hops $2
 exit 0

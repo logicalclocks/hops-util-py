@@ -1,4 +1,4 @@
-from hops.featurestore_impl.dao.feature_histogram import FeatureHistogram
+from hops.featurestore_impl.dao.stats.feature_histogram import FeatureHistogram
 
 
 class FeatureHistograms(object):

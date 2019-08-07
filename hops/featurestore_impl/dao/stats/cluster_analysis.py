@@ -1,6 +1,6 @@
+from hops.featurestore_impl.dao.stats.datapoint import DataPoint
 from hops import constants
-from hops.featurestore_impl.dao.cluster import Cluster
-from hops.featurestore_impl.dao.datapoint import DataPoint
+from hops.featurestore_impl.dao.stats.cluster import Cluster
 
 
 class ClusterAnalysis(object):

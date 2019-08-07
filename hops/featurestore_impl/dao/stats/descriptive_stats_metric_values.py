@@ -1,5 +1,5 @@
 from hops import constants
-from hops.featurestore_impl.dao.descriptive_stats_metric_value import DescriptiveStatsMetricValue
+from hops.featurestore_impl.dao.stats.descriptive_stats_metric_value import DescriptiveStatsMetricValue
 
 
 class DescriptiveStatsMetricValues(object):

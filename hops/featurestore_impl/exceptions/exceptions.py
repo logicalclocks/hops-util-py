@@ -68,3 +68,43 @@ class HiveNotEnabled(Exception):
     This exception will be raised if the user tries to peform featurestore operations using SparkSQL when
     hive is not enabled.
     """
+
+class StatisticsComputationError(Exception):
+    """
+    This exception will be raised if there is an error computing the statistics of a feature group or
+    training dataset
+    """
+
+class StorageConnectorNotFound(Exception):
+    """This exception will be raised if a requested storage connector cannot be found"""
+
+
+class CannotInsertIntoOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.insert_into_featuregroup(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+class CannotUpdateStatisticsOfOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.update_featuregroup_stats(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+class CannotGetPartitionsOfOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.get_featuregroup_partitions(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+class NumpyDatasetFormatNotSupportedForExternalTrainingDatasets(Exception):
+    """
+    This exception will be raised if the user tries to create an external training dataset with the .npy format.
+    .npy datasets are not supported for external training datasets.
+    """
+
+class HDF5DatasetFormatNotSupportedForExternalTrainingDatasets(Exception):
+    """
+    This exception will be raised if the user tries to create an external training dataset with the .npy format.
+    .npy datasets are not supported for external training datasets.
+    """

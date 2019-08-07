@@ -11,7 +11,7 @@ import pandas as pd
 import math
 import re
 import os
-
+import pydoop.hdfs as pydoop
 
 # for backwards compatibility
 try:
@@ -536,6 +536,9 @@ def _return_dataframe_type(dataframe, dataframe_type):
 
     Returns:
         The dataframe converted to either spark, pandas, numpy or python.
+
+    Raises:
+        :CouldNotConvertDataframe: if the dataframe type is not supported
     """
     if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK:
         return dataframe
@@ -545,6 +548,8 @@ def _return_dataframe_type(dataframe, dataframe_type):
         return np.array(dataframe.collect())
     if dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
         return dataframe.collect()
+
+    raise CouldNotConvertDataframe("DataFrame type not supported")
 
 
 def _convert_dataframe_to_spark(dataframe):
@@ -592,7 +597,7 @@ def _convert_dataframe_to_spark(dataframe):
             type(dataframe)))
 
 
-def _validate_metadata(name, dtypes, dependencies, description):
+def _validate_metadata(name, dtypes, description):
     """
     Function for validating metadata when creating new feature groups and training datasets.
     Raises and assertion exception if there is some error in the metadata.
@@ -600,7 +605,6 @@ def _validate_metadata(name, dtypes, dependencies, description):
     Args:
         :name: the name of the feature group/training dataset
         :dtypes: the dtypes in the provided spark dataframe
-        :dependencies: the list of data dependencies
         :description: the description
 
     Returns:
@@ -622,10 +626,6 @@ def _validate_metadata(name, dtypes, dependencies, description):
             raise ValueError("Name of feature column cannot be empty, cannot exceed 767 characters,"
                              " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
                              "feature name: {} is not valid".format(dtype[0]))
-
-    if not len(set(dependencies)) == len(dependencies):
-        dependencies_str = ",".join(dependencies)
-        raise ValueError("The list of data dependencies contains duplicates: {}".format(dependencies_str))
 
     if len(description) > 2000:
         raise ValueError(
@@ -857,6 +857,19 @@ def _do_get_project_featurestore():
     return featurestore_name
 
 
+def _do_get_project_training_datasets_sink():
+    """
+    Gets the project's default location for storing training datasets in HopsFS
+
+    Returns:
+        the project's default hopsfs location for storing training datasets
+
+    """
+    project_name = hdfs.project_name()
+    training_datasets_sink = project_name.lower() + constants.FEATURE_STORE.TRAINING_DATASETS_SUFFIX
+    return training_datasets_sink
+
+
 def _visualization_validation_warning():
     """
     Checks whether the user is trying to do visualization inside a livy session and prints a warning message
@@ -907,3 +920,111 @@ def _get_spark_sql_catalog_impl(spark):
         the sparkSQL catalog implementation of the spark session
     """
     return dict(spark.sparkContext._conf.getAll())[constants.SPARK_CONFIG.SPARK_SQL_CATALOG_IMPLEMENTATION]
+
+
+def _get_on_demand_featuregroup_type_info(featurestore_metadata):
+    """
+    Gets the type information for an on-demand feature group that the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the type information of the feature group, tuple of (type, dtotype)
+    """
+    featuregroup_type = featurestore_metadata.settings.on_demand_featuregroup_type
+    featuregroup_type_dto = featurestore_metadata.settings.on_demand_featuregroup_dto_type
+    return featuregroup_type, featuregroup_type_dto
+
+
+def _get_cached_featuregroup_type_info(featurestore_metadata):
+    """
+    Gets the type information for a cached feature group that the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+
+    Returns:
+        the type information of the feature group, tuple of (type, dtotype)
+    """
+    featuregroup_type = featurestore_metadata.settings.cached_featuregroup_type
+    featuregroup_type_dto = featurestore_metadata.settings.cached_featuregroup_dto_type
+    return featuregroup_type, featuregroup_type_dto
+
+
+def _get_training_dataset_type_info(featurestore_metadata, external=False):
+    """
+    Gets the type information of a training datasetthat the backend expects
+
+    Args:
+         :featurestore_metadata: metadata of the featurestore
+         :external: whether it is an external featuregroup or not
+
+    Returns:
+        the type information of the training dataset, tuple of (type, dtotype)
+    """
+    if external:
+        training_dataset_type = featurestore_metadata.settings.external_training_dataset_type
+        training_dataset_type_dto = featurestore_metadata.settings.external_training_dataset_dto_type
+    else:
+        training_dataset_type = featurestore_metadata.settings.hopsfs_training_dataset_type
+        training_dataset_type_dto = featurestore_metadata.settings.hopsfs_training_dataset_dto_type
+    return training_dataset_type, training_dataset_type_dto
+
+
+def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, data_format):
+    """
+    Utility function for getting the hopsfs path of a training dataset in the feature store
+
+    Args:
+        :training_dataset_name: name of the training dataset
+        :hdfs_store_path: the hdfs path to the dataset where all the training datasets are stored
+        :data_format: data format of the training datataset
+
+    Return:
+        the hdfs path to the training dataset
+    """
+    hdfs_path = hdfs_store_path + \
+                constants.DELIMITERS.SLASH_DELIMITER + training_dataset_name
+    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
+        hdfs_path = hdfs_store_path
+    # abspath means "hdfs://namenode:port/ is preprended
+    path = pydoop.path.abspath(hdfs_path)
+    return path
+
+
+def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket):
+    """
+    Utility function for getting the S3 path of a training dataset in the feature store
+
+    Args:
+        :training_dataset_name: name of the training dataset
+        :training_dataset_version: version of the training dataset
+        :bucket: the s3 bucket
+
+    Returns:
+        the s3 path to the training dataset
+    """
+    path = ""
+    if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
+        path = constants.S3_CONFIG.S3_FILE_PREFIX
+    path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + constants.S3_CONFIG.S3_TRAINING_DATASETS_FOLDER \
+           + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name, training_dataset_version)
+    return path
+
+
+def _setup_s3_credentials_for_spark(access_key, secret_key, spark):
+    """
+    Registers the access key and secret key environment variables for writing to S3 with Spark
+
+    Args:
+        :access_key: the S3 access key ID
+        :secret_key: the S3 secret key
+        :spark: the spark session
+
+    Returns:
+        None
+    """
+    sc = spark.sparkContext
+    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_ACCESS_KEY_ENV, access_key)
+    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SECRET_KEY_ENV, secret_key)

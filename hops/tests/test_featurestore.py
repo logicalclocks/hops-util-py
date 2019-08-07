@@ -10,31 +10,32 @@ HDFS/integration with hopsworks is not tested. The tests are structured as follo
 """
 
 # Regular imports (do not need to be mocked and are not dependent on mocked imports)
-import tensorflow as tf
-import pytest
-import mock
+import json
 import logging
-from petastorm.unischema import Unischema, UnischemaField
-from petastorm.codecs import ScalarCodec
-from pyspark.sql import SQLContext, SparkSession, DataFrame
-from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, ArrayType
-import pandas as pd
-import numpy as np
-import pyspark
+import os
+import shutil
 from random import choice
 from string import ascii_uppercase
-import json
-import os
-import h5py
-import shutil
 
-# Mocked imports and modules that depends on mocked imports
-from hops.featurestore_impl.dao.statistics import Statistics
+import h5py
+import mock
+import numpy as np
+import pandas as pd
+import pyspark
+import pytest
+import tensorflow as tf
+from petastorm.codecs import ScalarCodec
+from petastorm.unischema import Unischema, UnischemaField
+from pyspark.sql import SQLContext, SparkSession, DataFrame
+from pyspark.sql.types import StructType, StructField, IntegerType, FloatType, ArrayType
+
+from hops.featurestore_impl.dao.stats.statistics import Statistics
 
 orig_import = __import__
 pydoop_mock = mock.Mock()
 pydoop_hdfs_mock = mock.Mock()
 pydoop_hdfs_path_mock = mock.Mock()
+
 
 # For mocking pydoop imports to run tests locally (pydoop requires HADOOP_HOME etc to be set just to import,
 # so therefore we mock it)
@@ -47,6 +48,7 @@ def import_mock(name, *args):
         return pydoop_hdfs_path_mock
     return orig_import(name, *args)
 
+
 import sys
 
 if (sys.version_info > (3, 0)):
@@ -56,10 +58,17 @@ if (sys.version_info > (3, 0)):
         from hops import hdfs, featurestore, constants, util, tls
         from hops.featurestore_impl.util import fs_utils
         from hops.featurestore_impl import core
-        from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
-        from hops.featurestore_impl.dao.featuregroup import Featuregroup
-        from hops.featurestore_impl.dao.training_dataset import TrainingDataset
-        from hops.featurestore_impl.dao.feature import Feature
+        from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
+        from hops.featurestore_impl.dao.featuregroups.featuregroup import Featuregroup
+        from hops.featurestore_impl.dao.featuregroups.cached_featuregroup import CachedFeaturegroup
+        from hops.featurestore_impl.dao.featuregroups.on_demand_featuregroup import OnDemandFeaturegroup
+        from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
+        from hops.featurestore_impl.dao.datasets.external_training_dataset import ExternalTrainingDataset
+        from hops.featurestore_impl.dao.datasets.hopsfs_training_dataset import HopsfsTrainingDataset
+        from hops.featurestore_impl.dao.storageconnectors.hopsfs_connector import HopsfsStorageConnector
+        from hops.featurestore_impl.dao.storageconnectors.s3_connector import S3StorageConnector
+        from hops.featurestore_impl.dao.storageconnectors.jdbc_connector import JDBCStorageConnector
+        from hops.featurestore_impl.dao.features.feature import Feature
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
             InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
@@ -77,10 +86,17 @@ else:
         from hops import hdfs, featurestore, constants, util, tls
         from hops.featurestore_impl.util import fs_utils
         from hops.featurestore_impl import core
-        from hops.featurestore_impl.dao.featurestore_metadata import FeaturestoreMetadata
-        from hops.featurestore_impl.dao.featuregroup import Featuregroup
-        from hops.featurestore_impl.dao.training_dataset import TrainingDataset
-        from hops.featurestore_impl.dao.feature import Feature
+        from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
+        from hops.featurestore_impl.dao.featuregroups.featuregroup import Featuregroup
+        from hops.featurestore_impl.dao.featuregroups.cached_featuregroup import CachedFeaturegroup
+        from hops.featurestore_impl.dao.featuregroups.on_demand_featuregroup import OnDemandFeaturegroup
+        from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
+        from hops.featurestore_impl.dao.datasets.external_training_dataset import ExternalTrainingDataset
+        from hops.featurestore_impl.dao.datasets.hopsfs_training_dataset import HopsfsTrainingDataset
+        from hops.featurestore_impl.dao.storageconnectors.hopsfs_connector import HopsfsStorageConnector
+        from hops.featurestore_impl.dao.storageconnectors.s3_connector import S3StorageConnector
+        from hops.featurestore_impl.dao.storageconnectors.jdbc_connector import JDBCStorageConnector
+        from hops.featurestore_impl.dao.features.feature import Feature
         from hops.featurestore_impl.query_planner import query_planner
         from hops.featurestore_impl.exceptions.exceptions import FeatureNameCollisionError, FeatureNotFound, \
             InvalidPrimaryKey, TrainingDatasetNotFound, TFRecordSchemaNotFound, InferJoinKeyError, \
@@ -92,14 +108,12 @@ else:
         from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
 
 
-
 class TestFeaturestoreSuite(object):
     """
     Unit Test Suite for the Featurestore Python Client
     """
 
     pytest.logger = logging.getLogger("featurestore_tests")
-
 
     @pytest.fixture
     def sample_metadata(self):
@@ -109,7 +123,6 @@ class TestFeaturestoreSuite(object):
             f.close()
             return metadata
 
-
     @pytest.fixture
     def sample_statistics(self):
         """ Fixture for setting up some sample feature statistics for tests """
@@ -117,7 +130,6 @@ class TestFeaturestoreSuite(object):
             statistics = json.load(f)
             f.close()
             return statistics
-
 
     @pytest.fixture
     def sample_featuregroup(self):
@@ -127,7 +139,6 @@ class TestFeaturestoreSuite(object):
             f.close()
             return featuregroup
 
-
     @pytest.fixture
     def sample_training_dataset(self):
         """ Fixture for setting up a sample training dataset for tests """
@@ -135,7 +146,6 @@ class TestFeaturestoreSuite(object):
             training_dataset = json.load(f)
             f.close()
             return training_dataset
-
 
     @pytest.fixture
     def sample_featurestores(self):
@@ -147,7 +157,6 @@ class TestFeaturestoreSuite(object):
              'projectName': 'demo_featurestore_admin000',
              'projectId': 1, 'inodeId': 100289}]
 
-
     def _sample_spark_dataframe(self, spark):
         """ Creates a sample dataframe for testing"""
         sqlContext = SQLContext(spark.sparkContext)
@@ -157,7 +166,6 @@ class TestFeaturestoreSuite(object):
                              ])
         sample_df = sqlContext.createDataFrame([(999, 41251.52, 1), (998, 1319.4, 8), (997, 21219.1, 2)], schema)
         return sample_df
-
 
     def spark_session(self):
         """ Creates spark session if it do not exists, otherwise returns the existing one """
@@ -171,7 +179,6 @@ class TestFeaturestoreSuite(object):
             .enableHiveSupport() \
             .getOrCreate()
         return spark
-
 
     @pytest.fixture
     def prepare_featurestore_db_and_training_Datsets(self):
@@ -260,12 +267,10 @@ class TestFeaturestoreSuite(object):
             constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
         hdf5_file.create_dataset("team_position_prediction_hdf5", data=features_npy)
 
-
     @pytest.mark.prepare
     def test_prepare(self, prepare_featurestore_db_and_training_Datsets):
         """ Prepares the Hive Database for the tests, this should run before anything else"""
         assert True
-
 
     def test_project_featurestore(self):
         """ Tests that project_featurestore() returns the correct name"""
@@ -275,12 +280,10 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="TEST_PROJECT")
         assert featurestore.project_featurestore() == featurestore_name
 
-
     def test_get_table_name(self):
         """ Tests that _get_table_name returns the correct Hive table name"""
         assert fs_utils._get_table_name("test_fg", 1) == "test_fg_1"
         assert fs_utils._get_table_name("test_fg", 2) == "test_fg_2"
-
 
     def test_parse_metadata(self, sample_metadata):
         """
@@ -288,55 +291,93 @@ class TestFeaturestoreSuite(object):
         are parsed correctly given a valid json metadata object
         """
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        assert featurestore_metadata.featurestore is not None
+        assert featurestore_metadata.featurestore.name is not None
+        assert featurestore_metadata.featurestore.project_id is not None
+        assert featurestore_metadata.featurestore.description is not None
+        assert featurestore_metadata.featurestore.hdfs_path is not None
+        assert featurestore_metadata.featurestore.project_name is not None
+        assert featurestore_metadata.featurestore.inode_id is not None
+        assert featurestore_metadata.featurestore.name == "demo_featurestore_admin000_featurestore"
         names = []
         for fg in featurestore_metadata.featuregroups.values():
             assert isinstance(fg, Featuregroup)
-            assert not fg.id == None
-            assert not fg.name == None
-            assert not fg.features == None
+            assert fg.id is not None
+            assert fg.name is not None
+            assert fg.features is not None
             names.append(fg.name)
             for f in fg.features:
                 assert isinstance(f, Feature)
-                assert not f.name == None
-                assert not f.type == None
-                assert not f.description == None
-                assert not f.primary == None
-                assert not f.partition == None
+                assert f.name is not None
+                assert f.type is not None
+                assert f.description is not None
+                assert f.primary is not None
+                assert f.partition is not None
         assert set(names) == set(
-            ["games_features", "season_scores_features", "attendances_features", "players_features",
-             "teams_features"])
+            ['games_features', 'season_scores_features', 'attendances_features', 'players_features', 'teams_features',
+             'games_features_on_demand_tour', 'teams_features_spanish', 'games_features_on_demand',
+             'players_features_on_demand', 'teams_features_spanish', 'games_features_partitioned',
+             'games_features_double_partitioned', 'pandas_test_example', 'numpy_test_example',
+             'python_test_example'])
         names = []
         for td in featurestore_metadata.training_datasets.values():
             assert isinstance(td, TrainingDataset)
-            assert not td.id == None
-            assert not td.name == None
-            assert not td.features == None
+            assert td.id is not None
+            assert td.name is not None
+            assert td.features is not None
             names.append(td.name)
             for f in td.features:
                 assert isinstance(f, Feature)
-                assert not f.name == None
-                assert not f.type == None
-                assert not f.description == None
-                assert not f.primary == None
-                assert not f.partition == None
+                assert f.name is not None
+                assert f.type is not None
+                assert f.description is not None
+                assert f.primary is not None
+                assert f.partition is not None
         assert set(names) == set(
-            ["team_position_prediction", "team_position_prediction_csv", "team_position_prediction_tsv",
-             "team_position_prediction_parquet", "team_position_prediction_hdf5", "team_position_prediction_npy"])
-
+            ['team_position_prediction', 'team_position_prediction_csv', 'team_position_prediction_tsv',
+             'team_position_prediction_parquet', 'team_position_prediction_orc',
+             'team_position_prediction_avro', 'team_position_prediction_hdf5', 'team_position_prediction_npy',
+             'team_position_prediction_petastorm'])
+        names = []
+        for sc in featurestore_metadata.storage_connectors.values():
+            assert (isinstance(sc, JDBCStorageConnector) or isinstance(sc, S3StorageConnector) or
+                    isinstance(sc, HopsfsStorageConnector))
+            assert sc.name is not None
+            assert sc.id is not None
+            assert sc.featurestore_id is not None
+            assert sc.description is not None
+            assert sc.type is not None
+            names.append(sc.name)
+            if isinstance(sc, JDBCStorageConnector):
+                assert sc.connection_string is not None
+                assert sc.arguments is not None
+            if isinstance(sc, S3StorageConnector):
+                assert sc.access_key is not None
+                assert sc.bucket is not None
+                assert sc.secret_key is not None
+            if isinstance(sc, HopsfsStorageConnector):
+                assert sc.hopsfs_path is not None
+                assert sc.dataset_name is not None
+        assert set(names) == set(['demo_featurestore_admin000_featurestore', 'demo_featurestore_admin000',
+                                  'demo_featurestore_admin000_Training_Datasets'])
 
     def test_find_featuregroup_that_contains_feature(self, sample_metadata):
         """ Tests the _find_featuregroup_that_contains_feature method for the query planner"""
         featuregroups = \
             FeaturestoreMetadata(sample_metadata).featuregroups.values()
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "average_attendance")
-        assert len(matches) == 1
+        assert len(matches) == 2
         assert matches[0].name == "attendances_features"
+        assert (matches[0].version == 1 or matches[0].version == 2)
+        assert matches[1].name == "attendances_features"
+        assert (matches[1].version == 1 or matches[1].version == 2)
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "average_position")
         assert len(matches) == 1
         assert matches[0].name == "season_scores_features"
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "score")
-        assert len(matches) == 1
-        assert matches[0].name == "games_features"
+        assert len(matches) == 3
+        assert set(list(map(lambda x: x.name, matches))) == set(["games_features", "games_features_partitioned",
+                                                                 "games_features_double_partitioned"])
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "team_position")
         assert len(matches) == 1
         assert matches[0].name == "teams_features"
@@ -344,8 +385,7 @@ class TestFeaturestoreSuite(object):
         assert len(matches) == 1
         assert matches[0].name == "players_features"
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "team_id")
-        assert len(matches) == 4
-
+        assert len(matches) == 5
 
     def test_run_and_log_sql(self):
         """ Test for _run_and_log_sql, verifies that the sql method on the sparksession is called correctly"""
@@ -354,7 +394,6 @@ class TestFeaturestoreSuite(object):
         sql = "select * from test"
         core._run_and_log_sql(spark_mock, sql)
         spark_mock.sql.assert_called_with(sql)
-
 
     def test_use_database(self):
         """ Test for _use_database, verfifies that the hive database is selected correctly"""
@@ -367,7 +406,6 @@ class TestFeaturestoreSuite(object):
         core._use_featurestore(spark)
         selected_db = spark.sql("select current_database()").toPandas()["current_database()"][0]
         assert selected_db == database
-
 
     def test_return_dataframe_type(self):
         """ Test for the return_dataframe_type method"""
@@ -382,7 +420,6 @@ class TestFeaturestoreSuite(object):
         assert isinstance(converted_df, np.ndarray)
         converted_df = fs_utils._return_dataframe_type(sample_df, constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON)
         assert isinstance(converted_df, list)
-
 
     def test_convert_dataframe_to_spark(self):
         """ Test for the _convert_dataframe_to_spark method """
@@ -404,11 +441,11 @@ class TestFeaturestoreSuite(object):
             fs_utils._convert_dataframe_to_spark(numpy_df)
             assert "Cannot convert numpy array that do not have two dimensions to a dataframe." in ex.value
 
-
-    def test_get_featuregroup(self):
+    def test_get_featuregroup(self, sample_metadata):
         """ Test for get_featuregroup() method"""
         spark = self.spark_session()
         hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         teams_fg_df = featurestore.get_featuregroup("teams_features")
         teams_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
             "./hops/tests/test_resources/teams_features.csv")
@@ -441,9 +478,10 @@ class TestFeaturestoreSuite(object):
         attendances_fg_df = featurestore.get_featuregroup("attendances_features", dataframe_type="spark",
                                                           featuregroup_version=2)
         assert attendances_fg_df.count() == attendances_features_df.count()
-        with pytest.raises(pyspark.sql.utils.AnalysisException) as ex:
+        with pytest.raises(FeaturegroupNotFound) as ex:
             featurestore.get_featuregroup("attendances_features", dataframe_type="spark", featuregroup_version=3)
-            assert "Table or view not found: attendances_features_3" in ex.value
+            assert " Could not find the requested feature group with name: attendances_features and version: 3" \
+                   in ex.value
         with pytest.raises(pyspark.sql.utils.AnalysisException) as ex:
             featurestore.get_featuregroup("teams_features_spanish")
             assert "Table or view not found: teams_features_spanish_1" in ex.value
@@ -451,7 +489,6 @@ class TestFeaturestoreSuite(object):
                                                                      featurestore="other_featurestore",
                                                                      featuregroup_version=1)
         assert teams_features_spanish_fg_df.count() == teams_features_df.count()
-
 
     def test_find_feature(self, sample_metadata):
         """ Test _find_feature"""
@@ -467,7 +504,6 @@ class TestFeaturestoreSuite(object):
             query_planner._find_feature("non_existent_feature", featurestore.project_featurestore(), featuregroups)
             assert "Could not find the feature" in ex.value
 
-
     def test_do_get_feature(self, sample_metadata):
         """ Test _do_get_feature() method """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -479,14 +515,13 @@ class TestFeaturestoreSuite(object):
         assert df.count() == teams_features_df.count()
         assert len(df.schema.fields) == 1
         df = core._do_get_feature("team_budget", featurestore_metadata, featuregroup_version=1,
-                                          featuregroup="teams_features",
-                                          featurestore=featurestore.project_featurestore())
+                                  featuregroup="teams_features",
+                                  featurestore=featurestore.project_featurestore())
         assert df.count() == teams_features_df.count()
         assert len(df.schema.fields) == 1
         with pytest.raises(FeatureNotFound) as ex:
             core._do_get_feature("feature_that_do_not_exist", featurestore_metadata)
             assert "Could not find any featuregroups in the metastore that contains the given feature" in ex.value
-
 
     def test_get_join_str(self, sample_metadata):
         """ Test for the method that constructs the join-string in the featurestore query planner"""
@@ -501,7 +536,6 @@ class TestFeaturestoreSuite(object):
                            "AND attendances_features_1.`team_id`=season_scores_features_1.`team_id` " \
                            "AND attendances_features_1.`team_id`=teams_features_1.`team_id`"
 
-
     def test_get_join_col(self, sample_metadata):
         """ Test for the get_join_col in the query planner"""
         all_featuregroups = FeaturestoreMetadata(sample_metadata).featuregroups.values()
@@ -510,52 +544,38 @@ class TestFeaturestoreSuite(object):
         join_col = query_planner._get_join_col(featuregroups)
         assert join_col == "team_id"
 
-
     def test_validate_metadata(self):
         """ Test the validate_metadata() function"""
         fs_utils._validate_metadata("test",
-                                [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                ["input1", "input2"],
-                                        "description")
+                                    [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                    "description")
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test-",
-                                    [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
-                                            "description")
+                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description")
             assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                    [],
-                                    ["input1", "input2"],
-                                            "description")
+                                        [],
+                                        "description")
             assert "Cannot create a feature group from an empty spark dataframe" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                    [('team_budget-', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
-                                            "description")
+                                        [('team_budget-', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description")
             assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                    [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input2"],
-                                            "description")
+                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description")
             assert "Name of feature column cannot be empty" in ex.value
-        with pytest.raises(ValueError) as ex:
-            fs_utils._validate_metadata("test",
-                                    [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input1"],
-                                            "description")
-            assert "The list of data dependencies contains duplicates" in ex.value
         description = ''.join(choice(ascii_uppercase) for i in range(3000))
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                    [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    ["input1", "input1"],
-                                    description)
+                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        description)
             assert "Feature group/Training dataset description should " \
                    "not exceed the maximum length of 2000 characters" in ex.value
-
 
     def test_convert_featuregroup_version_dict(self, sample_metadata):
         """ Test the convert_featuregroup_version_dict function"""
@@ -573,63 +593,59 @@ class TestFeaturestoreSuite(object):
         assert set(names) == set(featuregroups_version_dict.keys())
         assert set(versions) == set(featuregroups_version_dict.values())
 
-
     def test_do_get_features(self, sample_metadata):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
-        df = core._do_get_features(["team_budget", "average_attendance", "average_player_age"], featurestore_metadata)
+        df = core._do_get_features(["team_budget", "average_player_age"], featurestore_metadata)
         assert df.count() > 0
-        assert len(df.schema.fields) == 3
+        assert len(df.schema.fields) == 2
+        with pytest.raises(FeatureNameCollisionError) as ex:
+            core._do_get_features(["teams_features_1.team_budget", "attendances_features_1.average_attendance",
+                                   "players_features_1.average_player_age"], featurestore_metadata)
+            assert "Found the feature with name 'attendances_features_1.average_attendance' in more than one of the " \
+                   "featuregroups" in ex.value
         df = core._do_get_features(["teams_features_1.team_budget", "attendances_features_1.average_attendance",
-                                            "players_features_1.average_player_age"], featurestore_metadata)
+                                    "players_features_1.average_player_age"],
+                                   featurestore_metadata,
+                                   featurestore=featurestore.project_featurestore(),
+                                   featuregroups_version_dict={
+                                       "teams_features": 1,
+                                       "attendances_features": 1,
+                                       "players_features": 1
+                                   }
+                                   )
         assert df.count() > 0
         assert len(df.schema.fields) == 3
-        df = core._do_get_features(["teams_features_1.team_budget", "attendances_features_1.average_attendance",
-                                            "players_features_1.average_player_age"],
-                                           featurestore_metadata,
-                                           featurestore=featurestore.project_featurestore(),
-                                           featuregroups_version_dict={
-                                               "teams_features": 1,
-                                               "attendances_features": 1,
-                                               "players_features": 1
-                                           }
-                                           )
+        df = core._do_get_features(["team_budget", "average_player_age", "team_position",
+                                    "average_player_rating", "average_player_worth", "sum_player_age",
+                                    "sum_player_rating", "sum_player_worth", "sum_position", "average_position"],
+                                   featurestore_metadata)
         assert df.count() > 0
-        assert len(df.schema.fields) == 3
-        df = core._do_get_features(["team_budget", "average_attendance", "average_player_age",
-                                            "team_position", "sum_attendance",
-                                            "average_player_rating", "average_player_worth", "sum_player_age",
-                                            "sum_player_rating", "sum_player_worth", "sum_position",
-                                            "average_position"
-                                            ],
-                                           featurestore_metadata)
-        assert df.count() > 0
-        assert len(df.schema.fields) == 12
+        assert len(df.schema.fields) == 10
         with pytest.raises(FeatureNotFound) as ex:
             core._do_get_features(["dummy_feature1", "dummy_feature2"],
-                                          featurestore_metadata)
+                                  featurestore_metadata)
             assert "Could not find any featuregroups containing the features in the metastore" in ex.value
-
 
     def test_check_if_list_of_featuregroups_contains_featuregroup(self, sample_metadata):
         """ Test of the _check_if_list_of_featuregroups_contains_featuregroup function"""
         all_featuregroups = FeaturestoreMetadata(sample_metadata).featuregroups.values()
         assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups, "games_features",
-                                                                                  1)
+                                                                                   1)
         assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups,
-                                                                                  "attendances_features", 1)
-        assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups, "players_features",
-                                                                                  1)
+                                                                                   "attendances_features", 1)
+        assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups,
+                                                                                   "players_features",
+                                                                                   1)
         assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups, "teams_features",
-                                                                                  1)
+                                                                                   1)
         assert query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups,
-                                                                                  "season_scores_features", 1)
+                                                                                   "season_scores_features", 1)
         assert not query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups,
-                                                                                      "season_scores_features", 2)
+                                                                                       "season_scores_features", 2)
         assert not query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups,
-                                                                                      "games_features", 2)
+                                                                                       "games_features", 2)
         assert not query_planner._check_if_list_of_featuregroups_contains_featuregroup(all_featuregroups, "dummy", 2)
-
 
     def test_sql(self):
         """ Test the sql interface to the feature store"""
@@ -643,7 +659,6 @@ class TestFeaturestoreSuite(object):
             "./hops/tests/test_resources/teams_features.csv")
         df = featurestore.sql("SELECT * FROM teams_features_spanish_1", featurestore="other_featurestore")
         assert df.count() == teams_features_df.count()
-
 
     def test_write_featuregroup_hive(self):
         """ Test write_featuregroup_hive method"""
@@ -661,21 +676,20 @@ class TestFeaturestoreSuite(object):
         spark.sql("CREATE TABLE IF NOT EXISTS `test_project_featurestore`.`teams_features_2`"
                   "(team_budget FLOAT,team_id INT,team_position INT)")
         core._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
-                                              1, "append")
+                                      1, "append")
         core._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
-                                              1, "overwrite")
+                                      1, "overwrite")
         core._write_featuregroup_hive(teams_features_df, "teams_features", featurestore.project_featurestore(),
-                                              2, "overwrite")
+                                      2, "overwrite")
         with pytest.raises(ValueError) as ex:
             core._write_featuregroup_hive(teams_features_df, "teams_features",
-                                                  featurestore.project_featurestore(), 1, "test")
+                                          featurestore.project_featurestore(), 1, "test")
             assert "The provided write mode test does not match the supported modes" in ex.value
-        #unmock for later tests
+        # unmock for later tests
         core._delete_table_contents = self.unmocked_delete_table_contents
         core._get_featuregroup_id = self.unmocked_get_featuregroup_id
 
-
-    def test_update_featuregroup_stats_rest(self, sample_metadata):
+    def test_update_featuregroup_stats_rest(self, sample_metadata, sample_featuregroup):
         """ Test _update_featuregroup_stats_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         connection = mock.Mock()
@@ -700,28 +714,27 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1, None,
-                                                              None, None, None)
-        assert result == data
+                                                          None, None, None, [])
+        assert result == {}
         response.code = 500
         response.status = 500
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1,
-                                                         None, None, None, None)
+                                                     None, None, None, None, [])
             assert "Could not update featuregroup stats" in ex.value
-        #unmock for later tests
+        # unmock for later tests
         core._get_featuregroup_id = self.unmocked_get_featuregroup_id
 
-
-    def test_insert_into_featuregroup(self, sample_metadata):
+    def test_insert_into_featuregroup(self, sample_metadata, sample_featuregroup):
         """ Test insert_into_featuregroup"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        rest_rpc._update_featuregroup_stats_rest = mock.MagicMock(return_value=None)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        rest_rpc._update_featuregroup_stats_rest = mock.MagicMock(return_value=sample_featuregroup)
         teams_features_df = featurestore.get_featuregroup("teams_features")
         old_count = teams_features_df.count()
         featurestore.insert_into_featuregroup(teams_features_df, "teams_features")
         teams_features_df = featurestore.get_featuregroup("teams_features")
         assert teams_features_df.count() == (2 * old_count)
-
 
     def test_convert_spark_dtype_to_hive_dtype(self):
         """Test converstion between spark datatype and Hive datatype"""
@@ -754,7 +767,6 @@ class TestFeaturestoreSuite(object):
                         {'metadata': {}, 'name': 'data', 'nullable': True, 'type': 'binary'}],
              'type': 'struct'}) == "STRUCT<origin:STRING,height:INT,width:INT,nChannels:INT,mode:INT,data:BINARY>"
 
-
     def test_convert_field_to_feature(self):
         """Tests the conversion of spark field to feature to save in NDB hopsworks"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -771,14 +783,12 @@ class TestFeaturestoreSuite(object):
         assert constants.REST_CONFIG.JSON_FEATURE_PARTITION in parsed_feature
         assert parsed_feature[constants.REST_CONFIG.JSON_FEATURE_NAME] == "team_budget"
 
-
     def test_parse_spark_features_schema(self):
         """ Test parse_spark_features_schema into hopsworks schema"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("teams_features")
         parsed_schema = core._parse_spark_features_schema(teams_features_df.schema, "team_id")
         assert len(parsed_schema) == len(teams_features_df.dtypes)
-
 
     def test_filter_spark_df_numeric(self):
         """ Test _filter_spark_df_numeric """
@@ -792,7 +802,6 @@ class TestFeaturestoreSuite(object):
         spark_df = fs_utils._convert_dataframe_to_spark(pandas_df)
         filtered_spark_df = fs_utils._filter_spark_df_numeric(spark_df)
         assert len(filtered_spark_df.dtypes) == 1  # should have dropped the string column
-
 
     def test_compute_corr_matrix(self):
         """ Test compute correlation matrix on a feature dataframe"""
@@ -820,7 +829,6 @@ class TestFeaturestoreSuite(object):
             assert "due to scalability reasons (number of correlatons grows quadratically " \
                    "with the number of columns." in ex.value
 
-
     def test_compute_cluster_analysis(self):
         """ Test compute cluster analysis on a sample dataframe """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -829,14 +837,12 @@ class TestFeaturestoreSuite(object):
         result = fs_utils._compute_cluster_analysis(numeric_df, clusters=5)
         assert len(set(result["clusters"].values())) <= 5
 
-
     def test_compute_descriptive_statistics(self):
         """ Test compute descriptive statistics on a sample dataframe"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("teams_features")
         result = fs_utils._compute_descriptive_statistics(teams_features_df)
         assert len(result) > 0
-
 
     def test_is_type_numeric(self):
         """ Test _is_type_numeric """
@@ -851,7 +857,6 @@ class TestFeaturestoreSuite(object):
         assert not fs_utils._is_type_numeric(('test', "array<float>"))
         assert not fs_utils._is_type_numeric(('test', "struct<float, int>"))
 
-
     def test_compute_feature_histograms(self):
         """ Test compute descriptive statistics on a sample dataframe"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -860,17 +865,15 @@ class TestFeaturestoreSuite(object):
         result = fs_utils._compute_feature_histograms(numeric_df)
         assert len(result) > 0
 
-
     def test_compute_dataframe_stats(self):
         """ Test compute stats on a sample dataframe"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("teams_features")
-        feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis_data =  \
+        feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis_data = \
             core._compute_dataframe_stats(teams_features_df, "teams_features")
         assert feature_corr_data is not None
         assert desc_stats_data is not None
         assert features_histograms_data is not None
-
 
     def test_structure_descriptive_stats_json(self):
         """ Test _structure_descriptive_stats_json"""
@@ -878,7 +881,6 @@ class TestFeaturestoreSuite(object):
         teams_features_df = featurestore.get_featuregroup("teams_features")
         result = fs_utils._compute_descriptive_statistics(teams_features_df)
         fs_utils._structure_descriptive_stats_json(result)
-
 
     def test_structure_cluster_analysis_json(self):
         """ Test _structure_cluster_analysis_json"""
@@ -888,7 +890,6 @@ class TestFeaturestoreSuite(object):
         result = fs_utils._compute_cluster_analysis(numeric_df)
         fs_utils._structure_cluster_analysis_json(result)
 
-
     def test_structure_feature_histograms_json(self):
         """ Test _structure_feature_histograms_json"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -896,7 +897,6 @@ class TestFeaturestoreSuite(object):
         numeric_df = fs_utils._filter_spark_df_numeric(teams_features_df)
         result = fs_utils._compute_feature_histograms(numeric_df)
         fs_utils._structure_feature_histograms_json(result)
-
 
     def test_structure_feature_corr_json(self):
         """ Test _structure_feature_histograms_json"""
@@ -906,20 +906,17 @@ class TestFeaturestoreSuite(object):
         result = fs_utils._compute_corr_matrix(numeric_df)
         fs_utils._structure_feature_corr_json(result)
 
-
-    def test_update_featuregroup_stats(self):
+    def test_update_featuregroup_stats(self, sample_featuregroup):
         """ Test update_featuregroup_stats"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        rest_rpc._update_featuregroup_stats_rest = mock.MagicMock(return_value=None)
+        rest_rpc._update_featuregroup_stats_rest = mock.MagicMock(return_value=sample_featuregroup)
         featurestore.update_featuregroup_stats("teams_features")
-
 
     def test_get_default_primary_key(self):
         """ Test _get_default_primary_key """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("teams_features")
         assert fs_utils._get_default_primary_key(teams_features_df) == "team_budget"
-
 
     def test_validate_primary_key(self):
         """ Test _validate_primary_key"""
@@ -931,7 +928,6 @@ class TestFeaturestoreSuite(object):
         with pytest.raises(InvalidPrimaryKey) as ex:
             fs_utils._validate_primary_key(teams_features_df, "wrong_key")
             assert "Invalid primary key" in ex.value
-
 
     def test_delete_table_contents(self):
         """ Test _delete_table_contents"""
@@ -956,9 +952,8 @@ class TestFeaturestoreSuite(object):
         with pytest.raises(RestAPIError) as ex:
             core._delete_table_contents(featurestore.project_featurestore(), "test", 1)
             assert "Could not clear featuregroup contents" in ex.value
-        #unmock for later tests
+        # unmock for later tests
         core._get_featuregroup_id = self.unmocked_get_featuregroup_id
-
 
     def test_get_featurestores(self):
         """ Test _get_featurestores"""
@@ -986,7 +981,6 @@ class TestFeaturestoreSuite(object):
             rest_rpc._get_featurestores()
             assert "Could not fetch feature stores" in ex.value
 
-
     def test_create_featuregroup_rest(self, sample_metadata):
         """ Test _create_featuregroup_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -1006,19 +1000,25 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         featurestore_id = core._get_featurestore_id(featurestore.project_featurestore())
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         result = rest_rpc._create_featuregroup_rest("test", featurestore_id, "",
-                                                        1, None, [], features_schema,
-                                                        None, None, None, None)
+                                                    1, [], features_schema,
+                                                    None, None, None, None,
+                                                    featurestore_metadata.settings.cached_featuregroup_type,
+                                                    featurestore_metadata.settings.cached_featuregroup_dto_type,
+                                                    None, None)
         assert result == sample_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS][0]
         response.code = 500
         response.status = 500
         featurestore_id = core._get_featurestore_id(featurestore.project_featurestore())
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._create_featuregroup_rest("test", featurestore_id, "",
-                                                   1, None, [], features_schema,
-                                                   None, None, None, None)
+                                               1, [], features_schema,
+                                               None, None, None, None,
+                                               featurestore_metadata.settings.cached_featuregroup_type,
+                                               featurestore_metadata.settings.cached_featuregroup_dto_type,
+                                               None, None)
             assert "Could not create feature group" in ex.value
-
 
     def test_create_featuregroup(self, sample_metadata):
         """ Test create_featuregroup"""
@@ -1028,34 +1028,38 @@ class TestFeaturestoreSuite(object):
         teams_features_df = featurestore.get_featuregroup("teams_features")
         featurestore.create_featuregroup(teams_features_df, "teams_features")
 
-
     def test_get_featurestore_metadata(self, sample_metadata):
         """ Test get_featurestore_metadata"""
         core._get_featurestore_metadata = mock.MagicMock(return_value=sample_metadata)
         assert core._get_featurestore_metadata() == sample_metadata
 
-
     def test_do_get_featuregroups(self, sample_metadata):
         """ Test do_get_featuregroups"""
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         result = fs_utils._do_get_featuregroups(featurestore_metadata)
-        assert len(result) == 5
-        assert set(result) == set(["games_features_1", "players_features_1", "season_scores_features_1",
-                                   "attendances_features_1", "teams_features_1"])
-
+        assert len(result) == 16
+        assert set(result) == set(['games_features_1', 'season_scores_features_1', 'attendances_features_1',
+                                   'players_features_1', 'teams_features_1', 'games_features_on_demand_tour_1',
+                                   'teams_features_spanish_1', 'games_features_on_demand_1',
+                                   'players_features_on_demand_1', 'teams_features_spanish_2',
+                                   'games_features_partitioned_1', 'games_features_double_partitioned_1',
+                                   'pandas_test_example_1', 'numpy_test_example_1', 'python_test_example_1',
+                                   'attendances_features_2'])
 
     def test_do_get_features_list(self, sample_metadata):
         """ Test do_get_features_list"""
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         result = fs_utils._do_get_features_list(featurestore_metadata)
-        assert len(result) == 19
-        assert set(result) == set(['away_team_id', 'home_team_id', 'score', 'average_position',
-                                   'sum_position', 'team_id', 'average_attendance', 'sum_attendance',
-                                   'team_id', 'average_player_age', 'average_player_rating',
-                                   'average_player_worth', 'sum_player_age', 'sum_player_rating',
-                                   'sum_player_worth', 'team_id',
-                                   'team_budget', 'team_id', 'team_position'])
-
+        assert len(result) == 43
+        assert set(result) == set(['away_team_id', 'home_team_id', 'score', 'average_position', 'sum_position',
+                                   'team_id', 'average_attendance', 'sum_attendance', 'team_id', 'average_player_age',
+                                   'average_player_rating', 'average_player_worth', 'sum_player_age',
+                                   'sum_player_rating', 'sum_player_worth', 'team_id', 'team_budget', 'team_id',
+                                   'team_position', 'equipo_id', 'equipo_posicion', 'equipo_presupuesto',
+                                   'equipo_id', 'equipo_posicion', 'equipo_presupuesto', 'away_team_id', 'home_team_id',
+                                   'score', 'away_team_id', 'home_team_id', 'score', 'average_attendance_test',
+                                   'average_player_age_test', 'team_budget_test', 'col_0', 'col_1', 'col_2', 'col_0',
+                                   'col_1', 'col_2', 'average_attendance', 'sum_attendance', 'team_id'])
 
     def test_get_project_featurestores(self, sample_featurestores):
         """ Test get_project_featurestores()"""
@@ -1063,11 +1067,11 @@ class TestFeaturestoreSuite(object):
         result = featurestore.get_project_featurestores()
         assert len(result) == 1
 
-
-    def test_get_dataframe_tf_record_schema_json(self):
+    def test_get_dataframe_tf_record_schema_json(self, sample_metadata):
         """ Test get_dataframe_tf_record_schema_json"""
         spark = self.spark_session()
         hdfs.project_name = mock.MagicMock(return_value="test_project")
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         teams_features_df = featurestore.get_featuregroup("players_features")
         tf_schema, json_schema = fs_utils._get_dataframe_tf_record_schema_json(teams_features_df)
         assert tf_schema == {'team_id': tf.FixedLenFeature(shape=[], dtype=tf.int64, default_value=None),
@@ -1081,11 +1085,11 @@ class TestFeaturestoreSuite(object):
         assert json_schema == {'team_id': {constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE:
                                                constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                                            constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE:
-                                               constants.FEATURE_STORE.TF_RECORD_INT_TYPE,},
+                                               constants.FEATURE_STORE.TF_RECORD_INT_TYPE, },
                                'average_player_rating': {constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE:
                                                              constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                                                          constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE:
-                                                             constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE,},
+                                                             constants.FEATURE_STORE.TF_RECORD_FLOAT_TYPE, },
                                'average_player_age': {constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE:
                                                           constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE_FIXED,
                                                       constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE:
@@ -1111,11 +1115,11 @@ class TestFeaturestoreSuite(object):
         sqlContext = SQLContext(spark.sparkContext)
         schema = StructType([StructField("val", ArrayType(FloatType()), True)
                              ])
-        sample_df = sqlContext.createDataFrame([{'val': [1.0,2.0,3.0,4.0]},
-                                                {'val': [5.0,6.0,7.0,8.0]},
-                                                {'val': [9.0,10.0,11.0,12.0]},
-                                                {'val': [13.0,14.0,15.0,16.0]},
-                                                {'val': [17.0,18.0,19.0,20.0]}], schema)
+        sample_df = sqlContext.createDataFrame([{'val': [1.0, 2.0, 3.0, 4.0]},
+                                                {'val': [5.0, 6.0, 7.0, 8.0]},
+                                                {'val': [9.0, 10.0, 11.0, 12.0]},
+                                                {'val': [13.0, 14.0, 15.0, 16.0]},
+                                                {'val': [17.0, 18.0, 19.0, 20.0]}], schema)
         tf_schema, json_schema = fs_utils._get_dataframe_tf_record_schema_json(sample_df)
         assert tf_schema == {'val': tf.FixedLenFeature(shape=[4], dtype=tf.float32, default_value=None)}
         assert json_schema == {'val': {constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE:
@@ -1126,11 +1130,11 @@ class TestFeaturestoreSuite(object):
         # Test that the tf.type is correct
         schema = StructType([StructField("val", ArrayType(IntegerType()), True)
                              ])
-        sample_df = sqlContext.createDataFrame([{'val': [1,2,3,4]},
-                                                {'val': [5,6,7,8]},
-                                                {'val': [9,10,11,12]},
-                                                {'val': [13,14,15,16]},
-                                                {'val': [17,18,19,20]}], schema)
+        sample_df = sqlContext.createDataFrame([{'val': [1, 2, 3, 4]},
+                                                {'val': [5, 6, 7, 8]},
+                                                {'val': [9, 10, 11, 12]},
+                                                {'val': [13, 14, 15, 16]},
+                                                {'val': [17, 18, 19, 20]}], schema)
         tf_schema, json_schema = fs_utils._get_dataframe_tf_record_schema_json(sample_df)
         assert tf_schema == {'val': tf.FixedLenFeature(shape=[4], dtype=tf.int64, default_value=None)}
         assert json_schema == {'val': {constants.FEATURE_STORE.TF_RECORD_SCHEMA_FEATURE:
@@ -1146,14 +1150,12 @@ class TestFeaturestoreSuite(object):
                                        constants.FEATURE_STORE.TF_RECORD_SCHEMA_TYPE:
                                            constants.FEATURE_STORE.TF_RECORD_INT_TYPE}}
 
-
     def test_convert_tf_record_schema_json(self):
         """ Test convert_tf_record_schema_json"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("players_features")
         tf_schema, json_schema = fs_utils._get_dataframe_tf_record_schema_json(teams_features_df)
         assert fs_utils._convert_tf_record_schema_json_to_dict(json_schema) == tf_schema
-
 
     def test_store_tf_record_schema_hdfs(self):
         """ Test store_tf_record_schema_hdfs"""
@@ -1162,7 +1164,6 @@ class TestFeaturestoreSuite(object):
         teams_features_df = featurestore.get_featuregroup("players_features")
         tf_schema, json_schema = fs_utils._get_dataframe_tf_record_schema_json(teams_features_df)
         fs_utils._store_tf_record_schema_hdfs(json_schema, "./schema.json")
-
 
     def test_find_training_dataset(self, sample_metadata):
         """ Test _find_training_dataset """
@@ -1183,7 +1184,6 @@ class TestFeaturestoreSuite(object):
             query_planner._find_training_dataset(training_datasets, "non_existent", 1)
             assert "Could not find the requested training dataset" in ex.value
 
-
     def test_do_get_latest_training_dataset_version(self, sample_metadata):
         """ Test _do_get_latest_training_dataset_version """
         version = fs_utils._do_get_latest_training_dataset_version("team_position_prediction",
@@ -1193,7 +1193,6 @@ class TestFeaturestoreSuite(object):
                                                                    FeaturestoreMetadata(sample_metadata))
         assert version == 1
 
-
     def test_do_get_featuregroup_version(self, sample_metadata):
         """ Test _do_get_featuregroup_version """
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
@@ -1201,7 +1200,6 @@ class TestFeaturestoreSuite(object):
         assert version == 1
         version = fs_utils._do_get_latest_featuregroup_version("players_features", featurestore_metadata)
         assert version == 1
-
 
     def test_update_training_dataset_stats_rest(self, sample_metadata):
         """ Test _update_training_dataset_stats_rest"""
@@ -1213,7 +1211,8 @@ class TestFeaturestoreSuite(object):
         response = mock.Mock()
         response.code = 200
         response.status = 200
-        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        featurestore_id = featurestore_metadata.featurestore.id
         core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
         training_dataset_id = 1
         self.unmocked_get_training_dataset_id = core._get_training_dataset_id
@@ -1226,20 +1225,21 @@ class TestFeaturestoreSuite(object):
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
-        result = rest_rpc._update_training_dataset_stats_rest("test", 1, 1, 1, [],
-                                                                  None, None, None, None)
+        result = rest_rpc._update_training_dataset_stats_rest(
+            1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type,
+            featurestore_metadata.settings.hopsfs_training_dataset_dto_type, [])
         assert result == data
         response.code = 500
         response.status = 500
         with pytest.raises(RestAPIError) as ex:
-            rest_rpc._update_training_dataset_stats_rest("test", 1, 1, 1, [],
-                                                             None, None, None, None)
+            rest_rpc._update_training_dataset_stats_rest(
+                1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type,
+                featurestore_metadata.settings.hopsfs_training_dataset_dto_type, [])
             assert "Could not update training dataset stats" in ex.value
-        #unmock for later tests
+        # unmock for later tests
         core._get_training_dataset_id = self.unmocked_get_training_dataset_id
 
-
-    def test_update_training_dataset_stats(self):
+    def test_update_training_dataset_stats(self, sample_training_dataset):
         """ Test _do_get_featuregroup_version"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         self.unmocked_get_training_dataset_id = core._get_training_dataset_id
@@ -1250,12 +1250,13 @@ class TestFeaturestoreSuite(object):
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
             "./training_datasets/team_position_prediction_1")
-        featurestore.get_training_dataset = mock.MagicMock(return_value=df)
-        rest_rpc._update_training_dataset_stats_rest = mock.MagicMock(return_value=None)
+        self.unmocked_do_get_training_dataset = core._do_get_training_dataset
+        core._do_get_training_dataset = mock.MagicMock(return_value=df)
+        rest_rpc._update_training_dataset_stats_rest = mock.MagicMock(return_value=sample_training_dataset)
         featurestore.update_training_dataset_stats("team_position_prediction")
-        #unmock for later tests
+        # unmock for later tests
         core._get_training_dataset_id = self.unmocked_get_training_dataset_id
-
+        core._do_get_training_dataset = self.unmocked_do_get_training_dataset
 
     def test_do_get_training_dataset_tf_record_schema(self, sample_metadata):
         """ Test _do_get_training_dataset_tf_record_schema """
@@ -1264,8 +1265,8 @@ class TestFeaturestoreSuite(object):
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/schema.json")
         hdfs.load = mock.MagicMock(return_value=json.dumps(schema_json))
         result = core._do_get_training_dataset_tf_record_schema("team_position_prediction",
-                                                                    FeaturestoreMetadata(sample_metadata),
-                                                                    training_dataset_version=1)
+                                                                FeaturestoreMetadata(sample_metadata),
+                                                                training_dataset_version=1)
         assert result == {'team_budget': tf.FixedLenFeature(shape=[], dtype=tf.float32, default_value=None),
                           'average_position': tf.FixedLenFeature(shape=[], dtype=tf.float32, default_value=None),
                           'sum_player_rating': tf.FixedLenFeature(shape=[], dtype=tf.float32, default_value=None),
@@ -1280,25 +1281,25 @@ class TestFeaturestoreSuite(object):
                           'average_player_age': tf.FixedLenFeature(shape=[], dtype=tf.float32, default_value=None)}
         with pytest.raises(TFRecordSchemaNotFound) as ex:
             core._do_get_training_dataset_tf_record_schema("team_position_prediction_parquet",
-                                                               FeaturestoreMetadata(sample_metadata),
-                                                               training_dataset_version=1)
+                                                           FeaturestoreMetadata(sample_metadata),
+                                                           training_dataset_version=1)
             assert "Cannot fetch tf records schema for a training dataset " \
                    "that is not stored in tfrecords format" in ex.value
-
 
     def test_do_get_training_datasets(self, sample_metadata):
         """ Test do_get_training_datasets"""
         result = core._do_get_training_datasets(FeaturestoreMetadata(sample_metadata))
-        assert len(result) == 7
+        assert len(result) == 10
         assert set(result) == set(['team_position_prediction_1', 'team_position_prediction_csv_1',
                                    'team_position_prediction_tsv_1', 'team_position_prediction_parquet_1',
+                                   'team_position_prediction_orc_1', 'team_position_prediction_avro_1',
                                    'team_position_prediction_hdf5_1', 'team_position_prediction_npy_1',
-                                   'team_position_prediction_2'])
+                                   'team_position_prediction_petastorm_1', 'team_position_prediction_2'])
 
-
-    def test_do_get_training_dataset_tsv(self):
+    def test_do_get_training_dataset_tsv(self, sample_training_dataset):
         """ Test _do_get_training_dataset_tsv"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         hdfs.exists = mock.MagicMock(return_value=True)
         df_compare = spark.read.format(
@@ -1307,77 +1308,77 @@ class TestFeaturestoreSuite(object):
             constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER).load(
             "./training_datasets/team_position_prediction_tsv_1")
         featureframe = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_tsv_1",
-                                                     dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                                     data_format=constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT)
+                                                     dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                                     data_format=constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT,
+                                                     training_dataset=td)
         df = featureframe.read_featureframe(spark)
         assert df.count() == df_compare.count()
 
-
-    def test_do_get_training_dataset_parquet(self):
+    def test_do_get_training_dataset_parquet(self, sample_training_dataset):
         """ Test _do_get_training_dataset_parquet"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         hdfs.exists = mock.MagicMock(return_value=True)
         df_compare = spark.read.parquet("./training_datasets/team_position_prediction_parquet_1")
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_parquet_1",
-                                      dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                      data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT)\
-            .read_featureframe(spark)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT,
+                                           training_dataset=td).read_featureframe(spark)
         assert df.count() == df_compare.count()
 
-
-    def test_do_get_training_dataset_avro(self):
+    def test_do_get_training_dataset_avro(self, sample_training_dataset):
         """ Test _do_get_training_dataset_avro"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         hdfs.exists = mock.MagicMock(return_value=True)
         df_compare = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT) \
             .load("./training_datasets/team_position_prediction_avro_1")
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_avro_1",
-                                           dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT)\
-            .read_featureframe(spark)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT,
+                                           training_dataset=td).read_featureframe(spark)
         assert df.count() == df_compare.count()
 
-
-    def test_do_get_training_dataset_orc(self):
+    def test_do_get_training_dataset_orc(self, sample_training_dataset):
         """ Test _do_get_training_dataset_orc"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_compare = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT) \
             .load("./training_datasets/team_position_prediction_orc_1")
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_orc_1",
-                                           dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT)\
-            .read_featureframe(spark)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT,
+                                           training_dataset=td).read_featureframe(spark)
         assert df.count() == df_compare.count()
 
-
-    def test_do_get_training_dataset_image(self):
+    def test_do_get_training_dataset_image(self, sample_training_dataset):
         """ Test _do_get_training_dataset_image"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_compare = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT) \
             .load("./hops/tests/test_resources/mnist")
         df = FeatureFrame.get_featureframe(path="./hops/tests/test_resources/mnist",
-                                           dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT)\
-            .read_featureframe(spark)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT,
+                                           training_dataset=td).read_featureframe(spark)
         assert df.count() == df_compare.count()
 
-
-    def test_do_get_training_dataset_tfrecords(self):
+    def test_do_get_training_dataset_tfrecords(self, sample_training_dataset):
         """ Test _do_get_training_dataset_tfrecords"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_compare = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
             "./training_datasets/team_position_prediction_1")
         df = FeatureFrame.get_featureframe(path="./training_datasets/team_position_prediction_1",
-                                           dataframe_type = constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
-                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT)\
-            .read_featureframe(spark)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                           data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
+                                           training_dataset=td).read_featureframe(spark)
         assert df.count() == df_compare.count()
-
 
     def test_do_get_training_dataset(self, sample_metadata):
         """ Test _do_get_training_dataset """
@@ -1394,7 +1395,7 @@ class TestFeaturestoreSuite(object):
         df_compare = spark.read.parquet("./training_datasets/team_position_prediction_parquet_1")
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/team_position_prediction_parquet_1")
         df = core._do_get_training_dataset("team_position_prediction_parquet",
-                                               FeaturestoreMetadata(sample_metadata))
+                                           FeaturestoreMetadata(sample_metadata))
         assert df.count() == df_compare.count()
         df_compare = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
@@ -1416,7 +1417,7 @@ class TestFeaturestoreSuite(object):
             "./training_datasets/team_position_prediction_npy_1" +
             constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
         with open("./training_datasets/team_position_prediction_npy_1" +
-                          constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX,'rb') as f:
+                          constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX, 'rb') as f:
             data = f.read()
         hdfs.load = mock.MagicMock(return_value=data)
         pydoop.path.abspath = mock.MagicMock(
@@ -1430,7 +1431,7 @@ class TestFeaturestoreSuite(object):
         df_compare = hdf5_file["team_position_prediction_hdf5"][()]
         with open("./training_datasets/team_position_prediction_hdf5_1" +
                           constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX,
-                'rb') as f:
+                  'rb') as f:
             data = f.read()
         hdfs.load = mock.MagicMock(return_value=data)
         pydoop.path.abspath = mock.MagicMock(
@@ -1440,26 +1441,26 @@ class TestFeaturestoreSuite(object):
         assert df.count() == len(df_compare)
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/team_position_prediction_1")
         df = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata),
-                                               dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
         assert isinstance(df, DataFrame)
         df = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata),
-                                               dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_PANDAS)
         assert isinstance(df, pd.DataFrame)
         df = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata),
-                                               dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY)
         assert isinstance(df, np.ndarray)
         df = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata),
-                                               dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON)
+                                           dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON)
         assert isinstance(df, list)
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/non_existent")
         with pytest.raises(TrainingDatasetNotFound) as ex:
             core._do_get_training_dataset("non_existent", FeaturestoreMetadata(sample_metadata))
             assert "Could not find the requested training dataset" in ex.value
 
-
-    def test_write_training_dataset_csv(self):
+    def test_write_training_dataset_csv(self, sample_training_dataset):
         """ Test _write_training_dataset_csv"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1468,17 +1469,18 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs_csv" + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT,
-            df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true"
         ).option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER
                  ).load("./training_datasets/test_write_hdfs_csv" + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_tsv(self):
+    def test_write_training_dataset_tsv(self, sample_training_dataset):
         """ Test _write_training_dataset_tsv"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1487,7 +1489,8 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs_tsv" + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true"
         ).option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER
@@ -1495,28 +1498,29 @@ class TestFeaturestoreSuite(object):
                         constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_parquet(self):
+    def test_write_training_dataset_parquet(self, sample_training_dataset):
         """ Test _write_training_dataset_parquet"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
             "./training_datasets/team_position_prediction_1")
         featureframe = FeatureFrame.get_featureframe(
-            path="./training_datasets/test_write_hdfs_parquet"+constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX,
+            path="./training_datasets/test_write_hdfs_parquet" + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.parquet(
             "./training_datasets/test_write_hdfs_parquet" +
             constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_orc(self):
+    def test_write_training_dataset_orc(self, sample_training_dataset):
         """ Test _write_training_dataset_orc"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1525,15 +1529,17 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs_orc" + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td
+        ).write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(
             "./training_datasets/test_write_hdfs_orc" + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_avro(self):
+    def test_write_training_dataset_avro(self, sample_training_dataset):
         """ Test _write_training_dataset_avro"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1542,15 +1548,16 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs_avro" + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(
             "./training_datasets/test_write_hdfs_avro" + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_tfrecords(self):
+    def test_write_training_dataset_tfrecords(self, sample_training_dataset):
         """ Test _write_training_dataset_tfrecords"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1560,7 +1567,8 @@ class TestFeaturestoreSuite(object):
             path="./training_datasets/test_write_hdfs_tfrecords" +
                  constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
-            df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE
@@ -1568,10 +1576,10 @@ class TestFeaturestoreSuite(object):
             "./training_datasets/test_write_hdfs_tfrecords" + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_npy(self):
+    def test_write_training_dataset_npy(self, sample_training_dataset):
         """ Test _write_training_dataset_npy"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1593,14 +1601,15 @@ class TestFeaturestoreSuite(object):
         featureframe = FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs_npy",
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = np.load("./training_datasets/test_write_hdfs_npy" + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
         assert df_1.count() == len(df_2)
 
-
-    def test_write_training_dataset_hdf5(self):
+    def test_write_training_dataset_hdf5(self, sample_training_dataset):
         """ Test _write_training_dataset_hdf5"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1610,7 +1619,7 @@ class TestFeaturestoreSuite(object):
             "./training_datasets/write_hdfs_test_ref_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
         hdf5_file.create_dataset("write_hdfs_test_ref_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX,
                                  data=fs_utils._return_dataframe_type(df_1,
-                                                                  constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY))
+                                                                      constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY))
         with open("./training_datasets/write_hdfs_test_ref_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX,
                   'rb') as f:
             data = f.read()
@@ -1623,19 +1632,18 @@ class TestFeaturestoreSuite(object):
 
         hdfs.dump = mock.MagicMock(side_effect=hdfs_dump_side_effect)
         FeatureFrame.get_featureframe(path="./training_datasets/test_write_hdfs_hdf5",
-            data_format=constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT,
-            df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
-            training_dataset = "test_write_hdfs_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)\
-            .write_featureframe()
+                                      data_format=constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT,
+                                      df=df_1, write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                      training_dataset=td).write_featureframe()
         hdf5_file = h5py.File(
             "./training_datasets/write_hdfs_test_ref_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
         df_2 = hdf5_file["write_hdfs_test_ref_hdf5" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX][()]
         assert df_1.count() == len(df_2)
 
-
-    def test_write_training_dataset_petastorm(self):
+    def test_write_training_dataset_petastorm(self, sample_training_dataset):
         """ Test _write_training_dataset_petastorm"""
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1662,15 +1670,15 @@ class TestFeaturestoreSuite(object):
                                            constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX,
                                       data_format=constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_FORMAT, df=df_1,
                                       write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
-                                      petastorm_args=petastorm_args).write_featureframe(spark)
+                                      petastorm_args=petastorm_args, training_dataset=td).write_featureframe()
         df_2 = spark.read.parquet(
             "./training_datasets/test_write_hdfs_petastorm" + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX)
         assert df_1.count() == df_2.count()
 
-
-    def test_write_training_dataset_hdfs(self):
+    def test_write_training_dataset_hdfs(self, sample_training_dataset):
         """ Test _write_training_dataset_hdfs """
         spark = self.spark_session()
+        td = TrainingDataset(sample_training_dataset)
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
@@ -1679,14 +1687,16 @@ class TestFeaturestoreSuite(object):
         FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs" + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.parquet("./training_datasets/test_write_hdfs" +
                                   constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
         assert df_1.count() == df_2.count()
         FeatureFrame.get_featureframe(
             path="./training_datasets/test_write_hdfs" + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX,
             data_format=constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT, df=df_1,
-            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE).write_featureframe()
+            write_mode=constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE,
+            training_dataset=td).write_featureframe()
         df_2 = spark.read.parquet(
             "./training_datasets/test_write_hdfs" + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
         assert df_1.count() * 2 == df_2.count()
@@ -1696,7 +1706,8 @@ class TestFeaturestoreSuite(object):
                                                      constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
                                                      df=df_1,
                                                      write_mode=
-                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                     training_dataset=td
                                                      )
         featureframe.write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
@@ -1710,7 +1721,8 @@ class TestFeaturestoreSuite(object):
                                                      constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT,
                                                      df=df_1,
                                                      write_mode=
-                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                     training_dataset=td
                                                      )
         featureframe.write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
@@ -1724,7 +1736,8 @@ class TestFeaturestoreSuite(object):
                                                      constants.FEATURE_STORE.TRAINING_DATASET_TSV_FORMAT,
                                                      df=df_1,
                                                      write_mode=
-                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                     training_dataset=td
                                                      )
         featureframe.write_featureframe()
         df_2 = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT) \
@@ -1750,7 +1763,8 @@ class TestFeaturestoreSuite(object):
                                                      constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT,
                                                      df=df_1,
                                                      write_mode=
-                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                     constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                     training_dataset=td
                                                      )
         featureframe.write_featureframe()
         df_2 = np.load("./training_datasets/test_write_hdfs" + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX)
@@ -1759,7 +1773,7 @@ class TestFeaturestoreSuite(object):
             "./training_datasets/write_hdfs_test_ref" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX)
         hdf5_file.create_dataset("write_hdfs_test_ref" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX,
                                  data=fs_utils._return_dataframe_type(df_1,
-                                                                  constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY))
+                                                                      constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY))
         with open("./training_datasets/write_hdfs_test_ref" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX,
                   'rb') as f:
             data = f.read()
@@ -1771,15 +1785,14 @@ class TestFeaturestoreSuite(object):
                 f.write(data)
 
         hdfs.dump = mock.MagicMock(side_effect=hdfs_dump_side_effect)
+        td.name="test_write_hdfs" + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX
         featureframe = FeatureFrame.get_featureframe(path="./training_datasets/test_write_hdfs",
                                                      data_format=
                                                      constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT,
                                                      df=df_1,
                                                      write_mode=
                                                      constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
-                                                     training_dataset =
-                                                     "test_write_hdfs" +
-                                                     constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX
+                                                     training_dataset=td
                                                      )
         featureframe.write_featureframe()
         hdf5_file = h5py.File(
@@ -1792,7 +1805,8 @@ class TestFeaturestoreSuite(object):
                                                          "non_existent_format",
                                                          df=df_1,
                                                          write_mode=
-                                                         constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                         constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                         training_dataset=td
                                                          )
             featureframe.write_featureframe()
             assert "Can not write dataframe in image format" in ex.value
@@ -1802,15 +1816,16 @@ class TestFeaturestoreSuite(object):
                                                          "image",
                                                          df=df_1,
                                                          write_mode=
-                                                         constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE
+                                                         constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE,
+                                                         training_dataset=td
                                                          )
             featureframe.write_featureframe()
             assert "Invalid data format to materialize training dataset." in ex.value
 
-
-    def test_create_training_dataset_rest(self):
+    def test_create_training_dataset_rest(self, sample_metadata):
         """ Test _create_training_dataset_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         connection = mock.Mock()
         util._get_http_connection = mock.MagicMock(return_value=connection)
         connection.request = mock.MagicMock(return_value=True)
@@ -1823,28 +1838,38 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._create_training_dataset_rest("test", 1, "", 1,
-                                                            "", "", [], [], None, None, None, None)
+                                                        "", [], [], None, None, None, None,
+                                                        featurestore_metadata.settings.hopsfs_training_dataset_type,
+                                                        featurestore_metadata.settings.hopsfs_training_dataset_dto_type,
+                                                        featurestore_metadata.settings, None, None)
         assert result == data
         response.code = 500
         response.status = 500
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._create_training_dataset_rest("test", 1, "", 1,
-                                                       "", "", [], [], None, None, None, None)
+                                                   "", [], [], None, None, None, None,
+                                                   featurestore_metadata.settings.hopsfs_training_dataset_type,
+                                                   featurestore_metadata.settings.hopsfs_training_dataset_dto_type,
+                                                   featurestore_metadata.settings, None, None)
             assert "Could not create training dataset" in ex.value
 
-
-    def test_create_training_dataset(self, sample_metadata):
+    def test_create_training_dataset(self, sample_metadata, sample_training_dataset):
         """ Test _create_training_dataset """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         df = featurestore.get_featuregroup("players_features")
-        rest_rpc._create_training_dataset_rest = mock.MagicMock(return_value={
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH: "./training_datasets/test_create_td"})
-        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        sample_training_dataset[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] = \
+            "./training_datasets/test_create_td"
+        sample_training_dataset[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME] = "test_create_training_dataset"
+        rest_rpc._create_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
+        rest_rpc._update_training_dataset_stats_rest = mock.MagicMock(return_value=sample_training_dataset)
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=featurestore_metadata)
         pydoop.path.abspath = mock.MagicMock(
             return_value="./training_datasets/test_create_td/test_create_training_dataset_1")
-        featurestore.create_training_dataset(df, "test_create_training_dataset",
-                                             data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
-                                             training_dataset_version=1)
+        featurestore.create_training_dataset(
+            df, "test_create_training_dataset", data_format=constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
+            training_dataset_version=1,
+            sink='demo_featurestore_admin000_Training_Datasets')
         spark = self.spark_session()
         df_1 = spark.read.format(
             constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
@@ -1854,7 +1879,7 @@ class TestFeaturestoreSuite(object):
         assert df_1.count() == df.count()
 
 
-    def test_do_insert_into_training_dataset(self, sample_metadata):
+    def test_do_insert_into_training_dataset(self, sample_metadata, sample_training_dataset):
         """ Test _do_insert_into_training_dataset """
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/team_position_prediction_1")
         hdfs.exists = mock.MagicMock(return_value=True)
@@ -1866,38 +1891,19 @@ class TestFeaturestoreSuite(object):
         df2 = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata),
                                             training_dataset_version=2)
         new_count = df2.count()
-        rest_rpc._update_training_dataset_stats_rest = mock.MagicMock(return_value={
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH:
-                "./training_datasets/team_position_prediction_2",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_CREATOR: "admin@kth.se",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_CREATED: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_DESCRIPTION: "",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_DEPENDENCIES: [],
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES: [],
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_LAST_COMPUTED: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_INODE_ID: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_ID: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBNAME: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION: "-",
-            constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT: "-"
-        })
+        sample_training_dataset[constants.REST_CONFIG.JSON_TRAINING_DATASET_HDFS_STORE_PATH] = \
+            "./training_datasets/team_position_prediction_2"
+        rest_rpc._update_training_dataset_stats_rest = mock.MagicMock(return_value=sample_training_dataset)
         pydoop.path.abspath = mock.MagicMock(return_value="./training_datasets/team_position_prediction_1")
         core._do_insert_into_training_dataset(df2, "team_position_prediction", FeaturestoreMetadata(sample_metadata),
-                                                  write_mode=
-                                                      constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE)
+                                              write_mode=
+                                              constants.FEATURE_STORE.FEATURE_GROUP_INSERT_OVERWRITE_MODE)
         pydoop.path.abspath = mock.MagicMock(
             return_value="./training_datasets/team_position_prediction_1/team_position_prediction")
         df = core._do_get_training_dataset("team_position_prediction", FeaturestoreMetadata(sample_metadata))
         updated_count = df.count()
         assert new_count == updated_count
-        with pytest.raises(ValueError) as ex:
-            core._do_insert_into_training_dataset(df, "team_position_prediction",
-                                                      FeaturestoreMetadata(sample_metadata),
-                                                      write_mode=
-                                                          constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
-            assert "Append is not supported for training datasets stored in tf-records format" in ex.value
-        #unmock for later tests
+        # unmock for later tests
         core._get_training_dataset_id = self.unmocked_get_training_dataset_id
 
 
@@ -1913,7 +1919,7 @@ class TestFeaturestoreSuite(object):
         games_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
             "./hops/tests/test_resources/games_features.csv")
         core._write_featuregroup_hive(games_features_df, "games_features_not_partitioned",
-                                              featurestore.project_featurestore(), 1, "overwrite")
+                                      featurestore.project_featurestore(), 1, "overwrite")
         table_dir = "./spark-warehouse/test_project_featurestore.db/games_features_not_partitioned_1/"
         table_files = os.listdir(table_dir)
         # without partitioning there should only be files in the table-dir, no directories.
@@ -1925,8 +1931,9 @@ class TestFeaturestoreSuite(object):
                   "(away_team_id INT,home_team_id INT) PARTITIONED BY (score INT)")
 
         # create table partitioned on column "score"
-        core._write_featuregroup_hive(games_features_df, "games_features_partitioned", featurestore.project_featurestore(),
-                                              1, "overwrite")
+        core._write_featuregroup_hive(games_features_df, "games_features_partitioned",
+                                      featurestore.project_featurestore(),
+                                      1, "overwrite")
         table_dir = "./spark-warehouse/test_project_featurestore.db/games_features_partitioned_1/"
         table_files = os.listdir(table_dir)
         # with partitioning the table should be organized with sub-directories for each partition
@@ -1936,9 +1943,8 @@ class TestFeaturestoreSuite(object):
         assert "score=2" in table_files
         assert "score=3" in table_files
 
-        #unmock for later tests
+        # unmock for later tests
         core._delete_table_contents = self.unmocked_delete_table_contents
-
 
     def test_dao(self, sample_metadata, sample_statistics):
         """ Test initialization of data access objects """
@@ -1950,14 +1956,13 @@ class TestFeaturestoreSuite(object):
         assert fs_metadata.training_datasets["team_position_prediction_1"].version == 1
         assert fs_metadata.training_datasets["team_position_prediction_1"].data_format == "tfrecords"
         assert fs_metadata.training_datasets["team_position_prediction_1"].description == ""
-        assert fs_metadata.training_datasets["team_position_prediction_1"].creator == "admin@kth.se"
+        assert fs_metadata.training_datasets["team_position_prediction_1"].creator == "admin@hopsworks.ai"
         assert not fs_metadata.training_datasets["team_position_prediction_1"].features[0].description is None
         assert not fs_metadata.training_datasets["team_position_prediction_1"].features[0].primary is None
         assert not fs_metadata.training_datasets["team_position_prediction_1"].features[0].partition is None
         assert not fs_metadata.training_datasets["team_position_prediction_1"].features[0].type is None
         assert fs_metadata.featuregroups["games_features_1"].version == 1
-        assert fs_metadata.featuregroups["games_features_1"].job_name == "featurestore_tour_job"
-        assert fs_metadata.featuregroups["games_features_1"].creator == "admin@kth.se"
+        assert fs_metadata.featuregroups["games_features_1"].creator == "admin@hopsworks.ai"
         assert not fs_metadata.featuregroups["games_features_1"].features[0].description is None
         assert not fs_metadata.featuregroups["games_features_1"].features[0].primary is None
         assert not fs_metadata.featuregroups["games_features_1"].features[0].partition is None
@@ -2005,27 +2010,26 @@ class TestFeaturestoreSuite(object):
         assert stats.correlation_matrix is None
         assert stats.feature_histograms is None
 
-
     def test_get_feature(self, sample_metadata):
         """ Test get_feature """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
-        feature_df = featurestore.get_feature("score", featurestore=featurestore.project_featurestore(),
-                                              featuregroup="games_features", featuregroup_version=1,
+        feature_df = featurestore.get_feature("average_player_age", featurestore=featurestore.project_featurestore(),
+                                              featuregroup="players_features", featuregroup_version=1,
                                               dataframe_type="spark")
         assert len(feature_df.schema.fields) == 1
-        assert feature_df.schema.fields[0].name == "score"
+        assert feature_df.schema.fields[0].name == "average_player_age"
         # it should work to prepend featuregroup name to the feature as well:
-        feature_df = featurestore.get_feature("games_features_1.score")
+        feature_df = featurestore.get_feature("players_features_1.average_player_age")
         assert len(feature_df.schema.fields) == 1
-        assert feature_df.schema.fields[0].name == "score"
+        assert feature_df.schema.fields[0].name == "average_player_age"
         # default values should give same result
-        feature_df = featurestore.get_feature("score")
+        feature_df = featurestore.get_feature("average_player_age")
         assert len(feature_df.schema.fields) == 1
-        assert feature_df.schema.fields[0].name == "score"
-        feature_df = featurestore.get_feature("average_attendance")
+        assert feature_df.schema.fields[0].name == "average_player_age"
+        feature_df = featurestore.get_feature("sum_position")
         assert len(feature_df.schema.fields) == 1
-        assert feature_df.schema.fields[0].name == "average_attendance"
+        assert feature_df.schema.fields[0].name == "sum_position"
         with pytest.raises(FeatureNameCollisionError) as ex:
             featurestore.get_feature("team_id")
             assert "Found the feature" in ex.value \
@@ -2039,57 +2043,54 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         features_df = featurestore.get_features(
-            ["team_budget", "average_attendance", "average_player_age"],
+            ["team_budget", "average_player_age"],
             featurestore=featurestore.project_featurestore(),
             featuregroups_version_dict={
                 "teams_features": 1,
-                "attendances_features": 1,
                 "players_features": 1
             }
         )
-        assert len(features_df.schema.fields) == 3
+        assert len(features_df.schema.fields) == 2
         feature_names = [field.name for field in features_df.schema.fields]
-        assert set(feature_names) == set(["team_budget", "average_attendance", "average_player_age"])
+        assert set(feature_names) == set(["team_budget", "average_player_age"])
         # it should work with specified join_key as well
         features_df = featurestore.get_features(
-            ["team_budget", "average_attendance", "average_player_age"],
+            ["team_budget", "average_player_age"],
             featurestore=featurestore.project_featurestore(),
             featuregroups_version_dict={
                 "teams_features": 1,
-                "attendances_features": 1,
                 "players_features": 1
             },
-            join_key = "team_id"
+            join_key="team_id"
         )
-        assert len(features_df.schema.fields) == 3
+        assert len(features_df.schema.fields) == 2
         feature_names = [field.name for field in features_df.schema.fields]
-        assert set(feature_names) == set(["team_budget", "average_attendance", "average_player_age"])
+        assert set(feature_names) == set(["team_budget", "average_player_age"])
         # it should work with featuregroup name prepended and inferred join key as well
         features_df = featurestore.get_features(["teams_features_1.team_budget",
-                                                 "attendances_features_1.average_attendance",
                                                  "players_features_1.average_player_age"])
-        assert len(features_df.schema.fields) == 3
+        assert len(features_df.schema.fields) == 2
         feature_names = [field.name for field in features_df.schema.fields]
-        assert set(feature_names) == set(["team_budget", "average_attendance", "average_player_age"])
+        assert set(feature_names) == set(["team_budget", "average_player_age"])
         # it should work with the query planner as well
-        features_df = featurestore.get_features(["team_budget", "average_attendance", "average_player_age"])
-        assert len(features_df.schema.fields) == 3
+        features_df = featurestore.get_features(["team_budget", "average_player_age"])
+        assert len(features_df.schema.fields) == 2
         feature_names = [field.name for field in features_df.schema.fields]
-        assert set(feature_names) == set(["team_budget", "average_attendance", "average_player_age"])
-        # Test getting 12 features from 4 different feature groups
+        assert set(feature_names) == set(["team_budget", "average_player_age"])
+        # Test getting 10 features from 4 different feature groups
         features_df = featurestore.get_features(
-            ["team_budget", "average_attendance", "average_player_age",
-             "team_position", "sum_attendance",
+            ["team_budget", "average_player_age",
+             "team_position",
              "average_player_rating", "average_player_worth", "sum_player_age",
              "sum_player_rating", "sum_player_worth", "sum_position",
              "average_position"
              ]
         )
-        assert len(features_df.schema.fields) == 12
+        assert len(features_df.schema.fields) == 10
         feature_names = [field.name for field in features_df.schema.fields]
         assert set(feature_names) == set(
-            ["team_budget", "average_attendance", "average_player_age",
-             "team_position", "sum_attendance",
+            ["team_budget", "average_player_age",
+             "team_position",
              "average_player_rating", "average_player_worth", "sum_player_age",
              "sum_player_rating", "sum_player_worth", "sum_position",
              "average_position"
@@ -2101,49 +2102,49 @@ class TestFeaturestoreSuite(object):
                    and "in more than one of the featuregroups of the featurestore" in ex.value
 
         # If we specify the feature group it should work:
-        features_df = featurestore.get_features(["team_budget", "team_id"],featuregroups_version_dict = {
-                "teams_features" : 1
-            }
-        )
+        features_df = featurestore.get_features(["team_budget", "team_id"], featuregroups_version_dict={
+            "teams_features": 1
+        }
+                                                )
         assert len(features_df.schema.fields) == 2
         feature_names = [field.name for field in features_df.schema.fields]
         assert set(feature_names) == set(["team_budget", "team_id"])
 
         # if we try to fetch features from two featuregroups that are not compatible we should get an error:
         with pytest.raises(InferJoinKeyError) as ex:
-            featurestore.get_features(["team_budget", "score"])
+            featurestore.get_features(["team_budget", "score"], featuregroups_version_dict={
+                "teams_features": 1,
+                "games_features": 1
+            })
             assert "Could not find any common columns in featuregroups to join on" in ex.value
-
 
     def test_get_training_dataset_id(self, sample_metadata):
         """ Test get_training_dataset_id """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         td_id = core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction", 1)
-        assert td_id == 1
+        assert td_id == 9
         with pytest.raises(TrainingDatasetNotFound) as ex:
             core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction", 99)
             assert "The training dataset {} " \
                    "with version: {} was not found in the featurestore {}".format(
                 "team_position_prediction", 99, featurestore.project_featurestore()) in ex.value
         td_id = core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction_csv", 1)
-        assert td_id == 2
-
+        assert td_id == 10
 
     def test_get_featuregroup_id(self, sample_metadata):
         """ Test get_featuregroup_id """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         fg_id = core._get_featuregroup_id(featurestore.project_featurestore(), "games_features", 1)
-        assert fg_id == 1
+        assert fg_id == 13
         with pytest.raises(FeaturegroupNotFound) as ex:
             core._get_featuregroup_id(featurestore.project_featurestore(), "games_features", 99)
             assert "The featuregroup {} with version: {} "
             "was not found in the feature store {}".format("games_features", 99,
                                                            featurestore.project_featurestore()) in ex.value
         fg_id = core._get_featuregroup_id(featurestore.project_featurestore(), "players_features", 1)
-        assert fg_id == 4
-
+        assert fg_id == 16
 
     def test_get_featurestore_id(self, sample_metadata):
         """ Test get_featurestore_id """
@@ -2151,9 +2152,8 @@ class TestFeaturestoreSuite(object):
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore.core.metadata_cache = FeaturestoreMetadata(sample_metadata)
         fs_id = core._get_featurestore_id(featurestore.project_featurestore())
-        assert fs_id == 1
+        assert fs_id == 67
         assert fs_id == FeaturestoreMetadata(sample_metadata).featurestore.id
-
 
     def test_get_training_dataset_path(self, sample_metadata):
         """ Test get_training_dataset_path """
@@ -2163,7 +2163,6 @@ class TestFeaturestoreSuite(object):
         pydoop.path.abspath = mock.MagicMock(return_value="test")
         hdfs_path = featurestore.get_training_dataset_path("team_position_prediction")
         assert hdfs_path == "test"
-
 
     def test_get_featuregroup_statistics(self, sample_metadata, sample_featuregroup):
         """ Test get_featuregroup_statistics """
@@ -2180,7 +2179,6 @@ class TestFeaturestoreSuite(object):
         assert stats.correlation_matrix is not None
         assert stats.feature_histograms is not None
 
-
     def test_get_training_dataset_statistics(self, sample_metadata, sample_training_dataset):
         """ Test get_training_dataset_statistics """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -2189,13 +2187,12 @@ class TestFeaturestoreSuite(object):
         core._get_training_dataset_id = mock.MagicMock(return_value=1)
         rest_rpc._get_training_dataset_rest = mock.MagicMock(return_value=sample_training_dataset)
         stats = featurestore.get_training_dataset_statistics("team_position_prediction",
-                                                         featurestore=featurestore.project_featurestore(),
-                                                         training_dataset_version=1)
+                                                             featurestore=featurestore.project_featurestore(),
+                                                             training_dataset_version=1)
         assert stats.descriptive_stats is not None
         assert stats.cluster_analysis is not None
         assert stats.correlation_matrix is not None
         assert stats.feature_histograms is not None
-
 
     def test_visualize_featuregroup_distributions(self, sample_metadata, sample_featuregroup):
         """ Test visualize_featuregroup_distributions """
@@ -2216,7 +2213,6 @@ class TestFeaturestoreSuite(object):
                 featurestore.visualize_featuregroup_distributions("games_features", plot=False)
                 assert "There was an error in visualizing the feature distributions" in ex.value
 
-
     def test_do_visualize_featuregroup_distributions(self, sample_metadata, sample_featuregroup):
         """ Test _do_visualize_featuregroup_distributions """
         # Matplotlib not working properly in 2.7
@@ -2235,7 +2231,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureDistributionsNotComputed) as ex:
                 core._do_visualize_featuregroup_distributions("games_features")
                 assert "feature distributions have not been computed for this featuregroup" in ex.value
-
 
     def test_visualize_featuregroup_correlations(self, sample_metadata, sample_featuregroup):
         """ Test visualize_featuregroup_correlations """
@@ -2256,7 +2251,6 @@ class TestFeaturestoreSuite(object):
                 featurestore.visualize_featuregroup_correlations("games_features", plot=False)
                 assert "There was an error in visualizing the feature correlations" in ex.value
 
-
     def test_do_visualize_featuregroup_correlations(self, sample_metadata, sample_featuregroup):
         """ Test _do_visualize_featuregroup_correlations """
         # Matplotlib not working properly in 2.7
@@ -2275,7 +2269,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureCorrelationsNotComputed) as ex:
                 core._do_visualize_featuregroup_correlations("games_features")
                 assert "feature correlations have not been computed for this featuregroup" in ex.value
-
 
     def test_visualize_featuregroup_clusters(self, sample_metadata, sample_featuregroup):
         """ Test visualize_featuregroup_clusters """
@@ -2296,7 +2289,6 @@ class TestFeaturestoreSuite(object):
                 featurestore.visualize_featuregroup_clusters("games_features", plot=False)
                 assert "There was an error in visualizing the feature clusters" in ex.value
 
-
     def test_do_visualize_featuregroup_clusters(self, sample_metadata, sample_featuregroup):
         """ Test _do_visualize_featuregroup_clusters """
         # Matplotlib not working properly in 2.7
@@ -2315,7 +2307,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureClustersNotComputed) as ex:
                 core._do_visualize_featuregroup_clusters("games_features")
                 assert "feature clusters have not been computed for this featuregroup" in ex.value
-
 
     def test_visualize_featuregroup_descriptive_stats(self, sample_metadata, sample_featuregroup):
         """ Test visualize_featuregroup_descriptive_stats """
@@ -2342,7 +2333,6 @@ class TestFeaturestoreSuite(object):
             featurestore.visualize_featuregroup_descriptive_stats("games_features")
             assert "There was an error in visualizing the descriptive statistics" in ex.value
 
-
     def test_do_visualize_featuregroup_descriptive_stats(self, sample_metadata, sample_featuregroup):
         """ Test _do_visualize_featuregroup_descriptive_stats """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -2368,7 +2358,6 @@ class TestFeaturestoreSuite(object):
             core._do_visualize_featuregroup_descriptive_stats("games_features")
             assert "descriptive statistics have not been computed for this featuregroup" in ex.value
 
-
     def test_visualize_training_dataset_distributions(self, sample_metadata, sample_training_dataset):
         """ Test visualize_training_dataset_distributions """
         # Matplotlib not working properly in 2.7
@@ -2387,7 +2376,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureVisualizationError) as ex:
                 featurestore.visualize_training_dataset_distributions("team_position_prediction", plot=False)
                 assert "There was an error in visualizing the feature distributions" in ex.value
-
 
     def test_do_visualize_training_dataset_distributions(self, sample_metadata, sample_training_dataset):
         """ Test _do_visualize_training_dataset_distributions """
@@ -2408,7 +2396,6 @@ class TestFeaturestoreSuite(object):
                 core._do_visualize_training_dataset_distributions("team_position_prediction")
                 assert "feature distributions have not been computed for this training dataset" in ex.value
 
-
     def test_visualize_training_dataset_correlations(self, sample_metadata, sample_training_dataset):
         """ Test visualize_training_dataset_correlations """
         if (sys.version_info > (3, 0)):
@@ -2426,7 +2413,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureVisualizationError) as ex:
                 featurestore.visualize_training_dataset_correlations("team_position_prediction", plot=False)
                 assert "There was an error in visualizing the feature correlations" in ex.value
-
 
     def test_do_visualize_training_dataset_correlations(self, sample_metadata, sample_training_dataset):
         """ Test _do_visualize_training_dataset_correlations """
@@ -2446,7 +2432,6 @@ class TestFeaturestoreSuite(object):
                 core._do_visualize_training_dataset_correlations("team_position_prediction")
                 assert "feature correlations have not been computed for this training dataset" in ex.value
 
-
     def test_visualize_training_dataset_clusters(self, sample_metadata, sample_training_dataset):
         """ Test visualize_training_dataset_correlations """
         if (sys.version_info > (3, 0)):
@@ -2465,7 +2450,6 @@ class TestFeaturestoreSuite(object):
                 featurestore.visualize_training_dataset_clusters("team_position_prediction", plot=False)
                 assert "There was an error in visualizing the feature clusters" in ex.value
 
-
     def test_do_visualize_training_dataset_clusters(self, sample_metadata, sample_training_dataset):
         """ Test _do_visualize_training_dataset_correlations """
         if (sys.version_info > (3, 0)):
@@ -2483,7 +2467,6 @@ class TestFeaturestoreSuite(object):
             with pytest.raises(FeatureClustersNotComputed) as ex:
                 core._do_visualize_training_dataset_clusters("team_position_prediction")
                 assert "clusters have not been computed for this training dataset" in ex.value
-
 
     def test_visualize_training_dataset_descriptive_stats(self, sample_metadata, sample_training_dataset):
         """ Test visualize_training_dataset_descriptive_stats """
@@ -2528,7 +2511,6 @@ class TestFeaturestoreSuite(object):
             featurestore.visualize_training_dataset_descriptive_stats("team_position_prediction")
             assert "There was an error in visualizing the descriptive statistics" in ex.value
 
-
     def test_do_visualize_training_dataset_descriptive_stats(self, sample_metadata, sample_training_dataset):
         """ Test _do_visualize_training_dataset_descriptive_stats """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
@@ -2572,18 +2554,15 @@ class TestFeaturestoreSuite(object):
             core._do_visualize_training_dataset_descriptive_stats("team_position_prediction")
             assert "descriptive statistics have not been computed for this training dataset" in ex.value
 
-
     def test_is_hive_enabled(self):
         """ Test _is_hive_enabled """
         spark = self.spark_session()
         assert fs_utils._is_hive_enabled(spark)
 
-
     def test_get_spark_sql_catalog_impl(self):
         """ Test _get_spark_sql_catalog_impl """
         spark = self.spark_session()
         assert fs_utils._get_spark_sql_catalog_impl(spark) == constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE
-
 
     def test_verify_hive_enabled(self):
         """ Test _verify_hive_enabled """

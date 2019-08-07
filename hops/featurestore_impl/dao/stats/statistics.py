@@ -1,8 +1,9 @@
+from hops.featurestore_impl.dao.stats.correlation_matrix import CorrelationMatrix
+from hops.featurestore_impl.dao.stats.descriptive_stats import DescriptiveStats
+from hops.featurestore_impl.dao.stats.feature_histograms import FeatureHistograms
+
 from hops import constants
-from hops.featurestore_impl.dao.cluster_analysis import ClusterAnalysis
-from hops.featurestore_impl.dao.correlation_matrix import CorrelationMatrix
-from hops.featurestore_impl.dao.descriptive_stats import DescriptiveStats
-from hops.featurestore_impl.dao.feature_histograms import FeatureHistograms
+from hops.featurestore_impl.dao.stats.cluster_analysis import ClusterAnalysis
 
 
 class Statistics(object):

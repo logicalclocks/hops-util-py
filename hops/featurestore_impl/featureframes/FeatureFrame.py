@@ -1,6 +1,7 @@
 from hops import hdfs, constants, util
 from hops.featurestore_impl.util import fs_utils
-from hops.featurestore_impl.exceptions.exceptions import TrainingDatasetNotFound, CouldNotConvertDataframe
+from hops.featurestore_impl.exceptions.exceptions import TrainingDatasetNotFound, CouldNotConvertDataframe, \
+    NumpyDatasetFormatNotSupportedForExternalTrainingDatasets, HDF5DatasetFormatNotSupportedForExternalTrainingDatasets
 from tempfile import TemporaryFile
 import pandas as pd
 import numpy as np
@@ -123,14 +124,17 @@ class AvroFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(
+                    self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(
-                self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_AVRO_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -170,14 +174,17 @@ class ORCFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(
+                    self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_ORC_FORMAT).load(
-                self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_ORC_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -217,19 +224,24 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
+                    self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(
+                            self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
-            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
-            constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
-                self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(
-                        self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
+                constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -243,6 +255,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
         """
+        print("write feature frame, write_mode: {}".format(self.write_mode))
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
                 "Append is not supported for training datasets stored in tf-records format, only overwrite, "
@@ -277,7 +290,12 @@ class NumpyFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
               :CouldNotConvertDataframe: if the numpy dataset could not be converted to a spark dataframe
+              :NumpyDatasetFormatNotSupportedForExternalTrainingDatasets: if the user tries to read an
+                                                                          external training dataset in the .npy format.
         """
+        if self.training_dataset.training_dataset_type == constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            raise NumpyDatasetFormatNotSupportedForExternalTrainingDatasets("The .npy dataset format is not "
+                                                                            "supported for external training datasets.")
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX):
             raise TrainingDatasetNotFound("Could not find a training dataset in file {}".format(
                 self.path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX))
@@ -316,7 +334,12 @@ class NumpyFeatureFrame(FeatureFrame):
 
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
+              :NumpyDatasetFormatNotSupportedForExternalTrainingDatasets: if the user tries to write an
+                                                                          external training dataset in the .npy format.
         """
+        if self.training_dataset.training_dataset_type == constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            raise NumpyDatasetFormatNotSupportedForExternalTrainingDatasets("The .npy dataset format is not "
+                                                                            "supported for external training datasets.")
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
                 "Append is not supported for training datasets stored in .npy format, only overwrite, "
@@ -361,7 +384,12 @@ class HDF5FeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
               :CouldNotConvertDataframe: if the hdf5 dataset could not be converted to a spark dataframe
+              :HDF5DatasetFormatNotSupportedForExternalTrainingDatasets: if the user tries to read an
+                                                                          external training dataset in the .hdf5 format.
         """
+        if self.training_dataset.training_dataset_type == constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            raise HDF5DatasetFormatNotSupportedForExternalTrainingDatasets("The .hdf5 dataset format is not "
+                                                                            "supported for external training datasets.")
         if not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX):
             raise TrainingDatasetNotFound("Could not find a training dataset in file {}".format(
                 self.path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX))
@@ -370,7 +398,7 @@ class HDF5FeatureFrame(FeatureFrame):
         tf.write(data)
         tf.seek(0)
         hdf5_file = h5py.File(tf)
-        np_array = hdf5_file[self.training_dataset][()]
+        np_array = hdf5_file[self.training_dataset.name][()]
         if self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_NUMPY:
             return np_array
         if self.dataframe_type == constants.FEATURE_STORE.DATAFRAME_TYPE_PYTHON:
@@ -402,23 +430,28 @@ class HDF5FeatureFrame(FeatureFrame):
 
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
+              :HDF5DatasetFormatNotSupportedForExternalTrainingDatasets: if the user tries to write an
+                                                                          external training dataset in the .hdf5 format.
         """
+        if self.training_dataset.training_dataset_type == constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            raise HDF5DatasetFormatNotSupportedForExternalTrainingDatasets("The .hdf5 dataset format is not "
+                                                                           "supported for external training datasets.")
         if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
             raise ValueError(
                 "Append is not supported for training datasets stored in .hdf5 format, only overwrite, "
                 "set the optional argument write_mode='overwrite'")
         if not isinstance(self.df, np.ndarray):
-            if isinstance(self.df, DataFrame) or isinstance(df, RDD):
+            if isinstance(self.df, DataFrame) or isinstance(self.df, RDD):
                 df = np.array(self.df.collect())
-            if isinstance(df, pd.DataFrame):
+            if isinstance(self.df, pd.DataFrame):
                 df = df.values
-            if isinstance(df, list):
-                df = np.array(df)
+            if isinstance(self.df, list):
+                df = np.array(self.df)
         tf = TemporaryFile()
         tf.seek(0)
         hdf5_file = h5py.File(tf)
         tf.seek(0)
-        hdf5_file.create_dataset(self.training_dataset, data=df)
+        hdf5_file.create_dataset(self.training_dataset.name, data=df)
         tf.seek(0)
         hdf5_file.close()
         tf.seek(0)
@@ -451,15 +484,18 @@ class PetastormFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.parquet(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
+                spark_df = spark.read.parquet(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(
+                            self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} "
+                                              "or in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX))
+        else:
             spark_df = spark.read.parquet(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
-            spark_df = spark.read.parquet(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(
-                        self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} "
-                                          "or in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_PETASTORM_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -514,16 +550,19 @@ class ImageFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(
+                    self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(
+                            self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or"
+                                              " in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT).load(
-                self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(
-                        self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or"
-                                          " in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -569,15 +608,18 @@ class ParquetFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
-            spark_df = spark.read.parquet(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            spark_df = spark.read.parquet(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(
-                        self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or "
-                                          "in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.parquet(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+                spark_df = spark.read.parquet(self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(
+                            self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or "
+                                              "in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
+        else:
+            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -618,21 +660,27 @@ class TSVFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+                    constants.DELIMITERS.TAB_DELIMITER).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+                    constants.DELIMITERS.TAB_DELIMITER).load(
+                    self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or "
+                                              "in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
                 constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
                 constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
                 constants.DELIMITERS.TAB_DELIMITER).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(
-                self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or "
-                                          "in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -675,21 +723,27 @@ class CSVFeatureFrame(FeatureFrame):
         Raises:
               :TrainingDatasetNotFound: if the requested training dataset could not be found
         """
-        if hdfs.exists(self.path):
+        if self.training_dataset.training_dataset_type != constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
+            if hdfs.exists(self.path):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+                    constants.DELIMITERS.COMMA_DELIMITER).load(self.path)
+            elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
+                    constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
+                    constants.DELIMITERS.COMMA_DELIMITER).load(self.path +
+                                                               constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
+            if not hdfs.exists(self.path) and not hdfs.exists(self.path +
+                                                                      constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
+                raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
+                    self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
+        else:
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
                 constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
                 constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
                 constants.DELIMITERS.COMMA_DELIMITER).load(self.path)
-        elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(self.path +
-                                                           constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX)
-        if not hdfs.exists(self.path) and not hdfs.exists(self.path +
-                                                                  constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX):
-            raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
-                self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
