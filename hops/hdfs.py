@@ -3,7 +3,6 @@ API for interacting with the file system on Hops (HopsFS).
 
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
 """
-import pydoop.hdfs as hdfs
 import datetime
 from six import string_types
 import shutil
@@ -11,10 +10,17 @@ import stat as local_stat
 import fnmatch
 import os
 import errno
-import pydoop.hdfs.path as path
+
 from hops import constants
 import sys
 import subprocess
+
+# Compatibility with SageMaker
+try:
+    import pydoop.hdfs as hdfs
+    import pydoop.hdfs.path as path
+except:
+    pass
 
 fd = None
 
@@ -61,11 +67,16 @@ def project_user():
 
 def project_name():
     """
-    Extracts the project name from the project username ("project__user")
+    Extracts the project name from the project username ("project__user") or from the environment if available
 
     Returns:
         project name
     """
+    try:
+        return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR]
+    except:
+        pass
+
     hops_user = project_user()
     hops_user_split = hops_user.split("__")  # project users have username project__user
     project = hops_user_split[0]
