@@ -19,11 +19,20 @@ import boto3
 from hops import hdfs
 from hops import version
 from hops import constants
-import ssl
 
+from OpenSSL import SSL
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+import idna
+from socket import socket
+
+verify = None
 #! Needed for hops library backwards compatability
 try:
     import requests
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 except:
     pass
 
@@ -38,16 +47,13 @@ try:
 except:
     pass
 
-try:
-    import http.client as http
-except ImportError:
-    import httplib as http
-
 # in case importing in %%local
 try:
     from pyspark.sql import SparkSession
 except:
     pass
+
+session = requests.session()
 
 def _get_elastic_endpoint():
     """
@@ -151,55 +157,95 @@ def _get_host_port_pair():
     host_port_pair = endpoint.split(':')
     return host_port_pair
 
-def _get_http_connection(https=False):
-    """
-    Opens a HTTP(S) connection to Hopsworks
 
-    Args:
-        https: boolean flag whether to use Secure HTTP or regular HTTP
-
-    Returns:
-        HTTP(S)Connection
-    """
-    host_port_pair = _get_host_port_pair()
-    if (https):
-        PROTOCOL = ssl.PROTOCOL_TLSv1_2
-        ssl_context = ssl.SSLContext(PROTOCOL)
-        connection = http.HTTPSConnection(str(host_port_pair[0]), int(host_port_pair[1]), context = ssl_context)
-    else:
-        connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
-    return connection
 
 def set_auth_header(headers):
+    """
+    Set authorization header for HTTP requests to Hopsworks, depending if setup is remote or not.
+
+    Args:
+        http headers
+    """
     if constants.ENV_VARIABLES.REMOTE_ENV_VAR in os.environ:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + get_api_key_aws(hdfs.project_name())
     else:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
 
-def send_request(connection, method, resource, body=None, headers=None):
+
+def get_requests_verify(hostname, port):
+    """
+    Get verification method for sending HTTP requests to Hopsworks.
+    Credit to https://gist.github.com/gdamjan/55a8b9eec6cf7b771f92021d93b87b2c
+    Дамјан Георгиевски gdamjan
+    Returns:
+        if env var HOPS_UTIL_VERIFY is not false
+            then if hopsworks certificate is self-signed, return the path to the truststore (PEM)
+            else if hopsworks is not self-signed, return true
+        return false
+    """
+    if constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR in os.environ and os.environ[
+        constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] == 'true':
+
+        hostname_idna = idna.encode(hostname)
+        sock = socket()
+
+        sock.connect((hostname, int(port)))
+        ctx = SSL.Context(SSL.SSLv23_METHOD)
+        ctx.check_hostname = False
+        ctx.verify_mode = SSL.VERIFY_NONE
+
+        sock_ssl = SSL.Connection(ctx, sock)
+        sock_ssl.set_connect_state()
+        sock_ssl.set_tlsext_host_name(hostname_idna)
+        sock_ssl.do_handshake()
+        cert = sock_ssl.get_peer_certificate()
+        crypto_cert = cert.to_cryptography()
+        sock_ssl.close()
+        sock.close()
+
+        try:
+            commonname = crypto_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+            issuer = crypto_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+            if commonname == issuer and constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR in os.environ:
+                return os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR]
+            else:
+                return True
+        except x509.ExtensionNotFound:
+            return True
+
+    return False
+
+
+def send_request(method, resource, data=None, headers=None):
     """
     Sends a request to Hopsworks. In case of Unauthorized response, submit the request once more as jwt might not
     have been read properly from local container.
-
     Args:
-        connection: HTTP connection instance to Hopsworks
         method: HTTP(S) method
         resource: Hopsworks resource
-        body: HTTP(S) body
+        data: HTTP(S) payload
         headers: HTTP(S) headers
-
+        verify: Whether to verify the https request
     Returns:
         HTTP(S) response
     """
     if headers is None:
         headers = {}
+    global verify
+    host, port = _get_host_port_pair()
+    if verify is None:
+        verify = get_requests_verify(host, port)
     set_auth_header(headers)
-    connection.request(method, resource, body, headers)
-    response = connection.getresponse()
-    if response.status == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
+    url = _get_hopsworks_rest_endpoint() + resource
+    req = requests.Request(method, url, data=data, headers=headers)
+    prepped = session.prepare_request(req)
+
+    response = session.send(prepped, verify=get_requests_verify(host, port))
+
+    if response.status_code == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
         set_auth_header(headers)
-        connection.request(method, resource, body, headers)
-        response = connection.getresponse()
+        prepped = session.prepare_request(req)
+        response = session.send(prepped)
     return response
 
 
@@ -311,12 +357,14 @@ def _put_elastic(project, appid, elastic_id, json_data):
     if not elastic_endpoint:
         return
     headers = {'Content-type': 'application/json'}
-    session = requests.Session()
 
     retries = 3
     resp=None
     while retries > 0:
-        resp = session.put("http://" + elastic_endpoint + "/" +  project.lower() + "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data, headers=headers, verify=False)
+        resp = requests.put(constants.HTTP_CONFIG.HTTP_PUT, "http://" + elastic_endpoint + "/" +
+                                  project.lower() +
+                           "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data,
+                           headers=headers, verify=False)
         if resp.status_code == 200:
             return
         else:

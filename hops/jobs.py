@@ -8,6 +8,7 @@ from hops.exceptions import RestAPIError
 import json
 import sys
 
+
 def create_job(name, job_config):
     """
     Create a job in Hopsworks
@@ -22,29 +23,20 @@ def create_job(name, job_config):
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     job_config["appName"] = name
     method = constants.HTTP_CONFIG.HTTP_PUT
-    connection = util._get_http_connection(https=True)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_JOBS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    name
-    response = util.send_request(connection, method, resource_url, body=json.dumps(job_config), headers=headers)
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    # for python 3
-    if sys.version_info > (3, 0):
-        if (response.code >= 400):
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not create job (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    else:  # for python 2
-        if response.status >= 400:
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not create job (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    response = util.send_request(method, resource_url, data=json.dumps(job_config), headers=headers)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not create job (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
     return response_object
 
 
@@ -56,7 +48,6 @@ def _job_execution_action(name, action):
         The job status.
     """
     method = constants.HTTP_CONFIG.HTTP_POST
-    connection = util._get_http_connection(https=True)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -64,22 +55,14 @@ def _job_execution_action(name, action):
                    constants.REST_CONFIG.HOPSWORKS_JOBS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    name + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_EXECUTIONS_RESOURCE + "?action=" + action
-    response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    # for python 3
-    if sys.version_info > (3, 0):
-        if response.code >= 400:
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not perform action on job's execution (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    else:  # for python 2
-        if response.status >= 400:
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not perform action on job's execution (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    response = util.send_request(method, resource_url)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not perform action on job's execution (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
     return response_object
 
 
@@ -104,7 +87,6 @@ def stop_job(name, action="stop"):
 
 def get_current_execution(name):
     method = constants.HTTP_CONFIG.HTTP_GET
-    connection = util._get_http_connection(https=True)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -112,20 +94,11 @@ def get_current_execution(name):
                    constants.REST_CONFIG.HOPSWORKS_JOBS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    name + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_EXECUTIONS_RESOURCE + "?offset=0&limit=1&sort_by=id:desc"
-    response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
-    # for python 3
-    if sys.version_info > (3, 0):
-        if response.code >= 400:
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not get current job's execution (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
-    else:  # for python 2
-        if response.status >= 400:
-            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not get current job's execution (url: {}), server response: \n "
-                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    response = util.send_request(method, resource_url)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get current job's execution (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
     return response_object

@@ -44,7 +44,6 @@ def start_beam_jobserver(flink_session_name,
     """
     # Get Flink master URL (flink session cluster) from an ExecutionDTO
     method = constants.HTTP_CONFIG.HTTP_GET
-    connection = util._get_http_connection(https=True)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -53,9 +52,9 @@ def start_beam_jobserver(flink_session_name,
                    flink_session_name + constants.DELIMITERS.SLASH_DELIMITER + \
                    "executions" + \
                    "?limit=1&offset=0&sort_by=submissionTime:desc"
-    response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
-    flink_master_url = json.loads(resp_body)['items'][0]['flinkMasterURL']
+    response = util.send_request(method, resource_url)
+    response_object = response.json()
+    flink_master_url = json.loads(response_object)['items'][0]['flinkMasterURL']
     artifact_port = randint(10000, 65000)
     expansion_port = randint(10000, 65000)
     job_port = randint(10000, 65000)
