@@ -11,7 +11,11 @@ import pandas as pd
 import math
 import re
 import os
-import pydoop.hdfs as pydoop
+
+try:
+    import pydoop.hdfs as pydoop
+except:
+    pass
 
 # for backwards compatibility
 try:
@@ -989,7 +993,7 @@ def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, da
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
         hdfs_path = hdfs_store_path
     # abspath means "hdfs://namenode:port/ is preprended
-    path = pydoop.path.abspath(hdfs_path)
+    path = util.abspath(hdfs_path)
     return path
 
 

@@ -18,8 +18,6 @@ Module hierarchy of featurestore implementation:
 
 import json
 
-import pydoop.hdfs as pydoop
-
 from hops import constants, util, hdfs, tls
 from hops.featurestore_impl.dao.common.featurestore_metadata import FeaturestoreMetadata
 from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
@@ -854,7 +852,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         featurestore_metadata.settings, hopsfs_connector_id=hopsfs_connector_id, s3_connector_id=s3_connector_id)
     td = TrainingDataset(td_json)
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = pydoop.path.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        path = util.abspath(td.hopsfs_training_dataset.hdfs_store_path)
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
@@ -1064,7 +1062,7 @@ def _do_insert_into_training_dataset(
                                            corr_method=corr_method, num_clusters=num_clusters)
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = pydoop.path.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        path = util.abspath(td.hopsfs_training_dataset.hdfs_store_path)
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
@@ -1176,7 +1174,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
         hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path
     # abspath means "hdfs://namenode:port/ is preprended
-    abspath = pydoop.path.abspath(hdfs_path)
+    abspath = util.abspath(hdfs_path)
     return abspath
 
 
@@ -1205,7 +1203,7 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(
                 training_dataset.data_format))
-    hdfs_path = pydoop.path.abspath(training_dataset.hopsfs_training_dataset.hdfs_store_path)
+    hdfs_path = util.abspath(training_dataset.hopsfs_training_dataset.hdfs_store_path)
     tf_record_json_schema = json.loads(hdfs.load(
         hdfs_path + constants.DELIMITERS.SLASH_DELIMITER +
         constants.FEATURE_STORE.TRAINING_DATASET_TF_RECORD_SCHEMA_FILE_NAME))

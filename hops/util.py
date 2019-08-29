@@ -22,7 +22,12 @@ try:
     import requests
 except:
     pass
-import pydoop.hdfs
+
+# Compatibility with SageMaker
+try:
+    import pydoop.hdfs
+except:
+    pass
 
 try:
     import tensorflow
@@ -161,6 +166,11 @@ def _get_http_connection(https=False):
         connection = http.HTTPConnection(str(host_port_pair[0]), int(host_port_pair[1]))
     return connection
 
+def set_auth_header(headers):
+    if os.environ[constants.ENV_VARIABLES.REMOTE_ENV_VAR]:
+        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + get_api_key_aws(hdfs.project_name())
+    else:
+        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
 
 def send_request(connection, method, resource, body=None, headers=None):
     """
@@ -179,11 +189,11 @@ def send_request(connection, method, resource, body=None, headers=None):
     """
     if headers is None:
         headers = {}
-    headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
+    set_auth_header(headers)
     connection.request(method, resource, body, headers)
     response = connection.getresponse()
     if response.status == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
-        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
+        set_auth_header(headers)
         connection.request(method, resource, body, headers)
         response = connection.getresponse()
     return response
@@ -496,3 +506,31 @@ def get_jwt():
     """
     with open(constants.REST_CONFIG.JWT_TOKEN, "r") as jwt:
         return jwt.read()
+
+def get_api_key_aws(project_name):
+    import boto3
+
+    def assumed_role():
+        client = boto3.client('sts')
+        response = client.get_caller_identity()
+        # arns for assumed roles in SageMaker follow the following schema
+        # arn:aws:sts::123456789012:assumed-role/my-role-name/my-role-session-name
+        local_identifier = response['Arn'].split(':')[-1].split('/')
+        if len(local_identifier) != 3 or local_identifier[0] != 'assumed-role':
+            raise Exception('Failed to extract assumed role from arn: ' + response['Arn'])
+        return local_identifier[1]
+
+    secret_name = 'hopsworks/project/' + project_name + '/role/' + assumed_role()
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager'
+    )
+    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(get_secret_value_response['SecretString'])['api-key']
+
+def abspath(hdfs_path):
+    if os.environ[constants.ENV_VARIABLES.REMOTE_ENV_VAR]:
+        return hdfs_path
+    else:
+        return pydoop.path.abspath(hdfs_path)
