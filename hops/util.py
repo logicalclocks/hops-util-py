@@ -167,7 +167,7 @@ def _get_http_connection(https=False):
     return connection
 
 def set_auth_header(headers):
-    if os.environ[constants.ENV_VARIABLES.REMOTE_ENV_VAR]:
+    if constants.ENV_VARIABLES.REMOTE_ENV_VAR in os.environ:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + get_api_key_aws(hdfs.project_name())
     else:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
