@@ -570,3 +570,72 @@ def _get_training_dataset_rest(training_dataset_id, featurestore_id):
                                "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.status, response.reason, error_code, error_msg, user_msg))
     return response_object
+
+
+def _sync_hive_table_with_featurestore(featuregroup, featurestore_id, description, featuregroup_version, jobs,
+                              feature_corr_data, featuregroup_desc_stats_data,
+                              features_histogram_data, cluster_analysis_data, featuregroup_type,
+                              featuregroup_dto_type):
+    """
+    Sends a REST call to hopsworks to synchronize a Hive table with the feature store
+
+    Args:
+        :featuregroup: the name of the featuregroup
+        :featurestore_id: id of the featurestore where the featuregroup resides
+        :description:  a description of the featuregroup
+        :featuregroup_version: the version of the featuregroup (defaults to 1)
+        :jobs: list of Hopsworks Jobs linked to the feature group
+        :feature_corr_data: json-string with the feature correlation matrix of the featuregroup
+        :featuregroup_desc_stats_data: json-string with the descriptive statistics of the featurergroup
+        :features_histogram_data: list of json-strings with histogram data for the features in the featuregroup
+        :cluster_analysis_data: cluster analysis for the featuregroup
+        :featuregroup_type: type of the featuregroup (on-demand or cached)
+        :featuregroup_dto_type: type of the JSON DTO for the backend
+
+    Returns:
+        The HTTP response
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION: description,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type
+                     }
+
+    json_embeddable = json.dumps(json_contents)
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    method = constants.HTTP_CONFIG.HTTP_POST
+    connection = util._get_http_connection(https=True)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_SYNC_RESOURCE)
+    response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    # for python 3
+    if sys.version_info > (3, 0):
+        if response.code != 201 and response.code != 200:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
+    else:  # for python 2
+        if response.status != 201 and response.status != 200:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    return response_object

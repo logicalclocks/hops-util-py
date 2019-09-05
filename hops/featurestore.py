@@ -1814,6 +1814,7 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
         core._get_featurestore_metadata(featurestore, update_cache=True)
         return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
 
+
 def connect(host, project_name, port = 443):
     """
     Connects to a feature store from a remote environment such as Amazon SageMaker
@@ -1831,3 +1832,59 @@ def connect(host, project_name, port = 443):
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     project_info = rest_rpc._get_project_info(project_name)
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = str(project_info['projectId'])
+
+
+def sync_hive_table_with_featurestore(featuregroup, description="", featurestore=None,
+                                      featuregroup_version=1, jobs=[], feature_corr_data = None,
+                                      featuregroup_desc_stats_data = None, features_histogram_data = None,
+                                      cluster_analysis_data = None):
+    """
+    Synchronizes an existing Hive table with a Feature Store.
+
+    Example usage:
+    >>> # Save Hive Table
+    >>> sample_df.write.mode("overwrite").saveAsTable("hive_fs_sync_example_1")
+    >>> # Synchronize with Feature Store
+    >>> featurestore.sync_hive_table_with_featurestore("hive_fs_sync_example", featuregroup_version=1)
+
+    Args:
+        :featuregroup: name of the featuregroup to synchronize with the hive table.
+                       The hive table should have a naming scheme of featuregroup_version
+        :description: description of the feature group
+        :featurestore: the feature store where the hive table is stored
+        :featuregroup_version: version of the feature group
+        :jobs: jobs to compute this feature group (optional)
+        :feature_corr_data: correlation statistics (optional)
+        :featuregroup_desc_stats_data: descriptive statistics (optional)
+        :features_histogram_data: histogram statistics (optional)
+        :cluster_analysis_data: cluster analysis (optional)
+
+    Returns:
+        None
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+
+    fs_utils._log("Synchronizing Hive Table: {} with Feature Store: {}".format(featuregroup, featurestore))
+
+    try: # Try with cached metadata
+        core._sync_hive_table_with_featurestore(
+            featuregroup, core._get_featurestore_metadata(featurestore, update_cache=False),
+            description=description, featurestore=featurestore, featuregroup_version=featuregroup_version,
+            jobs=jobs, feature_corr_data=feature_corr_data, featuregroup_desc_stats_data=featuregroup_desc_stats_data,
+            features_histogram_data=features_histogram_data, cluster_analysis_data=cluster_analysis_data)
+    except: # Try again after updating the cache
+        core._sync_hive_table_with_featurestore(
+            featuregroup, core._get_featurestore_metadata(featurestore, update_cache=True),
+            description=description, featurestore=featurestore, featuregroup_version=featuregroup_version,
+            jobs=jobs, feature_corr_data=feature_corr_data, featuregroup_desc_stats_data=featuregroup_desc_stats_data,
+            features_histogram_data=features_histogram_data, cluster_analysis_data=cluster_analysis_data)
+
+    # update metadata cache
+    try:
+        core._get_featurestore_metadata(featurestore, update_cache=True)
+    except:
+        pass
+
+    fs_utils._log("Hive Table: {} was successfully synchronized with Feature Store: {}".format(featuregroup,
+                                                                                               featurestore))

@@ -16,7 +16,10 @@ class Featuregroup(FeaturestoreEntity):
         Args:
             :featuregroup_json: JSON representation of the featuregroup, returned from Hopsworks REST API
         """
-        self.description = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION]
+        if constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION in featuregroup_json:
+            self.description = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION]
+        else:
+            self.description = ""
         self.features = self._parse_features(featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES])
         self.created = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_CREATED]
         self.creator = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_CREATOR]
