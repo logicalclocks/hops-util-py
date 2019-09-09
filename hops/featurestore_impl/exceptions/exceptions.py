@@ -108,3 +108,9 @@ class HDF5DatasetFormatNotSupportedForExternalTrainingDatasets(Exception):
     This exception will be raised if the user tries to create an external training dataset with the .npy format.
     .npy datasets are not supported for external training datasets.
     """
+
+class StorageConnectorTypeNotSupportedForFeatureImport(Exception):
+    """
+    This exception will be raised if the user tries to import a feature group using a storage connector type
+    that is not supported
+    """

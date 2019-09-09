@@ -95,4 +95,6 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_FEATURE_NAME_MAX_LENGTH]
         self.training_dataset_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE]
+        self.feature_import_connectors = \
+            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_IMPORT_CONNECTORS]
 
