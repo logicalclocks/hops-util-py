@@ -41,6 +41,7 @@ class ENV_VARIABLES:
     HOPSWORKS_PROJECT_ID_ENV_VAR = "HOPSWORKS_PROJECT_ID"
     HOPSWORKS_PROJECT_NAME_ENV_VAR = "HOPSWORKS_PROJECT_NAME"
     REMOTE_ENV_VAR = "REMOTE"
+    KAGENT_CERTS_DIR = "KAGENT_CERTS_DIR"
 
 
 class KAFKA_SSL_CONFIG:
@@ -78,7 +79,7 @@ class SSL_CONFIG:
     PEM_CA_CHAIN_CERTIFICATE_CONFIG = "ca_chain.pem"
     DOMAIN_CA_TRUSTSTORE = "domain_ca_truststore"
     CRYPTO_MATERIAL_PASSWORD = "material_passwd"
-    PEM_CA_ROOT_CERT = "/srv/hops/kagent/host-certs/hops_root_ca.pem"
+    PEM_CA_ROOT_CERT = "hops_root_ca.pem"
 
 
 class KAFKA_PRODUCER_CONFIG:
