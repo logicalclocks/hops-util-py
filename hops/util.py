@@ -530,7 +530,7 @@ def get_api_key_aws(project_name):
     return json.loads(get_secret_value_response['SecretString'])['api-key']
 
 def abspath(hdfs_path):
-    if os.environ[constants.ENV_VARIABLES.REMOTE_ENV_VAR]:
+    if constants.ENV_VARIABLES.REMOTE_ENV_VAR in os.environ:
         return hdfs_path
     else:
-        return pydoop.path.abspath(hdfs_path)
+        return pydoop.hdfs.path.abspath(hdfs_path)
