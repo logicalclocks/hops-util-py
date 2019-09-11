@@ -1584,6 +1584,39 @@ def _verify_hive_enabled(spark):
                 fs_utils._get_spark_sql_catalog_impl(spark), constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE)))
 
 
+
+def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, description="", featurestore=None,
+                                       featuregroup_version=1, jobs=[], feature_corr_data = None,
+                                       featuregroup_desc_stats_data = None, features_histogram_data = None,
+                                       cluster_analysis_data = None):
+    """
+    Synchronizes an existing Hive table with a Feature Store.
+
+    Args:
+        :featuregroup: name of the featuregroup to synchronize with the hive table.
+                       The hive table should have a naming scheme of `featuregroup_featuregroupversion`
+        :featurestore_metadata: metadata of the feature store
+        :description: description of the feature group
+        :featurestore: the feature store where the hive table is stored
+        :featuregroup_version: version of the feature group
+        :jobs: list of jobs used to compute the feature group (optional)
+        :feature_corr_data: feature correlation statistics (optional)
+        :featuregroup_desc_stats_data: descriptive statistics (optional)
+        :features_histogram_data: feature histograms statistics (optional)
+        :cluster_analysis_data: cluster analysis statistics (optional)
+
+    Returns:
+        None
+
+    """
+    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
+    featurestore_id = _get_featurestore_id(featurestore)
+    rest_rpc._sync_hive_table_with_featurestore(featuregroup, featurestore_id, description, featuregroup_version, jobs,
+                                                feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
+                                                cluster_analysis_data, featuregroup_type, featuregroup_type_dto)
+
+
+# Fetch on-load and cache it on the client
 try:
     metadata_cache = _get_featurestore_metadata(featurestore=fs_utils._do_get_project_featurestore())
 except:

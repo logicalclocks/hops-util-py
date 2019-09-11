@@ -14,6 +14,9 @@ class Feature(object):
         """
         self.name = feature_json[constants.REST_CONFIG.JSON_FEATURE_NAME]
         self.type = feature_json[constants.REST_CONFIG.JSON_FEATURE_TYPE]
-        self.description = feature_json[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]
+        if constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION in feature_json:
+            self.description = feature_json[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]
+        else:
+            self.description = ""
         self.primary = feature_json[constants.REST_CONFIG.JSON_FEATURE_PRIMARY]
         self.partition = feature_json[constants.REST_CONFIG.JSON_FEATURE_PARTITION]
