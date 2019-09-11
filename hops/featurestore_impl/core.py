@@ -27,7 +27,7 @@ from hops.featurestore_impl.exceptions.exceptions import FeaturegroupNotFound, H
     TrainingDatasetNotFound, CouldNotConvertDataframe, TFRecordSchemaNotFound, FeatureDistributionsNotComputed, \
     FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed, HiveNotEnabled, \
     StorageConnectorNotFound, CannotInsertIntoOnDemandFeatureGroup, CannotUpdateStatisticsOfOnDemandFeatureGroup, \
-    CannotGetPartitionsOfOnDemandFeatureGroup
+    CannotGetPartitionsOfOnDemandFeatureGroup, StorageConnectorTypeNotSupportedForFeatureImport
 from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
 from hops.featurestore_impl.query_planner import query_planner
 from hops.featurestore_impl.query_planner.f_query import FeatureQuery, FeaturesQuery
@@ -767,8 +767,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
                                                  data_format=training_dataset.data_format,
                                                  training_dataset = training_dataset
                                                  )
-    spark = util._find_spark()
-    return featureframe.read_featureframe(spark)
+    return featureframe.read_featureframe(util._find_spark())
 
 
 def _do_create_training_dataset(df, training_dataset, description="", featurestore=None,
@@ -1614,6 +1613,38 @@ def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, desc
     rest_rpc._sync_hive_table_with_featurestore(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                                 feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
                                                 cluster_analysis_data, featuregroup_type, featuregroup_type_dto)
+
+
+def _do_get_external_featuregroup(storage_connector_name, dataset_path, featurestore_metadata,
+                                  featurestore=None, data_format="parquet"):
+    """
+    Gets a feature dataset stored externally (e.g in a S3 bucket)
+
+    Args:
+        :storage_connector_name: the storage connector to the external data store
+        :dataset_path: the path to the dataset in the external datastore
+        :featurestore_metadata: featurestore metadata
+        :featurestore: the featurestore of the storage connector
+        :data_format: the data format (so that we know how to read the dataset)
+
+    Returns:
+        A spark dataframe of the external feature group
+    """
+    storage_connector = _do_get_storage_connector(storage_connector_name, featurestore)
+    if storage_connector.type == featurestore_metadata.settings.s3_connector_type:
+        fs_utils._setup_s3_credentials_for_spark(storage_connector.access_key,
+                                                 storage_connector.secret_key, util._find_spark())
+        path = fs_utils._get_bucket_path(storage_connector.bucket, dataset_path)
+        featureframe = FeatureFrame.get_featureframe(path=path,
+                                                     dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
+                                                     data_format=data_format)
+        return featureframe.read_featureframe(util._find_spark())
+    elif storage_connector.type not in metadata_cache.settings.feature_import_connectors:
+        raise StorageConnectorTypeNotSupportedForFeatureImport("The storage conector type: {} is not supported for "
+                                                                   "feature importation. Supported feature storage "
+                                                                   "connectors for importation are: " \
+                                                                   .format(storage_connector.type))
+
 
 
 # Fetch on-load and cache it on the client

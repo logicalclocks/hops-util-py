@@ -1032,3 +1032,27 @@ def _setup_s3_credentials_for_spark(access_key, secret_key, spark):
     sc = spark.sparkContext
     sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_ACCESS_KEY_ENV, access_key)
     sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SECRET_KEY_ENV, secret_key)
+
+
+def _get_bucket_path(bucket, dataset_path):
+    """
+    Utility function for getting the S3 path of a feature dataset on S3
+
+    Args:
+        :bucket: the bucket of the storage connector for s3
+        :dataset_path: the user-supplied path to the dataset
+
+    Returns:
+        S3 path to the dataset (bucket and file prefix appended if not in the user-supplied path
+
+    """
+    if bucket in dataset_path:
+        if constants.S3_CONFIG.S3_FILE_PREFIX not in dataset_path:
+            return constants.S3_CONFIG.S3_FILE_PREFIX + dataset_path
+        return dataset_path
+    else:
+        path = ""
+        if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
+            path = constants.S3_CONFIG.S3_FILE_PREFIX
+        path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + dataset_path
+        return path
