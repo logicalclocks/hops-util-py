@@ -523,8 +523,14 @@ def get_api_key_aws(project_name):
     secret_name = 'hopsworks/project/' + project_name + '/role/' + assumed_role()
 
     session = boto3.session.Session()
+    if (os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] != constants.AWS.DEFAULT_REGION):
+        region_name = os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR]
+    else:
+        region_name = session.region_name
+
     client = session.client(
-        service_name='secretsmanager'
+        service_name='secretsmanager',
+        region_name=region_name
     )
     get_secret_value_response = client.get_secret_value(SecretId=secret_name)
     return json.loads(get_secret_value_response['SecretString'])['api-key']

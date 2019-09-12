@@ -35,7 +35,7 @@ def _delete_table_contents(featuregroup_id, featurestore_id):
                     str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUP_CLEAR_RESOURCE)
     response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -71,7 +71,7 @@ def _get_featurestores():
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE)
     response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -113,7 +113,7 @@ def _get_featurestore_metadata(featurestore):
                     featurestore + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_METADATA_RESOURCE)
     response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -155,7 +155,7 @@ def _get_project_info(project_name):
                     constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     project_name)
     response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -257,7 +257,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE)
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -322,7 +322,7 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                     + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
                     constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false")
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -401,7 +401,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE)
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -465,7 +465,7 @@ def _update_training_dataset_stats_rest(
                     + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
                     constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false")
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     # for python 3
     if sys.version_info > (3, 0):
@@ -511,7 +511,7 @@ def _get_featuregroup_rest(featuregroup_id, featurestore_id):
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
                     + str(featuregroup_id))
     response = util.send_request(connection, method, resource_url, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     try:  # for python 3
         if (response.code != 200):
@@ -555,7 +555,7 @@ def _get_training_dataset_rest(training_dataset_id, featurestore_id):
                     constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
                     + str(training_dataset_id))
     response = util.send_request(connection, method, resource_url, headers=headers)
-    resp_body = response.read()
+    resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
     try:  # for python 3
         if (response.code != 200):
