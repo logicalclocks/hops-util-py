@@ -487,7 +487,6 @@ def _parse_rest_error(response_dict):
         user_msg = response_dict[constants.REST_CONFIG.JSON_USR_MSG]
     return error_code, error_msg, user_msg
 
-
 def get_job_name():
     """
     If this method is called from inside a hopsworks job, it returns the name of the job.
@@ -600,3 +599,44 @@ def get_flink_conf_dir():
     """
     if constants.ENV_VARIABLES.FLINK_CONF_DIR in os.environ:
         return os.environ[constants.ENV_VARIABLES.FLINK_CONF_DIR]
+
+def _validate_enable_online_featuregroup_schema(featuregroup_schema):
+    """
+    Validates the user-provided schema of an online feature group
+    Args:
+        :featuregroup_schema: the schema dict to validate
+
+    Returns:
+        schema with default values
+    """
+    if featuregroup_schema == None or len(featuregroup_schema) == 0:
+        raise ValueError("The feature schema is invalid, featuregroup schema is empty: {} ".format(featuregroup_schema))
+    primary_idx = -1
+    for idx, feature_def in enumerate(featuregroup_schema):
+        if constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION not in feature_def or \
+                        feature_def[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION] is None:
+            feature_def[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION] = "-"
+        if constants.REST_CONFIG.JSON_FEATURE_PARTITION not in feature_def or \
+                feature_def[constants.REST_CONFIG.JSON_FEATURE_PARTITION] is None:
+            feature_def[constants.REST_CONFIG.JSON_FEATURE_PARTITION] = False
+        if constants.REST_CONFIG.JSON_FEATURE_PRIMARY in feature_def and \
+                        feature_def[constants.REST_CONFIG.JSON_FEATURE_PRIMARY] is not None:
+            primary_idx = idx
+        if constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE not in feature_def or \
+                        feature_def[constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE] is None:
+            if constants.REST_CONFIG.JSON_FEATURE_TYPE not in feature_def or \
+                            feature_def[constants.REST_CONFIG.JSON_FEATURE_TYPE] is None:
+                feature_def[constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE] = \
+                    feature_def[constants.REST_CONFIG.JSON_FEATURE_TYPE]
+            else:
+                raise ValueError("The feature schema is invalid, the feature definition: {} "
+                                 "does not contain a type".format(feature_def))
+
+        if constants.REST_CONFIG.JSON_FEATURE_NAME not in feature_def or \
+                        feature_def[constants.REST_CONFIG.JSON_FEATURE_NAME] is None:
+            raise ValueError("The feature schema is invalid, the feature definition: {} "
+                             "does not contain a name".format(feature_def))
+    if primary_idx == -1:
+        raise ValueError("You must mark at least one feature as primary in the online feature group")
+
+    return featuregroup_schema

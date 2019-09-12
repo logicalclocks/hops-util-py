@@ -21,8 +21,8 @@ class FeaturestoreMetadata(object):
         Args:
             :metadata_json: JSON metadata about the featurestore returned from Hopsworks REST API
         """
-        featuregroups, training_datasets, features_to_featuregroups, featurestore, settings, storage_connectors = \
-            self._parse_featurestore_metadata(metadata_json)
+        featuregroups, training_datasets, features_to_featuregroups, featurestore, settings, storage_connectors, \
+            online_featurestore_connector = self._parse_featurestore_metadata(metadata_json)
         self.featuregroups = featuregroups
         self.training_datasets = training_datasets
         self.features_to_featuregroups = features_to_featuregroups
@@ -30,6 +30,7 @@ class FeaturestoreMetadata(object):
         self.settings = settings
         self.storage_connectors = storage_connectors
         constants.FEATURE_STORE.TRAINING_DATASET_SUPPORTED_FORMATS = settings.training_dataset_formats
+        self.online_featurestore_connector = online_featurestore_connector
 
 
     def _parse_featurestore_metadata(self, metadata_json):
@@ -41,7 +42,7 @@ class FeaturestoreMetadata(object):
             :featurestore_metadata: the JSON metadata of the featurestore returned by hopsworks
 
         Returns:
-            A dict with parsed metadata
+            the parsed metadata
 
         """
         featuregroups = {}
@@ -76,4 +77,7 @@ class FeaturestoreMetadata(object):
                 storage_connectors[sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_NAME]] = \
                     HopsfsStorageConnector(sc)
         featurestore = Featurestore(metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE])
-        return featuregroups, training_datasets, features_to_featuregroups, featurestore, settings, storage_connectors
+        online_featurestore_connector = JDBCStorageConnector(
+            metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_CONNECTOR])
+        return featuregroups, training_datasets, features_to_featuregroups, \
+               featurestore, settings, storage_connectors, online_featurestore_connector

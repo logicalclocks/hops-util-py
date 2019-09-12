@@ -6,7 +6,8 @@ from hops import constants, util, hdfs
 import json
 import numpy as np
 from hops.featurestore_impl.exceptions.exceptions import InferTFRecordSchemaError, \
-    InvalidPrimaryKey, SparkToHiveSchemaConversionError, CouldNotConvertDataframe
+    InvalidPrimaryKey, SparkToHiveSchemaConversionError, CouldNotConvertDataframe, \
+    SparkToMySQLSchemaConversionError
 import pandas as pd
 import math
 import re
@@ -291,7 +292,7 @@ def _validate_primary_key(featuregroup_df, primary_key):
     Raises:
         :InvalidPrimaryKey: when the primary key does not exist in the dataframe
     """
-    cols = map(lambda x: x[0], featuregroup_df.dtypes)
+    cols = list(map(lambda x: x[0], featuregroup_df.dtypes))
     if primary_key in cols:
         return True
     else:
@@ -300,34 +301,40 @@ def _validate_primary_key(featuregroup_df, primary_key):
                 .format(primary_key,cols))
 
 
-def _do_get_featuregroups(featurestore_metadata):
+def _do_get_featuregroups(featurestore_metadata, online):
     """
     Gets a list of all featuregroups in a featurestore
 
     Args:
         :featurestore_metadata: the metadata of the featurestore
+        :online: flag whether to filter the featuregroups that have online serving enabled
 
     Returns:
         A list of names of the featuregroups in this featurestore
     """
-    featuregroup_names = list(map(lambda fg: _get_table_name(fg.name,
-                                                                        fg.version),
-                                  featurestore_metadata.featuregroups.values()))
+    featuregroups = featurestore_metadata.featuregroups.values()
+    if online:
+        featuregroups = list(filter(lambda fg: fg.is_online(), featuregroups))
+    featuregroup_names = list(map(lambda fg: _get_table_name(fg.name, fg.version), featuregroups))
     return featuregroup_names
 
 
-def _do_get_features_list(featurestore_metadata):
+def _do_get_features_list(featurestore_metadata, online):
     """
     Gets a list of all features in a featurestore
 
     Args:
         :featurestore_metadata: metadata of the featurestore
+        :online: flag whether to filter the featuregroups that have online serving enabled
 
     Returns:
         A list of names of the features in this featurestore
     """
+    featuregroups = featurestore_metadata.featuregroups.values()
+    if online:
+        featuregroups = list(filter(lambda fg: fg.is_online(), featuregroups))
     features = []
-    for fg in featurestore_metadata.featuregroups.values():
+    for fg in featuregroups:
         features.extend(fg.features)
     features = list(map(lambda f: f.name, features))
     return features
@@ -678,6 +685,50 @@ def _convert_spark_dtype_to_hive_dtype(spark_dtype):
     if constants.SPARK_CONFIG.SPARK_DECIMAL_TYPE in spark_dtype.lower():
         return spark_dtype.upper()
     raise SparkToHiveSchemaConversionError("Dataframe data type: {} not recognized.".format(spark_dtype))
+
+
+def _convert_spark_dtype_to_mysql_dtype(spark_dtype):
+    """
+    Helper function to convert a spark data type into a mysql datatype
+
+    Args:
+        :spark_dtype: the spark datatype to convert
+
+    Returns:
+        the mysql datatype or None
+
+    Raises:
+        :SparkToMySQLSchemaConversionError: if there was an error converting a spark datatype to a mysql datatype
+    """
+
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_LONG_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_BIGINT_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_SHORT_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_BYTE_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_BYTE_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_CHAR_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_INTEGER_TYPE \
+            or spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_INT_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_INTEGER_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_BIGINT_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_BIGINT_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_SMALLINT_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_SMALLINT_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_STRING_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_VARCHAR_1000_TYPE
+    if spark_dtype.lower() == constants.SPARK_CONFIG.SPARK_BINARY_TYPE:
+        return constants.MYSQL_CONFIG.MYSQL_BLOB_TYPE
+    if constants.SPARK_CONFIG.SPARK_STRUCT in spark_dtype.lower():
+        return constants.MYSQL_CONFIG.MYSQL_BLOB_TYPE
+    if constants.SPARK_CONFIG.SPARK_ARRAY in spark_dtype.lower():
+        return constants.MYSQL_CONFIG.MYSQL_BLOB_TYPE
+    if constants.SPARK_CONFIG.SPARK_VECTOR in spark_dtype.lower():
+        return constants.MYSQL_CONFIG.MYSQL_BLOB_TYPE
+    if spark_dtype.lower() in constants.MYSQL_CONFIG.MYSQL_DATA_TYPES:
+        return spark_dtype.lower()
+    if spark_dtype.upper() in constants.MYSQL_CONFIG.MYSQL_DATA_TYPES:
+        return spark_dtype.upper()
+    raise SparkToMySQLSchemaConversionError("Dataframe data type: {} not recognized.".format(spark_dtype))
 
 
 def _structure_cluster_analysis_json(cluster_analysis_dict):

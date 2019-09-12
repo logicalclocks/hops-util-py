@@ -226,7 +226,8 @@ def project_training_datasets_sink():
     return fs_utils._do_get_project_training_datasets_sink()
 
 
-def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark", jdbc_args={}):
+def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark",
+                     jdbc_args={}, online=False):
     """
     Gets a featuregroup from a featurestore as a spark dataframe
 
@@ -237,7 +238,7 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
     >>> #You can also explicitly define version and feature store:
     >>> trx_summary_features = featurestore.get_featuregroup("trx_summary_features",
     >>>                                                      featurestore=featurestore.project_featurestore(),
-    >>>                                                      featuregroup_version = 1)
+    >>>                                                      featuregroup_version = 1, online=False)
 
     Args:
         :featuregroup: the featuregroup to get
@@ -246,6 +247,8 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
         :jdbc_args: a dict of argument_name -> value with jdbc connection string arguments to be filled in
                     dynamically at runtime for fetching on-demand feature groups
+        :online: a boolean flag whether to fetch the online feature group or the offline one (assuming that the
+                 feature group has online serving enabled)
 
     Returns:
         a dataframe with the contents of the featuregroup
@@ -258,16 +261,16 @@ def get_featuregroup(featuregroup, featurestore=None, featuregroup_version=1, da
         return core._do_get_featuregroup(featuregroup,
                                          core._get_featurestore_metadata(featurestore, update_cache=False),
                                          featurestore=featurestore, featuregroup_version=featuregroup_version,
-                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args)
+                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args, online=online)
     except: # Try again after updating the cache
         return core._do_get_featuregroup(featuregroup,
                                          core._get_featurestore_metadata(featurestore, update_cache=True),
                                          featurestore=featurestore, featuregroup_version=featuregroup_version,
-                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args)
+                                         dataframe_type = dataframe_type, jdbc_args=jdbc_args, online=online)
 
 
 def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_version=1, dataframe_type="spark",
-                jdbc_args = {}):
+                jdbc_args = {}, online=False):
     """
     Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries
     hopsworks metastore to see if the feature exists in any of the featuregroups in the featurestore.
@@ -282,7 +285,7 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
     >>> max_trx_feature = featurestore.get_feature("max_trx")
     >>> #You can also explicitly define feature group,version and feature store:
     >>> max_trx_feature = featurestore.get_feature("max_trx", featurestore=featurestore.project_featurestore(),
-    >>> featuregroup="trx_summary_features", featuregroup_version = 1)
+    >>> featuregroup="trx_summary_features", featuregroup_version = 1, online=False)
 
     Args:
         :feature: the feature name to get
@@ -293,6 +296,9 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         :jdbc_args: a dict of argument_name -> value with jdbc connection string arguments to
                     be filled in dynamically at runtime for fetching on-demand feature group in-case the feature
                     belongs to a dynamic feature group
+        :online: a boolean flag whether to fetch the online feature or the offline one (assuming that the
+                 feature group that the feature is stored in has online serving enabled)
+                 (for cached feature groups only)
 
     Returns:
         A dataframe with the feature
@@ -302,16 +308,16 @@ def get_feature(feature, featurestore=None, featuregroup=None, featuregroup_vers
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=False),
                                     featurestore=featurestore, featuregroup=featuregroup,
                                     featuregroup_version=featuregroup_version, dataframe_type=dataframe_type,
-                                    jdbc_args=jdbc_args)
+                                    jdbc_args=jdbc_args, online=online)
     except:  # Try again after updating cache
         return core._do_get_feature(feature, core._get_featurestore_metadata(featurestore, update_cache=True),
                                     featurestore=featurestore, featuregroup=featuregroup,
                                     featuregroup_version=featuregroup_version, dataframe_type=dataframe_type,
-                                    jdbc_args=jdbc_args)
+                                    jdbc_args=jdbc_args, online=online)
 
 
 def get_features(features, featurestore=None, featuregroups_version_dict={}, join_key=None, dataframe_type="spark",
-                 jdbc_args = {}):
+                 jdbc_args = {}, online=False):
     """
     Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
     metastore to find where the features are stored. It will try to construct the query first from the cached metadata,
@@ -326,7 +332,7 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
     >>> features = featurestore.get_features(["pagerank", "triangle_count", "avg_trx"],
     >>>                                     featurestore=featurestore.project_featurestore(),
     >>>                                     featuregroups_version_dict={"trx_graph_summary_features": 1,
-    >>>                                     "trx_summary_features": 1}, join_key="cust_id")
+    >>>                                     "trx_summary_features": 1}, join_key="cust_id", online=False)
 
     Args:
         :features: a list of features to get from the featurestore
@@ -335,8 +341,10 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
         :featuregroup_version: the version of the featuregroup, defaults to 1
         :join_key: (Optional) column name to join on
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
-        :jdbc_args: a dict of featuregroup_version -> dict of argument_name -> value with jdbc connection string arguments to
-                    be filled in dynamically at runtime for fetching on-demand feature groups
+        :jdbc_args: a dict of featuregroup_version -> dict of argument_name -> value with jdbc connection string
+                    arguments to be filled in dynamically at runtime for fetching on-demand feature groups
+        :online: a boolean flag whether to fetch the online version of the features (assuming that the
+                 feature groups where the features reside have online serving enabled) (for cached feature groups only)
 
     Returns:
         A dataframe with all the features
@@ -348,16 +356,18 @@ def get_features(features, featurestore=None, featuregroups_version_dict={}, joi
                                      core._get_featurestore_metadata(featurestore, update_cache=False),
                                      featurestore=featurestore,
                                      featuregroups_version_dict=featuregroups_version_dict,
-                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args)
+                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args,
+                                     online=online)
         # Try again after updating cache
     except:
         return core._do_get_features(features, core._get_featurestore_metadata(featurestore, update_cache=True),
                                      featurestore=featurestore,
                                      featuregroups_version_dict=featuregroups_version_dict,
-                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args)
+                                     join_key=join_key, dataframe_type=dataframe_type, jdbc_args=jdbc_args,
+                                     online=online)
 
 
-def sql(query, featurestore=None, dataframe_type="spark"):
+def sql(query, featurestore=None, dataframe_type="spark", online=False):
     """
     Executes a generic SQL query on the featurestore
 
@@ -373,6 +383,8 @@ def sql(query, featurestore=None, dataframe_type="spark"):
         :query: SQL query
         :featurestore: the featurestore to query, defaults to the project's featurestore
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
+        :online: boolean flag whether to run the query against the online featurestore (otherwise it will be the offline
+                 featurestore)
 
     Returns:
         A dataframe with the query results
@@ -385,7 +397,7 @@ def sql(query, featurestore=None, dataframe_type="spark"):
     spark.sparkContext.setJobGroup("Running SQL query against feature store",
                                    "Running query: {} on the featurestore {}".format(query, featurestore))
     core._use_featurestore(spark, featurestore)
-    result = core._run_and_log_sql(spark, query)
+    result = core._run_and_log_sql(spark, query, online=online, featurestore=featurestore)
     spark.sparkContext.setJobGroup("", "")
     return fs_utils._return_dataframe_type(result, dataframe_type)
 
@@ -393,7 +405,7 @@ def sql(query, featurestore=None, dataframe_type="spark"):
 def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append",
                              descriptive_statistics=True, feature_correlation=True, feature_histograms=True,
                              cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
-                             num_clusters=5):
+                             num_clusters=5, online=False, offline=True):
     """
     Saves the given dataframe to the specified featuregroup. Defaults to the project-featurestore
     This will append to  the featuregroup. To overwrite a featuregroup, create a new version of the featuregroup
@@ -409,7 +421,7 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
     >>>                                      featurestore=featurestore.project_featurestore(), featuregroup_version=1,
     >>>                                      mode="append", descriptive_statistics=True, feature_correlation=True,
     >>>                                      feature_histograms=True, cluster_analysis=True,
-    >>>                                      stat_columns=None)
+    >>>                                      stat_columns=None, online=False, offline=True)
 
     Args:
         :df: the dataframe containing the data to insert into the featuregroup
@@ -428,6 +440,9 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
         :num_bins: number of bins to use for computing histograms
         :num_clusters: number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :online: boolean flag whether to insert the data in the online version of the featuregroup
+                 (assuming the featuregroup already has online feature serving enabled)
+        :offline boolean flag whether to insert the data in the offline version of the featuregroup
 
     Returns:
         None
@@ -444,7 +459,7 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
                                           feature_correlation=feature_correlation,
                                           feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                                           stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                          num_clusters=num_clusters)
+                                          num_clusters=num_clusters, online=online, offline=offline)
     except:
         # Retry with updated cache
         core._do_insert_into_featuregroup(df, featuregroup,
@@ -454,7 +469,7 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
                                           feature_correlation=feature_correlation,
                                           feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                                           stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                          num_clusters=num_clusters)
+                                          num_clusters=num_clusters, online=online, offline=offline)
 
 
 def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=True,
@@ -562,7 +577,7 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
     featuregroup_type, featuregroup_type_dto = fs_utils._get_on_demand_featuregroup_type_info(featurestore_metadata)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
                                        None, None, None, None, None, featuregroup_type, featuregroup_type_dto,
-                                       sql_query, jdbc_connector.id)
+                                       sql_query, jdbc_connector.id, False)
     # update metadata cache
     try:
         core._get_featurestore_metadata(featurestore, update_cache=True)
@@ -575,7 +590,8 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
                         featuregroup_version=1, jobs=[],
                         descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                        corr_method='pearson', num_clusters=5, partition_by=[]):
+                        corr_method='pearson', num_clusters=5, partition_by=[], online=False, online_types=None,
+                        offline=True):
     """
     Creates a new cached featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call
     to create the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly
@@ -593,7 +609,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
-    >>>                                  stat_columns=None, partition_by=[])
+    >>>                                  stat_columns=None, partition_by=[], online=False, offline=True)
 
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
@@ -616,6 +632,11 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
         :num_clusters: the number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
         :partition_by: a list of columns to partition_by, defaults to the empty list
+        :online: boolean flag, if this is set to true, a MySQL table for online feature data will be created in
+                 addition to the Hive table for offline feature data
+        :online_types: a dict with feature_name --> online_type, if a feature is present in this dict,
+                            the online_type will be taken from the dict rather than inferred from the spark dataframe.
+        :offline boolean flag whether to insert the data in the offline version of the featuregroup
 
     Returns:
         None
@@ -623,43 +644,28 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     Raises:
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
+    # Try with the cache first
     try:
-        spark_df = fs_utils._convert_dataframe_to_spark(df)
-    except Exception as e:
-        raise CouldNotConvertDataframe(
-            "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to "
-            "the Feature Store, error: {}".format(
-                str(e)))
+        core._do_create_featuregroup(df, core._get_featurestore_metadata(featurestore, update_cache=False),
+                                     featuregroup, primary_key=primary_key, description= description,
+                                     featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                     jobs=jobs, descriptive_statistics=descriptive_statistics,
+                                     feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                     cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                     corr_method=corr_method, num_clusters=num_clusters, partition_by=partition_by,
+                                     online=online, online_types=online_types, offline=offline)
+    # If it fails, update cache and retry
+    except:
+        core._do_create_featuregroup(df, core._get_featurestore_metadata(featurestore, update_cache=True),
+                                     featuregroup, primary_key=primary_key, description= description,
+                                     featurestore=featurestore, featuregroup_version=featuregroup_version,
+                                     jobs=jobs, descriptive_statistics=descriptive_statistics,
+                                     feature_correlation=feature_correlation, feature_histograms=feature_histograms,
+                                     cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
+                                     corr_method=corr_method, num_clusters=num_clusters, partition_by=partition_by,
+                                     online=online, online_types=online_types, offline=offline)
 
-    fs_utils._validate_metadata(featuregroup, spark_df.dtypes, description)
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    if primary_key is None:
-        primary_key = fs_utils._get_default_primary_key(spark_df)
-    if util.get_job_name() is not None:
-        jobs.append(util.get_job_name())
-
-    fs_utils._validate_primary_key(spark_df, primary_key)
-    features_schema = core._parse_spark_features_schema(spark_df.schema, primary_key, partition_by)
-    feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
-        core._compute_dataframe_stats(
-            spark_df, featuregroup, version=featuregroup_version,
-            descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
-            feature_histograms=feature_histograms, cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-            num_bins=num_bins,
-            corr_method=corr_method,
-            num_clusters=num_clusters)
-    featurestore_metadata = core._get_featurestore_metadata(featurestore, update_cache=False)
-    featurestore_id = core._get_featurestore_id(featurestore)
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
-    rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
-                                       features_schema, feature_corr_data, featuregroup_desc_stats_data,
-                                       features_histogram_data, cluster_analysis_data, featuregroup_type,
-                                       featuregroup_type_dto, None, None)
-    core._write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version,
-                                  constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
-    # update metadata cache
+    # update metadata cache since we created a new feature group and added new metadata
     try:
         core._get_featurestore_metadata(featurestore, update_cache=True)
     except:
@@ -691,7 +697,7 @@ def get_featurestore_metadata(featurestore=None, update_cache=False):
     return core._get_featurestore_metadata(featurestore=featurestore, update_cache=update_cache)
 
 
-def get_featuregroups(featurestore=None):
+def get_featuregroups(featurestore=None, online=False):
     """
     Gets a list of all featuregroups in a featurestore, uses the cached metadata.
 
@@ -699,10 +705,11 @@ def get_featuregroups(featurestore=None):
     >>> featurestore.get_featuregroups()
     >>> # By default `get_featuregroups()` will use the project's feature store, but this can also be specified
     >>> # with the optional argument `featurestore`
-    >>> featurestore.get_featuregroups(featurestore=featurestore.project_featurestore())
+    >>> featurestore.get_featuregroups(featurestore=featurestore.project_featurestore(), online=False)
 
     Args:
         :featurestore: the featurestore to list featuregroups for, defaults to the project-featurestore
+        :online: flag whether to filter the featuregroups that have online serving enabled
 
     Returns:
         A list of names of the featuregroups in this featurestore
@@ -712,13 +719,15 @@ def get_featuregroups(featurestore=None):
 
     # Try with the cache first
     try:
-        return fs_utils._do_get_featuregroups(core._get_featurestore_metadata(featurestore, update_cache=False))
+        return fs_utils._do_get_featuregroups(core._get_featurestore_metadata(featurestore, update_cache=False),
+                                              online=online)
     # If it fails, update cache
     except:
-        return fs_utils._do_get_featuregroups(core._get_featurestore_metadata(featurestore, update_cache=True))
+        return fs_utils._do_get_featuregroups(core._get_featurestore_metadata(featurestore, update_cache=True),
+                                              online=online)
 
 
-def get_features_list(featurestore=None):
+def get_features_list(featurestore=None, online=False):
     """
     Gets a list of all features in a featurestore, will use the cached featurestore metadata
 
@@ -730,6 +739,7 @@ def get_features_list(featurestore=None):
 
     Args:
         :featurestore: the featurestore to list features for, defaults to the project-featurestore
+        :online: flag whether to filter the features that have online serving enabled
 
     Returns:
         A list of names of the features in this featurestore
@@ -737,9 +747,11 @@ def get_features_list(featurestore=None):
     if featurestore is None:
         featurestore = project_featurestore()
     try:
-        return fs_utils._do_get_features_list(core._get_featurestore_metadata(featurestore, update_cache=False))
+        return fs_utils._do_get_features_list(core._get_featurestore_metadata(featurestore, update_cache=False),
+                                              online=online)
     except:
-        return fs_utils._do_get_features_list(core._get_featurestore_metadata(featurestore, update_cache=True))
+        return fs_utils._do_get_features_list(core._get_featurestore_metadata(featurestore, update_cache=True),
+                                              online=online)
 
 
 def get_training_datasets(featurestore=None):
@@ -1268,7 +1280,7 @@ def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, f
         :featuregroup_name: the name of the featuregroup
         :featurestore: the featurestore where the featuregroup resides
         :featuregroup_version: the version of the featuregroup
-        :figsize: size of the figure. If None, gets autmatically set
+        :figsize: size of the figure. If None, gets automatically set
         :color: the color of the histograms
         :log: whether to use log-scaling on the y-axis or not
         :align: how to align the bars, defaults to center.
@@ -1937,7 +1949,6 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
     Returns:
         None
     """
-    # update metadata cache
     if featurestore is None:
         featurestore = project_featurestore()
 
@@ -2038,3 +2049,92 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
                             num_clusters=num_clusters, partition_by=partition_by)
 
     fs_utils._log("Feature group imported successfully")
+
+
+def get_online_featurestore_connector(featurestore=None):
+    """
+    Gets a JDBC connector for the online feature store
+
+    Args:
+        :featurestore: the feature store name
+
+    Returns:
+        a DTO object of the JDBC connector for the online feature store
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try: # try with metadata cache
+        return core._do_get_online_featurestore_connector(featurestore,
+                                                   core._get_featurestore_metadata(featurestore, update_cache=False))
+    except: # retry with updated metadata
+        return core._do_get_online_featurestore_connector(featurestore,
+                                                   core._get_featurestore_metadata(featurestore, update_cache=True))
+
+
+def enable_featuregroup_online(featuregroup_name, featuregroup_version=1, featurestore=None, online_types=None):
+    """
+    Enables online feature serving for a feature group
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> featurestore.enable_featurergroup_online(featuregroup_name)
+    >>> # You can also explicitly override the default arguments:
+    >>> featurestore.enable_featurergroup_online(featuregroup_name, featuregroup_version=1, featurestore=featurestore,
+    >>>                                          online_types=False)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :featuregroup_version: version of the featuregroup
+        :featurestore: the featurestore that the featuregroup belongs to
+        :online_types: a dict with feature_name --> online_type, if a feature is present in this dict,
+                            the online_type will be taken from the dict rather than inferred from the spark dataframe.
+
+    Returns:
+        None
+    """
+    if featurestore is None:
+        featurestore = fs_utils._do_get_project_featurestore()
+
+    try: # try with metadata cache
+        core._do_enable_featuregroup_online(featuregroup_name, featuregroup_version,
+                                                      core._get_featurestore_metadata(featurestore, update_cache=False),
+                                                      featurestore=featurestore, online_types=online_types)
+    except: # retry with updated metadata
+        core._do_enable_featuregroup_online(featuregroup_name, featuregroup_version,
+                                            core._get_featurestore_metadata(featurestore, update_cache=True),
+                                            featurestore=featurestore, online_types=online_types)
+
+    fs_utils._log("Online Feature Serving enabled successfully for featuregroup: {}".format(featuregroup_name))
+
+
+def disable_featuregroup_online(featuregroup_name, featuregroup_version=1, featurestore=None):
+    """
+    Enables online feature serving for a feature group
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> featurestore.disable_featurergroup_online(featuregroup_name)
+    >>> # You can also explicitly override the default arguments:
+    >>> featurestore.disable_featurergroup_online(featuregroup_name, featuregroup_version=1, featurestore=featurestore)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :featuregroup_version: version of the featuregroup
+        :featurestore: the featurestore that the featuregroup belongs to
+
+    Returns:
+        None
+    """
+    if featurestore is None:
+        featurestore = fs_utils._do_get_project_featurestore()
+
+    try: # try with metadata cache
+        core._do_disable_featuregroup_online(featuregroup_name, featuregroup_version,
+                                            core._get_featurestore_metadata(featurestore, update_cache=False))
+    except: # retry with updated metadata
+        core._do_disable_featuregroup_online(featuregroup_name, featuregroup_version,
+                                            core._get_featurestore_metadata(featurestore, update_cache=True))
+
+    fs_utils._log("Online Feature Serving disabled successfully for featuregroup: {}".format(featuregroup_name))
