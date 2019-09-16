@@ -709,7 +709,7 @@ class TestFeaturestoreSuite(object):
         response.code = 200
         response.status = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
+        response.read = mock.MagicMock(return_value=bytes(json.dumps(data), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
@@ -941,7 +941,7 @@ class TestFeaturestoreSuite(object):
         response.status = 200
         response.code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
+        response.read = mock.MagicMock(return_value=bytes(json.dumps(data), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
@@ -969,7 +969,7 @@ class TestFeaturestoreSuite(object):
         response.status = 200
         response.code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
+        response.read = mock.MagicMock(return_value=bytes(json.dumps(data), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
@@ -995,7 +995,7 @@ class TestFeaturestoreSuite(object):
         response.code = 201
         response.status = 201
         response.read = mock.MagicMock(
-            return_value=json.dumps(sample_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS][0]))
+            return_value=bytes(json.dumps(sample_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS][0]), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
@@ -1221,7 +1221,7 @@ class TestFeaturestoreSuite(object):
             jwt = jwt.read()
         util.get_jwt = mock.MagicMock(return_value=jwt)
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
+        response.read = mock.MagicMock(return_value=bytes(json.dumps(data), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
@@ -1833,7 +1833,7 @@ class TestFeaturestoreSuite(object):
         response.code = 201
         response.status = 201
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
+        response.read = mock.MagicMock(return_value=bytes(json.dumps(data), "utf-8"))
         connection.getresponse = mock.MagicMock(return_value=response)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
