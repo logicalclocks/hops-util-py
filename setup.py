@@ -17,7 +17,7 @@ setup(
         'pandas',
         'pyjks',
         'pathlib',
-        'pyhopshive[hive]',
+        'pyhopshive[thrift]',
         'confluent-kafka',
         'hops-petastorm',
         'opencv-python'

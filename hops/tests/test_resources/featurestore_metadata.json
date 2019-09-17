@@ -1971,7 +1971,8 @@
     "trainingDatasetDescriptionMaxLength": 10000,
     "trainingDatasetFeatureDescriptionMaxLength": 10000,
     "trainingDatasetFeatureNameMaxLength": 1000,
-    "trainingDatasetType": "TRAINING DATASET"
+    "trainingDatasetType": "TRAINING DATASET",
+    "featureImportConnectors": ["S3"]
   },
   "storageConnectors": [
     {
