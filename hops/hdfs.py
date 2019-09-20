@@ -271,15 +271,11 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     if project == None:
         project = project_name()
 
-    if "PDIR" in os.environ:
-        full_local = os.environ['PDIR'] + '/' + local_path
+    # Absolute path
+    if local_path.startswith(os.getcwd()):
+        full_local = local_path
     else:
-        # Absolute path
-        if local_path.startswith(os.getcwd()):
-            full_local = local_path
-        else:
-            # Relative path
-            full_local = os.getcwd() + '/' + local_path
+        full_local = os.getcwd() + '/' + local_path
 
     hdfs_path = _expand_path(relative_hdfs_path, project, exists=False)
 
@@ -351,15 +347,10 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
     if project == None:
         project = project_name()
 
-    if "PDIR" in os.environ:
-        local_dir = os.environ['PDIR'] + '/' + local_path
+    if local_path.startswith(os.getcwd()):
+        local_dir = local_path
     else:
-        # Absolute path
-        if local_path.startswith(os.getcwd()):
-            local_dir = local_path
-        else:
-            # Relative path
-            local_dir = os.getcwd() + '/' + local_path
+        local_dir = os.getcwd() + '/' + local_path
 
     if not os.path.isdir(local_dir):
         raise IOError("You need to supply the path to a local directory. This is not a local dir: %s" % local_dir)
@@ -906,12 +897,12 @@ def add_module(hdfs_path, project=None):
     hdfs_path = _expand_path(hdfs_path, project)
 
     if path.isfile(hdfs_path) and hdfs_path.endswith('.py'):
-        py_path = copy_to_local(hdfs_path, localized_deps)
+        py_path = copy_to_local(hdfs_path, localized_deps, overwrite=True)
         if py_path not in sys.path:
             sys.path.append(py_path)
         return py_path
     elif path.isfile(hdfs_path) and hdfs_path.endswith('.ipynb'):
-        ipynb_path = copy_to_local(hdfs_path, localized_deps)
+        ipynb_path = copy_to_local(hdfs_path, localized_deps, overwrite=True)
         python_path = os.environ['PYSPARK_PYTHON']
         jupyter_binary = os.path.dirname(python_path) + '/jupyter'
         if not os.path.exists(jupyter_binary):
