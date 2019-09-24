@@ -1632,8 +1632,9 @@ def _do_get_external_featuregroup(storage_connector_name, dataset_path, features
     """
     storage_connector = _do_get_storage_connector(storage_connector_name, featurestore)
     if storage_connector.type == featurestore_metadata.settings.s3_connector_type:
-        fs_utils._setup_s3_credentials_for_spark(storage_connector.access_key,
-                                                 storage_connector.secret_key, util._find_spark())
+        if storage_connector.access_key is not None: 
+            fs_utils._setup_s3_credentials_for_spark(storage_connector.access_key,
+                                                    storage_connector.secret_key, util._find_spark())
         path = fs_utils._get_bucket_path(storage_connector.bucket, dataset_path)
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,

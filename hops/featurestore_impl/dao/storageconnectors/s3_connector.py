@@ -18,6 +18,16 @@ class S3StorageConnector():
         self.type = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_TYPE]
         self.featurestore_id = \
             s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_FEATURESTORE_ID]
-        self.access_key = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_S3_ACCESS_KEY]
         self.bucket = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_S3_BUCKET]
-        self.secret_key = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_S3_SECRET_KEY]
+
+        if constants.REST_CONFIG.JSON_FEATURESTORE_S3_ACCESS_KEY in s3_storage_connector_json: 
+            self.access_key = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_S3_ACCESS_KEY]
+        else: 
+            self.access_key = None 
+
+        if constants.REST_CONFIG.JSON_FEATURESTORE_S3_SECRET_KEY in s3_storage_connector_json: 
+            self.secret_key = s3_storage_connector_json[constants.REST_CONFIG.JSON_FEATURESTORE_S3_SECRET_KEY]
+        else:
+            self.secret_key = None
+
+    
