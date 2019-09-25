@@ -20,18 +20,18 @@ hops.experiment module
     :undoc-members:
     :show-inheritance:
 
-hops.numpy module
+hops.numpy_helper module
 ----------------------
 
-.. automodule:: hops.numpy
+.. automodule:: hops.numpy_helper
     :members:
     :undoc-members:
     :show-inheritance:
 
-hops.pandas module
+hops.pandas_helper module
 ----------------------
 
-.. automodule:: hops.pandas
+.. automodule:: hops.pandas_helper
     :members:
     :undoc-members:
     :show-inheritance:

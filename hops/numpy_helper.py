@@ -1,5 +1,5 @@
 """
-API for reading/writing numpy arrays to/from HopsFS.
+API for reading/writing numpy arrays to/from HDFS
 """
 import hops.hdfs as hdfs
 import numpy as np
@@ -7,7 +7,7 @@ import os
 
 def load(hdfs_filename, **kwds):
     """
-    Reads a file from HopsFS into a Numpy Array
+    Reads a file from HDFS into a Numpy Array
 
      Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
@@ -17,7 +17,7 @@ def load(hdfs_filename, **kwds):
       A numpy array
 
      Raises:
-      IOError: If the file does not exist.
+      IOError: If the file does not exist
     """
     hdfs_path = hdfs._expand_path(hdfs_filename)
     local_path = hdfs.copy_to_local(hdfs_path)
@@ -25,14 +25,14 @@ def load(hdfs_filename, **kwds):
 
 def save(hdfs_filename, data):
     """
-    Saves a numpy array to a file in HopsFS 
+    Saves a numpy array to a file in HDFS
 
     Args:
-       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
        :data: numpy array
 
     Raises:
-      IOError: If the local file does not exist.
+      IOError: If the local file does not exist
     """
     local_file = os.path.basename(hdfs_filename)
     np.save(local_file, data)
