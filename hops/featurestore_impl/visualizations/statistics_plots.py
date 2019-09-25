@@ -179,8 +179,8 @@ def _get_cluster_data(cluster_analysis):
     return data, colors, groups
 
 
-def _visualize_feature_distributions(feature_distributions, figsize=(16,12), color='lightblue', log=False,
-                                    align="center"):
+def _visualize_feature_distributions(feature_distributions, figsize=None, color='lightblue', log=False,
+                                     align="center"):
     """
     Visualizes the feature distributions of a training dataset or feature group in the featurestore
 
@@ -194,24 +194,28 @@ def _visualize_feature_distributions(feature_distributions, figsize=(16,12), col
     Returns:
         The figure
     """
+
     # Create the Raw sub-figures
     ncols = 2
     num_distributions = len(feature_distributions)
-    nrows = math.ceil(num_distributions/ncols)
+    nrows = math.ceil(num_distributions / ncols)
+
+    if figsize is None:
+        figsize = (16, nrows * 4)
+
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
     titles = []
-    for row in range(nrows):
-        for col in range(ncols):
-            if(row+col <= num_distributions):
-                _plot_feature_distribution(ax[row][col], feature_distributions[row+col], color=color, log=log,
-                                           align=align)
-                titles.append(feature_distributions[row+col].feature_name)
+
+    for plot_number in range(num_distributions):
+        _plot_feature_distribution(ax.flat[plot_number], feature_distributions[plot_number], color=color, log=log,
+                                   align=align)
+        titles.append(feature_distributions[plot_number].feature_name)
 
     # Stylize the sub-figures
     xlabel = 'Bin'
     ylabel = 'Frequency'
     for i, axes in enumerate(ax.flat):
-        if(i < len(titles)):
+        if (i < len(titles)):
             _stylize_axes(axes, titles[i], xlabel, ylabel)
 
     return fig

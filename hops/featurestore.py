@@ -1246,7 +1246,7 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
                                                     featurestore, featuregroup_version, dataframe_type)
 
 
-def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16, 12),
+def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=None,
                                          color='lightblue', log=False, align="center", plot=True):
     """
     Visualizes the feature distributions (if they have been computed) for a featuregroup in the featurestore
@@ -1259,7 +1259,7 @@ def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, f
     >>>                                                  featurestore=featurestore.project_featurestore(),
     >>>                                                  featuregroup_version = 1,
     >>>                                                  color="lightblue",
-    >>>                                                  figsize=(16,12),
+    >>>                                                  figsize=None,
     >>>                                                  log=False,
     >>>                                                  align="center",
     >>>                                                  plot=True)
@@ -1268,8 +1268,7 @@ def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, f
         :featuregroup_name: the name of the featuregroup
         :featurestore: the featurestore where the featuregroup resides
         :featuregroup_version: the version of the featuregroup
-        :figsize: size of the figure
-        :figsize: the size of the figure
+        :figsize: size of the figure. If None, gets autmatically set
         :color: the color of the histograms
         :log: whether to use log-scaling on the y-axis or not
         :align: how to align the bars, defaults to center.
