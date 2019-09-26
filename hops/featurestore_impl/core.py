@@ -1615,8 +1615,8 @@ def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, desc
                                                 cluster_analysis_data, featuregroup_type, featuregroup_type_dto)
 
 
-def _do_get_external_featuregroup(storage_connector_name, dataset_path, featurestore_metadata,
-                                  featurestore=None, data_format="parquet"):
+def _do_get_s3_featuregroup(storage_connector_name, dataset_path, featurestore_metadata,
+                            featurestore=None, data_format="parquet"):
     """
     Gets a feature dataset stored externally (e.g in a S3 bucket)
 
@@ -1639,6 +1639,38 @@ def _do_get_external_featuregroup(storage_connector_name, dataset_path, features
                                                      dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
                                                      data_format=data_format)
         return featureframe.read_featureframe(util._find_spark())
+    elif storage_connector.type not in metadata_cache.settings.feature_import_connectors:
+        raise StorageConnectorTypeNotSupportedForFeatureImport("The storage conector type: {} is not supported for "
+                                                                   "feature importation. Supported feature storage "
+                                                                   "connectors for importation are: " \
+                                                                   .format(storage_connector.type))
+
+
+def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_metadata, featurestore):
+    """
+    Gets a feature dataset stored in Redshift
+
+    Args:
+        :storage_connector_name: the storage connector to the external data store
+        :query: the query extracting the data from Redshift
+        :featurestore_metadata: featurestore metadata
+        :featurestore: the featurestore of the storage connector
+
+    Returns:
+        A spark dataframe of the Redshift feature group
+    """
+    storage_connector = _do_get_storage_connector(storage_connector_name, featurestore)
+    if storage_connector.type == featurestore_metadata.settings.jdbc_connector_type:
+        region_name, cluster_identifier, database, user = util.parse_redhift_jdbc_url(
+            storage_connector.connection_string + '?' + storage_connector.arguments)
+        user, password = util.get_redshift_username_password(region_name, cluster_identifier, user, database)
+
+        return util._find_spark().read.format(constants.SPARK_CONFIG.SPARK_JDBC_FORMAT) \
+            .option(constants.SPARK_CONFIG.SPARK_JDBC_URL, storage_connector.connection_string) \
+            .option(constants.SPARK_CONFIG.SPARK_JDBC_DBTABLE, '(' + query + ') tmp') \
+            .option(constants.SPARK_CONFIG.SPARK_JDBC_USER, user) \
+            .option(constants.SPARK_CONFIG.SPARK_JDBC_PW, password) \
+            .load()
     elif storage_connector.type not in metadata_cache.settings.feature_import_connectors:
         raise StorageConnectorTypeNotSupportedForFeatureImport("The storage conector type: {} is not supported for "
                                                                    "feature importation. Supported feature storage "

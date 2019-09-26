@@ -159,6 +159,8 @@ class SPARK_CONFIG:
     SPARK_JDBC_FORMAT= "jdbc"
     SPARK_JDBC_URL= "url"
     SPARK_JDBC_DBTABLE= "dbtable"
+    SPARK_JDBC_USER = "user"
+    SPARK_JDBC_PW = "password"
 
 class MODEL_SERVING:
     MODELS_DATASET = "Models"

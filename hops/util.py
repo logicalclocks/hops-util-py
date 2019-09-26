@@ -6,12 +6,16 @@ Miscellaneous utility functions for user applications.
 
 import os
 import signal
+import urllib
 from ctypes import cdll
 import itertools
 import socket
 import json
 from datetime import datetime
 import time
+
+import boto3
+
 from hops import hdfs
 from hops import version
 from hops import constants
@@ -540,3 +544,49 @@ def abspath(hdfs_path):
         return hdfs_path
     else:
         return pydoop.hdfs.path.abspath(hdfs_path)
+
+def parse_redhift_jdbc_url(url):
+    """
+    Parses a Redshift JDBC URL and extracts region_name, cluster_identifier, database and user.
+
+    Args:
+        :url: the JDBC URL
+
+    Returns:
+        region_name, cluster_identifier, database, user
+    """
+
+    jdbc_url = urllib.parse.urlparse(url)
+    redshift_url = urllib.parse.urlparse(jdbc_url.path)
+    if redshift_url.scheme != 'redshift':
+        raise Exception('Trying to parse non-redshift url: ' + jdbc_url)
+    cluster_identifier = redshift_url.netloc.split('.')[0]
+    region_name = redshift_url.netloc.split('.')[2]
+    database = redshift_url.path.split('/')[1]
+    user = urllib.parse.parse_qs(jdbc_url.query)['user'][0]
+    return region_name, cluster_identifier, database, user
+
+
+def get_redshift_username_password(region_name, cluster_identifier, user, database):
+    """
+    Requests temporary Redshift credentials with a validity of 3600 seconds and the given parameters.
+
+    Args:
+        :region_name: the AWS region name
+        :cluster_identifier: the Redshift cluster identifier
+        :user: the Redshift user to get credentials for
+        :database: the Redshift database
+
+    Returns:
+        user, password
+    """
+
+    client = boto3.client('redshift', region_name=region_name)
+    credential = client.get_cluster_credentials(
+        DbUser=user,
+        DbName=database,
+        ClusterIdentifier=cluster_identifier,
+        DurationSeconds=3600,
+        AutoCreate=False
+    )
+    return credential['DbUser'], credential['DbPassword']

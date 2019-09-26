@@ -1892,22 +1892,94 @@ def sync_hive_table_with_featurestore(featuregroup, description="", featurestore
     fs_utils._log("Hive Table: {} was successfully synchronized with Feature Store: {}".format(featuregroup,
                                                                                                featurestore))
 
+def import_featuregroup_redshift(storage_connector, query, featuregroup, primary_key=None, description="",
+                                 featurestore=None, featuregroup_version=1, jobs=[], descriptive_statistics=True,
+                                 feature_correlation=True, feature_histograms=True, cluster_analysis=True,
+                                 stat_columns=None, num_bins=20, corr_method='pearson', num_clusters=5,
+                                 partition_by=[]):
+    """
+    Imports an external dataset of features into a feature group in Hopsworks.
+    This function will read the dataset using spark and a configured JDBC storage connector for Redshift
+    and then writes the data to Hopsworks Feature Store (Hive) and registers its metadata.
 
-def import_featuregroup(storage_connector, path, featuregroup, primary_key=None, description="", featurestore=None,
-                        featuregroup_version=1, jobs=[],
-                        descriptive_statistics=True, feature_correlation=True,
-                        feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                        corr_method='pearson', num_clusters=5, partition_by=[], data_format="parquet"):
+    Example usage:
+    >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name)
+    >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:
+    >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name, primary_key="id",
+    >>>                                  description="trx_summary_features without the column count_trx",
+    >>>                                  featurestore=featurestore.project_featurestore(), featuregroup_version=1,
+    >>>                                  jobs=[], descriptive_statistics=False,
+    >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
+    >>>                                  stat_columns=None, partition_by=[])
+
+    Args:
+        :storage_connector: the storage connector used to connect to the external storage
+        :query: the queury extracting data from Redshift
+        :featuregroup: name of the featuregroup to import the dataset into the featurestore
+        :primary_key: primary key of the featuregroup
+        :description: metadata description of the feature group to import
+        :featurestore: name of the featurestore database to import the feature group into
+        :featuregroup_version: version of the feature group
+        :jobs: list of Hopsworks jobs linked to the feature group (optional)
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc) for the
+                                 featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns in
+                              the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
+                           featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+        :num_clusters: the number of clusters to use for cluster analysis
+        :partition_by: a list of columns to partition_by, defaults to the empty list
+
+    Returns:
+        None
+    """
+    # update metadata cache
+    if featurestore is None:
+        featurestore = project_featurestore()
+
+    try: # try with metadata cache
+        spark_df = core._do_get_redshift_featuregroup(storage_connector, query,
+                                            core._get_featurestore_metadata(featurestore, update_cache=False),
+                                            featurestore=featurestore)
+        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+                            featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
+                            descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
+                            feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
+                            stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
+                            num_clusters=num_clusters, partition_by=partition_by)
+    except: # retry with updated metadata
+        spark_df = core._do_get_redshift_featuregroup(storage_connector, query,
+                                                      core._get_featurestore_metadata(featurestore, update_cache=True),
+                                                      featurestore=featurestore)
+        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+                            featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
+                            descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
+                            feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
+                            stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
+                            num_clusters=num_clusters, partition_by=partition_by)
+
+    fs_utils._log("Feature group imported successfully")
+
+
+def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=None, description="", featurestore=None,
+                           featuregroup_version=1, jobs=[],
+                           descriptive_statistics=True, feature_correlation=True,
+                           feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
+                           corr_method='pearson', num_clusters=5, partition_by=[], data_format="parquet"):
     """
     Imports an external dataset of features into a feature group in Hopsworks.
     This function will read the dataset using spark and a configured storage connector (e.g to an S3 bucket)
     and then writes the data to Hopsworks Feature Store (Hive) and registers its metadata.
 
     Example usage:
-    >>> featurestore.import_featuregroup(my_s3_connector_name, s3_path, featuregroup_name,
+    >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name,
     >>>                                  data_format=s3_bucket_data_format)
     >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:
-    >>> featurestore.import_featuregroup(my_s3_connector_name, s3_path, featuregroup_name, primary_key="id",
+    >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name, primary_key="id",
     >>>                                  description="trx_summary_features without the column count_trx",
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
@@ -1945,9 +2017,9 @@ def import_featuregroup(storage_connector, path, featuregroup, primary_key=None,
         featurestore = project_featurestore()
 
     try: # try with metadata cache
-        spark_df = core._do_get_external_featuregroup(storage_connector, path,
-                                            core._get_featurestore_metadata(featurestore, update_cache=False),
-                                            featurestore=featurestore, data_format=data_format)
+        spark_df = core._do_get_s3_featuregroup(storage_connector, path,
+                                                core._get_featurestore_metadata(featurestore, update_cache=False),
+                                                featurestore=featurestore, data_format=data_format)
         create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
@@ -1955,9 +2027,9 @@ def import_featuregroup(storage_connector, path, featuregroup, primary_key=None,
                             stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
                             num_clusters=num_clusters, partition_by=partition_by)
     except: # retry with updated metadata
-        spark_df = core._do_get_external_featuregroup(storage_connector, path,
-                                                      core._get_featurestore_metadata(featurestore, update_cache=False),
-                                                      featurestore=featurestore, data_format=data_format)
+        spark_df = core._do_get_s3_featuregroup(storage_connector, path,
+                                                core._get_featurestore_metadata(featurestore, update_cache=True),
+                                                featurestore=featurestore, data_format=data_format)
         create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
