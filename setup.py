@@ -20,7 +20,8 @@ setup(
         'pyhopshive[thrift]',
         'confluent-kafka',
         'hops-petastorm',
-        'opencv-python'
+        'opencv-python',
+        'boto3'
     ],
     extras_require={
         'pydoop': ['pydoop'],
