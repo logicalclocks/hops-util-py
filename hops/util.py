@@ -487,6 +487,7 @@ def _parse_rest_error(response_dict):
         user_msg = response_dict[constants.REST_CONFIG.JSON_USR_MSG]
     return error_code, error_msg, user_msg
 
+
 def get_job_name():
     """
     If this method is called from inside a hopsworks job, it returns the name of the job.
@@ -497,13 +498,11 @@ def get_job_name():
     """
     if constants.ENV_VARIABLES.JOB_NAME_ENV_VAR in os.environ:
         return os.environ[constants.ENV_VARIABLES.JOB_NAME_ENV_VAR]
-    else:
-        None
 
 
 def get_jwt():
     """
-    Retrieves jwt from local container
+    Retrieves jwt from local container.
 
     Returns:
         Content of jwt.token file in local container.
@@ -590,3 +589,14 @@ def get_redshift_username_password(region_name, cluster_identifier, user, databa
         AutoCreate=False
     )
     return credential['DbUser'], credential['DbPassword']
+
+
+def get_flink_conf_dir():
+    """
+    Returns the Flink configuration directory.
+
+    Returns:
+        The Flink config dir path.
+    """
+    if constants.ENV_VARIABLES.FLINK_CONF_DIR in os.environ:
+        return os.environ[constants.ENV_VARIABLES.FLINK_CONF_DIR]

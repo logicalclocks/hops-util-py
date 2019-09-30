@@ -42,7 +42,7 @@ class ENV_VARIABLES:
     HOPSWORKS_PROJECT_NAME_ENV_VAR = "HOPSWORKS_PROJECT_NAME"
     REMOTE_ENV_VAR = "REMOTE"
     REGION_NAME_ENV_VAR = "REGION_NAME"
-
+    FLINK_CONF_DIR = "FLINK_CONF_DIR"
 
 class KAFKA_SSL_CONFIG:
     """
@@ -80,6 +80,7 @@ class SSL_CONFIG:
     DOMAIN_CA_TRUSTSTORE = "domain_ca_truststore"
     CRYPTO_MATERIAL_PASSWORD = "material_passwd"
     PEM_CA_ROOT_CERT = "/srv/hops/kagent/host-certs/hops_root_ca.pem"
+    SSL_ENABLED = "ipc.server.ssl.enabled"
 
 
 class KAFKA_PRODUCER_CONFIG:
@@ -465,6 +466,8 @@ class REST_CONFIG:
 
     HOPSWORKS_PROJECT_RESOURCE = "project"
     HOPSWORKS_PROJECT_INFO_RESOURCE = "getProjectInfo"
+    HOPSWORKS_JOBS_RESOURCE = "jobs"
+    HOPSWORKS_EXECUTIONS_RESOURCE = "executions"
 
     JSON_DESCRIPTIVE_STATS_FEATURE_NAME= "featureName"
     JSON_DESCRIPTIVE_STATS_METRIC_VALUES= "metricValues"

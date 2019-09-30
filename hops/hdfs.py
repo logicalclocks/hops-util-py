@@ -3,6 +3,7 @@ API for interacting with the file system on Hops (HopsFS).
 
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
 """
+import socket
 import datetime
 from six import string_types
 import shutil
@@ -22,7 +23,12 @@ try:
 except:
     pass
 
+import re
+from xml.dom import minidom
+
 fd = None
+tls_enabled = None
+webhdfs_address = None
 
 def get_plain_path(abs_path):
     """
@@ -82,7 +88,7 @@ def project_name():
     project = hops_user_split[0]
     return project
 
-def project_path(project=None):
+def project_path(project=None, exclude_nn_addr=False):
     """ Get the path in HopsFS where the HopsWorks project is located. To point to a particular dataset, this path should be
     appended with the name of your dataset.
 
@@ -97,11 +103,15 @@ def project_path(project=None):
         returns the project absolute path
     """
 
-    if project:
-        # abspath means "hdfs://namenode:port/ is preprended
-        return hdfs.path.abspath("/Projects/" + project + "/")
-    project = project_name()
-    return hdfs.path.abspath("/Projects/" + project + "/")
+    if project is None:
+        project = project_name()
+
+    # abspath means "hdfs://namenode:port/ is preprended
+    abspath = hdfs.path.abspath("/Projects/" + project + "/")
+    if exclude_nn_addr:
+        abspath = re.sub(r"\d+.\d+.\d+.\d+:\d+", "", abspath)
+    return abspath
+
 
 def get():
     """ Get a handle to pydoop hdfs using the default namenode (specified in hadoop config)
@@ -825,7 +835,7 @@ def load(hdfs_path):
     hdfs_path = _expand_path(hdfs_path)
     return hdfs.load(hdfs_path)
 
-def ls(hdfs_path, recursive=False):
+def ls(hdfs_path, recursive=False, exclude_nn_addr=False):
     """
     lists a directory in HDFS
 
@@ -835,6 +845,8 @@ def ls(hdfs_path, recursive=False):
     Returns:
         returns a list of hdfs paths
     """
+    if exclude_nn_addr:
+        hdfs_path = re.sub(r"\d+.\d+.\d+.\d+:\d+", "", hdfs_path)
     hdfs_path = _expand_path(hdfs_path)
     return hdfs.ls(hdfs_path, recursive=recursive)
 
@@ -926,4 +938,60 @@ def add_module(hdfs_path, project=None):
         raise Exception("Given path " + hdfs_path + " does not point to a .py or .ipynb file")
 
 
+def is_tls_enabled():
+    """
+    Reads the ipc.server.ssl.enabled property from core-site.xml.
 
+    Returns:
+        returns True if ipc.server.ssl.enabled is true. False otherwise.
+    """
+    global tls_enabled
+    if tls_enabled is None:
+        hadoop_conf_path = os.environ['HADOOP_CONF_DIR']
+        xmldoc = minidom.parse(os.path.join(hadoop_conf_path,'core-site.xml'))
+        itemlist = xmldoc.getElementsByTagName('property')
+        for item in itemlist:
+            name = item.getElementsByTagName("name")[0]
+            if name.firstChild.data == "ipc.server.ssl.enabled":
+                tls_enabled = item.getElementsByTagName("value")[0].firstChild.data == 'true'
+    return tls_enabled
+
+
+def _get_webhdfs_address():
+    """
+    Reads the ipc.server.ssl.enabled property from core-site.xml.
+
+    Returns:
+        returns True if ipc.server.ssl.enabled is true. False otherwise.
+    """
+    global webhdfs_address
+    if webhdfs_address is None:
+        hadoop_conf_path = os.environ['HADOOP_CONF_DIR']
+        webhdfs_config = "dfs.namenode.http-address"
+        if is_tls_enabled():
+            webhdfs_config = "dfs.namenode.https-address"
+        for item in minidom.parse(os.path.join(hadoop_conf_path,'hdfs-site.xml')).getElementsByTagName('property'):
+            name = item.getElementsByTagName("name")[0]
+            if name.firstChild.data == webhdfs_config:
+                webhdfs_address = item.getElementsByTagName("value")[0].firstChild.data
+    return webhdfs_address
+
+
+def get_webhdfs_host():
+    """
+    Reads the ipc.server.ssl.enabled property from core-site.xml and returns webhdfs hostname.
+
+    Returns:
+        returns the webhdfs hostname.
+    """
+    return socket.gethostbyaddr(_get_webhdfs_address().split(":")[0])[0]
+
+
+def get_webhdfs_port():
+    """
+    Reads the ipc.server.ssl.enabled property from core-site.xml and the webhdfs port.
+
+    Returns:
+        returns the webhdfs port.
+    """
+    return _get_webhdfs_address().split(":")[1]
