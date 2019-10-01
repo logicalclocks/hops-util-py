@@ -114,3 +114,26 @@ class StorageConnectorTypeNotSupportedForFeatureImport(Exception):
     This exception will be raised if the user tries to import a feature group using a storage connector type
     that is not supported
     """
+
+class OnlineFeaturestorePasswordOrUserNotFound(Exception):
+    """
+    This exception will be raised if the user tries to do an operation on the online feature store but a
+    user/password for the online featurestore was not found.
+    """
+
+class SparkToMySQLSchemaConversionError(Exception):
+    """This exception will be raised if there is an error in translating the spark schema to a MySQL schema"""
+
+
+class CannotEnableOnlineFeatureServingForOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.enable_featuregroup_online(fg1)
+    where fg1 is an on-demand feature group
+    """
+
+
+class CannotDisableOnlineFeatureServingForOnDemandFeatureGroup(Exception):
+    """
+    This exception will be raised if the user calls featurestore.disable_featuregroup_online(fg1)
+    where fg1 is an on-demand feature group
+    """

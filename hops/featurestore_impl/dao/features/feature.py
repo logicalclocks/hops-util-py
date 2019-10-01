@@ -20,3 +20,7 @@ class Feature(object):
             self.description = ""
         self.primary = feature_json[constants.REST_CONFIG.JSON_FEATURE_PRIMARY]
         self.partition = feature_json[constants.REST_CONFIG.JSON_FEATURE_PARTITION]
+        if constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE in feature_json:
+            self.online_type = feature_json[constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE]
+        else:
+            self.online_type = ""

@@ -78,6 +78,7 @@ if (sys.version_info > (3, 0)):
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
         from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
+        from hops.featurestore_impl.online_featurestore import online_featurestore
 
 else:
     # Python 2
@@ -106,6 +107,7 @@ else:
         from hops.featurestore_impl.query_planner.f_query import FeaturesQuery
         from hops.featurestore_impl.rest import rest_rpc
         from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
+        from hops.featurestore_impl.online_featurestore import online_featurestore
 
 
 class TestFeaturestoreSuite(object):
@@ -138,6 +140,14 @@ class TestFeaturestoreSuite(object):
             featuregroup = json.load(f)
             f.close()
             return featuregroup
+
+    @pytest.fixture
+    def sample_online_featurestore_connector(self):
+        """ Fixture for setting up a sample online featurestore connector for tests """
+        with open("./hops/tests/test_resources/online_featurestore_connector.json") as f:
+            online_featurestore_connector = json.load(f)
+            f.close()
+            return online_featurestore_connector
 
     @pytest.fixture
     def sample_training_dataset(self):
@@ -314,11 +324,12 @@ class TestFeaturestoreSuite(object):
                 assert f.primary is not None
                 assert f.partition is not None
         assert set(names) == set(
-            ['games_features', 'season_scores_features', 'attendances_features', 'players_features', 'teams_features',
-             'games_features_on_demand_tour', 'teams_features_spanish', 'games_features_on_demand',
-             'players_features_on_demand', 'teams_features_spanish', 'games_features_partitioned',
-             'games_features_double_partitioned', 'pandas_test_example', 'numpy_test_example',
-             'python_test_example'])
+            ['online_featuregroup_test', 'season_scores_features', 'players_features_on_demand',
+             'games_features_hudi_tour', 'pandas_test_example', 'games_features_partitioned', 'python_test_example',
+             'attendances_features', 'teams_features', 'games_features_on_demand_tour', 'games_features',
+             'teams_features_spanish', 'hive_fs_sync_example', 'attendances_features',
+             'online_featuregroup_test_types', 'games_features_double_partitioned', 'games_features_on_demand',
+             'teams_features_spanish', 'players_features', 'numpy_test_example', 'enable_online_features_test'])
         names = []
         for td in featurestore_metadata.training_datasets.values():
             assert isinstance(td, TrainingDataset)
@@ -334,10 +345,10 @@ class TestFeaturestoreSuite(object):
                 assert f.primary is not None
                 assert f.partition is not None
         assert set(names) == set(
-            ['team_position_prediction', 'team_position_prediction_csv', 'team_position_prediction_tsv',
-             'team_position_prediction_parquet', 'team_position_prediction_orc',
-             'team_position_prediction_avro', 'team_position_prediction_hdf5', 'team_position_prediction_npy',
-             'team_position_prediction_petastorm'])
+            ['team_position_prediction', 'team_position_prediction_petastorm', 'team_position_prediction_npy',
+             'team_position_prediction_hdf5', 'team_position_prediction_avro', 'team_position_prediction_orc',
+             'team_position_prediction_parquet', 'team_position_prediction_tsv',
+             'team_position_prediction_csv', 'team_position_prediction', 'tour_training_dataset_test'])
         names = []
         for sc in featurestore_metadata.storage_connectors.values():
             assert (isinstance(sc, JDBCStorageConnector) or isinstance(sc, S3StorageConnector) or
@@ -358,7 +369,8 @@ class TestFeaturestoreSuite(object):
             if isinstance(sc, HopsfsStorageConnector):
                 assert sc.hopsfs_path is not None
                 assert sc.dataset_name is not None
-        assert set(names) == set(['demo_featurestore_admin000_featurestore', 'demo_featurestore_admin000',
+        assert set(names) == set(['demo_featurestore_admin000_meb1_onlinefeaturestore',
+                                  'demo_featurestore_admin000', 'demo_featurestore_admin000_featurestore',
                                   'demo_featurestore_admin000_Training_Datasets'])
 
     def test_find_featuregroup_that_contains_feature(self, sample_metadata):
@@ -375,9 +387,10 @@ class TestFeaturestoreSuite(object):
         assert len(matches) == 1
         assert matches[0].name == "season_scores_features"
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "score")
-        assert len(matches) == 3
-        assert set(list(map(lambda x: x.name, matches))) == set(["games_features", "games_features_partitioned",
-                                                                 "games_features_double_partitioned"])
+        assert len(matches) == 4
+        assert set(list(map(lambda x: x.name, matches))) == set(['games_features_partitioned',
+                                                                 'games_features_hudi_tour', 'games_features',
+                                                                 'games_features_double_partitioned'])
         matches = query_planner._find_featuregroup_that_contains_feature(featuregroups, "team_position")
         assert len(matches) == 1
         assert matches[0].name == "teams_features"
@@ -446,6 +459,8 @@ class TestFeaturestoreSuite(object):
         spark = self.spark_session()
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
         teams_fg_df = featurestore.get_featuregroup("teams_features")
         teams_features_df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(
             "./hops/tests/test_resources/teams_features.csv")
@@ -489,6 +504,11 @@ class TestFeaturestoreSuite(object):
                                                                      featurestore="other_featurestore",
                                                                      featuregroup_version=1)
         assert teams_features_spanish_fg_df.count() == teams_features_df.count()
+
+        teams_fg_df = featurestore.get_featuregroup("teams_features")
+        online_featurestore._read_jdbc_dataframe = mock.MagicMock(return_value=teams_fg_df)
+        online_fg_df = featurestore.get_featuregroup("teams_features", online=True)
+        assert teams_fg_df.count() == online_fg_df.count()
 
     def test_find_feature(self, sample_metadata):
         """ Test _find_feature"""
@@ -1006,7 +1026,7 @@ class TestFeaturestoreSuite(object):
                                                     None, None, None, None,
                                                     featurestore_metadata.settings.cached_featuregroup_type,
                                                     featurestore_metadata.settings.cached_featuregroup_dto_type,
-                                                    None, None)
+                                                    None, None, False)
         assert result == sample_metadata[constants.REST_CONFIG.JSON_FEATUREGROUPS][0]
         response.code = 500
         response.status = 500
@@ -1017,7 +1037,7 @@ class TestFeaturestoreSuite(object):
                                                None, None, None, None,
                                                featurestore_metadata.settings.cached_featuregroup_type,
                                                featurestore_metadata.settings.cached_featuregroup_dto_type,
-                                               None, None)
+                                               None, None, False)
             assert "Could not create feature group" in ex.value
 
     def test_create_featuregroup(self, sample_metadata):
@@ -1036,30 +1056,41 @@ class TestFeaturestoreSuite(object):
     def test_do_get_featuregroups(self, sample_metadata):
         """ Test do_get_featuregroups"""
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
-        result = fs_utils._do_get_featuregroups(featurestore_metadata)
-        assert len(result) == 16
-        assert set(result) == set(['games_features_1', 'season_scores_features_1', 'attendances_features_1',
-                                   'players_features_1', 'teams_features_1', 'games_features_on_demand_tour_1',
-                                   'teams_features_spanish_1', 'games_features_on_demand_1',
-                                   'players_features_on_demand_1', 'teams_features_spanish_2',
-                                   'games_features_partitioned_1', 'games_features_double_partitioned_1',
-                                   'pandas_test_example_1', 'numpy_test_example_1', 'python_test_example_1',
-                                   'attendances_features_2'])
+        result = fs_utils._do_get_featuregroups(featurestore_metadata, False)
+        assert len(result) == 21
+        assert set(result) == set(['games_features_partitioned_1', 'games_features_on_demand_1',
+                                   'season_scores_features_1', 'enable_online_features_test_1',
+                                   'attendances_features_1', 'games_features_hudi_tour_1', 'hive_fs_sync_example_1',
+                                   'teams_features_spanish_1', 'teams_features_1', 'online_featuregroup_test_types_1',
+                                   'games_features_double_partitioned_1', 'teams_features_spanish_2',
+                                   'games_features_1', 'pandas_test_example_1', 'numpy_test_example_1',
+                                   'games_features_on_demand_tour_1', 'players_features_1', 'python_test_example_1',
+                                   'attendances_features_2', 'online_featuregroup_test_1',
+                                   'players_features_on_demand_1'])
+        result = fs_utils._do_get_featuregroups(featurestore_metadata, True)
+        assert len(result) == 3
+        assert set(result) == set(['season_scores_features_1', 'online_featuregroup_test_types_1',
+                                   'online_featuregroup_test_1'])
 
     def test_do_get_features_list(self, sample_metadata):
         """ Test do_get_features_list"""
         featurestore_metadata = FeaturestoreMetadata(sample_metadata)
-        result = fs_utils._do_get_features_list(featurestore_metadata)
-        assert len(result) == 43
-        assert set(result) == set(['away_team_id', 'home_team_id', 'score', 'average_position', 'sum_position',
-                                   'team_id', 'average_attendance', 'sum_attendance', 'team_id', 'average_player_age',
-                                   'average_player_rating', 'average_player_worth', 'sum_player_age',
-                                   'sum_player_rating', 'sum_player_worth', 'team_id', 'team_budget', 'team_id',
-                                   'team_position', 'equipo_id', 'equipo_posicion', 'equipo_presupuesto',
-                                   'equipo_id', 'equipo_posicion', 'equipo_presupuesto', 'away_team_id', 'home_team_id',
-                                   'score', 'away_team_id', 'home_team_id', 'score', 'average_attendance_test',
-                                   'average_player_age_test', 'team_budget_test', 'col_0', 'col_1', 'col_2', 'col_0',
-                                   'col_1', 'col_2', 'average_attendance', 'sum_attendance', 'team_id'])
+        result = fs_utils._do_get_features_list(featurestore_metadata, False)
+        assert len(result) == 63
+        assert set(result) == set(['id', 'col_0', 'test_col_2', 'average_attendance_test',
+                                   'average_player_worth', 'average_position', 'sum_player_worth',
+                                   '_hoodie_commit_seqno', 'equipo_posicion', 'col_2', 'sum_position',
+                                   'val_2', 'away_team_id', '_hoodie_partition_path', 'sum_player_rating',
+                                   'score', 'equipo_presupuesto', 'team_position', 'val_2_type_test', 'equipo_id',
+                                   '_hoodie_commit_time', '_hoodie_file_name', 'val_1', '_hoodie_record_key',
+                                   'average_player_age_test', 'test_col_1', 'col_1', 'average_attendance',
+                                   'team_id', 'val_1_type_test', 'average_player_age', 'team_budget',
+                                   'sum_player_age', 'team_budget_test', 'sum_attendance', 'home_team_id',
+                                   'average_player_rating'])
+        result = fs_utils._do_get_features_list(featurestore_metadata, True)
+        assert len(result) == 9
+        assert set(result) == set(['val_1', 'team_id', 'sum_position', 'val_2', 'id', 'average_position',
+                                   'val_2_type_test', 'val_1_type_test'])
 
     def test_get_project_featurestores(self, sample_featurestores):
         """ Test get_project_featurestores()"""
@@ -1289,12 +1320,13 @@ class TestFeaturestoreSuite(object):
     def test_do_get_training_datasets(self, sample_metadata):
         """ Test do_get_training_datasets"""
         result = core._do_get_training_datasets(FeaturestoreMetadata(sample_metadata))
-        assert len(result) == 10
-        assert set(result) == set(['team_position_prediction_1', 'team_position_prediction_csv_1',
-                                   'team_position_prediction_tsv_1', 'team_position_prediction_parquet_1',
-                                   'team_position_prediction_orc_1', 'team_position_prediction_avro_1',
-                                   'team_position_prediction_hdf5_1', 'team_position_prediction_npy_1',
-                                   'team_position_prediction_petastorm_1', 'team_position_prediction_2'])
+        assert len(result) == 11
+        assert set(result) == set(['team_position_prediction_hdf5_1', 'tour_training_dataset_test_1',
+                                   'team_position_prediction_orc_1', 'team_position_prediction_1',
+                                   'team_position_prediction_2', 'team_position_prediction_csv_1',
+                                   'team_position_prediction_tsv_1', 'team_position_prediction_npy_1',
+                                   'team_position_prediction_avro_1', 'team_position_prediction_parquet_1',
+                                   'team_position_prediction_petastorm_1'])
 
     def test_do_get_training_dataset_tsv(self, sample_training_dataset):
         """ Test _do_get_training_dataset_tsv"""
@@ -2118,33 +2150,42 @@ class TestFeaturestoreSuite(object):
             })
             assert "Could not find any common columns in featuregroups to join on" in ex.value
 
+        features_df = featurestore.get_features(["teams_features_1.team_budget",
+                                                 "players_features_1.average_player_age"])
+        online_featurestore._read_jdbc_dataframe = mock.MagicMock(return_value=features_df)
+        online_features_df = featurestore.get_features(["teams_features_1.team_budget",
+                                                 "players_features_1.average_player_age"], online=True)
+        assert len(online_features_df.schema.fields) == 2
+        feature_names = [field.name for field in online_features_df.schema.fields]
+        assert set(feature_names) == set(["team_budget", "average_player_age"])
+
     def test_get_training_dataset_id(self, sample_metadata):
         """ Test get_training_dataset_id """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         td_id = core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction", 1)
-        assert td_id == 9
+        assert td_id == 40
         with pytest.raises(TrainingDatasetNotFound) as ex:
             core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction", 99)
             assert "The training dataset {} " \
                    "with version: {} was not found in the featurestore {}".format(
                 "team_position_prediction", 99, featurestore.project_featurestore()) in ex.value
         td_id = core._get_training_dataset_id(featurestore.project_featurestore(), "team_position_prediction_csv", 1)
-        assert td_id == 10
+        assert td_id == 41
 
     def test_get_featuregroup_id(self, sample_metadata):
         """ Test get_featuregroup_id """
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         fg_id = core._get_featuregroup_id(featurestore.project_featurestore(), "games_features", 1)
-        assert fg_id == 13
+        assert fg_id == 117
         with pytest.raises(FeaturegroupNotFound) as ex:
             core._get_featuregroup_id(featurestore.project_featurestore(), "games_features", 99)
             assert "The featuregroup {} with version: {} "
             "was not found in the feature store {}".format("games_features", 99,
                                                            featurestore.project_featurestore()) in ex.value
         fg_id = core._get_featuregroup_id(featurestore.project_featurestore(), "players_features", 1)
-        assert fg_id == 16
+        assert fg_id == 122
 
     def test_get_featurestore_id(self, sample_metadata):
         """ Test get_featurestore_id """
@@ -2152,7 +2193,7 @@ class TestFeaturestoreSuite(object):
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore.core.metadata_cache = FeaturestoreMetadata(sample_metadata)
         fs_id = core._get_featurestore_id(featurestore.project_featurestore())
-        assert fs_id == 67
+        assert fs_id == 107
         assert fs_id == FeaturestoreMetadata(sample_metadata).featurestore.id
 
     def test_get_training_dataset_path(self, sample_metadata):
@@ -2568,3 +2609,191 @@ class TestFeaturestoreSuite(object):
         """ Test _verify_hive_enabled """
         spark = self.spark_session()
         core._verify_hive_enabled(spark)
+
+    def test_enable_featuregroup_online_rest(self, sample_metadata, sample_featuregroup):
+        """ Test _enable_featuregroup_online_rest"""
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        connection = mock.Mock()
+        util._get_http_connection = mock.MagicMock(return_value=connection)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
+        featuregroup_id = 1
+        self.unmocked_get_featuregroup_id = core._get_featuregroup_id
+        core._get_featuregroup_id = mock.MagicMock(return_value=featuregroup_id)
+        with open("./hops/tests/test_resources/token.jwt", "r") as jwt:
+            jwt = jwt.read()
+        util.get_jwt = mock.MagicMock(return_value=jwt)
+        os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
+        connection.request = mock.MagicMock(return_value=True)
+        response = mock.Mock()
+        response.code = 200
+        response.status = 200
+        data = {}
+        response.read = mock.MagicMock(return_value=json.dumps(data))
+        connection.getresponse = mock.MagicMock(return_value=response)
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        sample_featuregroup_dto = Featuregroup(sample_featuregroup)
+        sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
+        result = rest_rpc._enable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
+                                                           featurestore_id,
+                                                           sample_metadata_dto.settings.cached_featuregroup_dto_type,
+                                                           sample_metadata_dto.settings.cached_featuregroup_type,
+                                                           [])
+        assert result == {}
+        response.code = 500
+        response.status = 500
+        with pytest.raises(RestAPIError) as ex:
+            result = rest_rpc._enable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
+                                                               featurestore_id,
+                                                               sample_metadata_dto.settings.cached_featuregroup_dto_type,
+                                                               sample_metadata_dto.settings.cached_featuregroup_type,
+                                                               [])
+            assert "Could not enable feature serving" in ex.value
+        # unmock for later tests
+        core._get_featuregroup_id = self.unmocked_get_featuregroup_id
+
+
+    def test_disable_featuregroup_online_rest(self, sample_metadata, sample_featuregroup):
+        """ Test _disable_featuregroup_online_rest"""
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        connection = mock.Mock()
+        util._get_http_connection = mock.MagicMock(return_value=connection)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
+        featuregroup_id = 1
+        self.unmocked_get_featuregroup_id = core._get_featuregroup_id
+        core._get_featuregroup_id = mock.MagicMock(return_value=featuregroup_id)
+        with open("./hops/tests/test_resources/token.jwt", "r") as jwt:
+            jwt = jwt.read()
+        util.get_jwt = mock.MagicMock(return_value=jwt)
+        os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
+        connection.request = mock.MagicMock(return_value=True)
+        response = mock.Mock()
+        response.code = 200
+        response.status = 200
+        data = {}
+        response.read = mock.MagicMock(return_value=json.dumps(data))
+        connection.getresponse = mock.MagicMock(return_value=response)
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        sample_featuregroup_dto = Featuregroup(sample_featuregroup)
+        sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
+        result = rest_rpc._disable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
+                                                           featurestore_id,
+                                                           sample_metadata_dto.settings.cached_featuregroup_dto_type,
+                                                           sample_metadata_dto.settings.cached_featuregroup_type)
+        assert result == {}
+        response.code = 500
+        response.status = 500
+        with pytest.raises(RestAPIError) as ex:
+            result = rest_rpc._disable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
+                                                               featurestore_id,
+                                                               sample_metadata_dto.settings. \
+                                                                cached_featuregroup_dto_type,
+                                                               sample_metadata_dto.settings.cached_featuregroup_type)
+            assert "Could not disable feature serving" in ex.value
+        # unmock for later tests
+        core._get_featuregroup_id = self.unmocked_get_featuregroup_id
+
+
+    def test_sync_hive_table_with_featurestore_rest(self, sample_metadata, sample_featuregroup):
+        """ Test _sync_hive_table_with_featurestore_rest"""
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        connection = mock.Mock()
+        util._get_http_connection = mock.MagicMock(return_value=connection)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
+        featuregroup_id = 1
+        self.unmocked_get_featuregroup_id = core._get_featuregroup_id
+        core._get_featuregroup_id = mock.MagicMock(return_value=featuregroup_id)
+        with open("./hops/tests/test_resources/token.jwt", "r") as jwt:
+            jwt = jwt.read()
+        util.get_jwt = mock.MagicMock(return_value=jwt)
+        os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
+        connection.request = mock.MagicMock(return_value=True)
+        response = mock.Mock()
+        response.code = 200
+        response.status = 200
+        data = {}
+        response.read = mock.MagicMock(return_value=json.dumps(data))
+        connection.getresponse = mock.MagicMock(return_value=response)
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        sample_featuregroup_dto = Featuregroup(sample_featuregroup)
+        sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
+        result = rest_rpc._sync_hive_table_with_featurestore_rest(sample_featuregroup_dto.name, featurestore_id,
+                                                                  "test", 1, [], None, None, None, None,
+                                                                  sample_metadata_dto.settings. \
+                                                                  cached_featuregroup_dto_type,
+                                                                  sample_metadata_dto.settings. \
+                                                                  cached_featuregroup_type
+                                                                  )
+        assert result == {}
+        response.code = 500
+        response.status = 500
+        with pytest.raises(RestAPIError) as ex:
+            result = rest_rpc._sync_hive_table_with_featurestore_rest(sample_featuregroup_dto.name, featurestore_id,
+                                                                      "test", 1, [], None, None, None, None,
+                                                                      sample_metadata_dto.settings. \
+                                                                      cached_featuregroup_dto_type,
+                                                                      sample_metadata_dto.settings. \
+                                                                      cached_featuregroup_type
+                                                                      )
+            assert "Could not sync hive table with featurestore" in ex.value
+        # unmock for later tests
+        core._get_featuregroup_id = self.unmocked_get_featuregroup_id
+
+    def test_get_online_featurestore_jdbc_connector_rest(self, sample_metadata, sample_featuregroup):
+        """ Test _sync_hive_table_with_featurestore_rest"""
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        connection = mock.Mock()
+        util._get_http_connection = mock.MagicMock(return_value=connection)
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
+        with open("./hops/tests/test_resources/token.jwt", "r") as jwt:
+            jwt = jwt.read()
+        util.get_jwt = mock.MagicMock(return_value=jwt)
+        os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
+        connection.request = mock.MagicMock(return_value=True)
+        response = mock.Mock()
+        response.code = 200
+        response.status = 200
+        data = {}
+        response.read = mock.MagicMock(return_value=json.dumps(data))
+        connection.getresponse = mock.MagicMock(return_value=response)
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        result = rest_rpc._get_online_featurestore_jdbc_connector_rest(featurestore_id)
+        assert result == {}
+        response.code = 500
+        response.status = 500
+        with pytest.raises(RestAPIError) as ex:
+            result = rest_rpc._get_online_featurestore_jdbc_connector_rest(featurestore_id)
+            assert "Could not sync hive table with featurestore" in ex.value
+
+
+    def test_do_get_online_featurestore_connector(self, sample_metadata, sample_online_featurestore_connector):
+        """ Test do_get_online_featurestore_connector"""
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        fs = featurestore.project_featurestore()
+        result = core._do_get_online_featurestore_connector(fs, featurestore_metadata)
+        assert result == featurestore_metadata.online_featurestore_connector
+        featurestore_id = featurestore_metadata.featurestore.id
+        core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
+        rest_rpc._get_online_featurestore_jdbc_connector_rest = mock.MagicMock(
+            return_value=sample_online_featurestore_connector)
+        result = core._do_get_online_featurestore_connector(fs, None)
+        reference_connector = JDBCStorageConnector(sample_online_featurestore_connector)
+        assert result.id == reference_connector.id
+        assert result.name == reference_connector.name
+        assert result.description == reference_connector.description
+        assert result.connection_string == reference_connector.connection_string
+        assert result.arguments == reference_connector.arguments
+
+

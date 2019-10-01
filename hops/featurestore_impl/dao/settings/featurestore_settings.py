@@ -78,8 +78,10 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_STORAGE_CONNECTOR_DESCRIPTION_MAX_LEN]
         self.storage_connector_max_len = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_STORAGE_CONNECTOR_NAME_MAX_LEN]
-        self.suggested_feature_types = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_SUGGESTED_FEATURE_TYPES]
+        self.suggested_hive_feature_types = \
+            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HIVE_SUGGESTED_FEATURE_TYPES]
+        self.suggested_mysql_feature_types = \
+            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_MYSQL_SUGGESTED_FEATURE_TYPES]
         self.training_dataset_formats = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_DATA_FORMATS]
         self.training_dataset_desc_max_len = \

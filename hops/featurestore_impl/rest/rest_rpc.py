@@ -203,7 +203,7 @@ def _pre_process_jobs_list(jobNames):
 def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                               features_schema, feature_corr_data, featuregroup_desc_stats_data,
                               features_histogram_data, cluster_analysis_data, featuregroup_type,
-                              featuregroup_dto_type, sql_query, jdbc_connector_id):
+                              featuregroup_dto_type, sql_query, jdbc_connector_id, online_fg):
     """
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
@@ -222,6 +222,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
         :featuregroup_dto_type: type of the JSON DTO for the backend
         :sql_query: SQL Query for On-demand feature groups
         :jdbc_connector_id: id of the jdbc_connector for on-demand feature groups
+        :online_fg: whether online feature serving should be enabled for the feature group
 
     Returns:
         The HTTP response
@@ -239,7 +240,8 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_ONLINE: online_fg
                      }
     if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
@@ -320,7 +322,12 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
                     + str(featuregroup_id) + "?" + constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATS_QUERY_PARAM
                     + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false")
+                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false"
+                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_ENABLE_ONLINE_QUERY_PARAM
+                    + "=false" + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM + "=false"
+                    )
     response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
     resp_body = response.read().decode('utf-8')
     response_object = json.loads(resp_body)
@@ -336,6 +343,134 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
             raise RestAPIError("Could not update featuregroup stats (url: {}), server response: \n " \
                                  "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    return response_object
+
+
+def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, featuregroup_id, featurestore_id,
+                                     featuregroup_dto_type, featuregroup_type, features_schema):
+    """
+    Makes a REST call to hopsworks appservice for enabling online serving of a feature group (Create MySQL Table)
+
+    Args:
+        :featuregroup_id: id of the featuregroup
+        :featurestore_id: id of the featurestore where the featuregroup resides
+        :featuregroup_type: type of the featuregroup (on-demand or cached)
+        :featuregroup_dto_type: type of the JSON DTO for the backend
+        :features_schema: the schema of the featuregroup (to create the MySQL table)
+        :featuregroup: name of the featuregroup
+        :featuregroup_version: version of the featuregroup
+
+    Returns:
+        The REST response
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: features_schema,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version
+                     }
+    json_embeddable = json.dumps(json_contents, allow_nan=False)
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    method = constants.HTTP_CONFIG.HTTP_PUT
+    connection = util._get_http_connection(https=True)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    str(featurestore_id) +
+                    constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
+                    + str(featuregroup_id) + "?" + constants.REST_CONFIG.JSON_FEATURESTORE_ENABLE_ONLINE_QUERY_PARAM
+                    + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false"
+                    + constants.DELIMITERS.AMPERSAND_DELIMITER
+                    + constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATS_QUERY_PARAM
+                    + "=false" + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM + "=false"
+                    )
+    response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    # for python 3
+    if sys.version_info > (3, 0):
+        if (response.code != 200):
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not enable feature serving (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
+    else:  # for python 2
+        if (response.status != 200):
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not enable feature serving (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    return response_object
+
+
+def _disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, featuregroup_id, featurestore_id,
+                                      featuregroup_dto_type, featuregroup_type):
+    """
+    Makes a REST call to hopsworks appservice for disable online serving of a feature group (Drop MySQL table)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :featuregroup_version: version
+        :featuregroup_id: id of the featuregroup
+        :featurestore_id: id of the featurestore where the featuregroup resides
+        :featuregroup_type: type of the featuregroup (on-demand or cached)
+        :featuregroup_dto_type: type of the JSON DTO for the backend
+
+    Returns:
+        The REST response
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup_name,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version
+                     }
+    json_embeddable = json.dumps(json_contents, allow_nan=False)
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    method = constants.HTTP_CONFIG.HTTP_PUT
+    connection = util._get_http_connection(https=True)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    str(featurestore_id) +
+                    constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
+                    + str(featuregroup_id) + "?" + constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM
+                    + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false"
+                    + constants.DELIMITERS.AMPERSAND_DELIMITER
+                    + constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATS_QUERY_PARAM
+                    + "=false" + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_ENABLE_ONLINE_QUERY_PARAM + "=false"
+                    )
+    response = util.send_request(connection, method, resource_url, body=json_embeddable, headers=headers)
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    # for python 3
+    if sys.version_info > (3, 0):
+        if (response.code != 200):
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not disable feature serving (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
+    else:  # for python 2
+        if (response.status != 200):
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not disable feature serving (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.status, response.reason, error_code, error_msg, user_msg))
     return response_object
 
@@ -572,10 +707,10 @@ def _get_training_dataset_rest(training_dataset_id, featurestore_id):
     return response_object
 
 
-def _sync_hive_table_with_featurestore(featuregroup, featurestore_id, description, featuregroup_version, jobs,
-                              feature_corr_data, featuregroup_desc_stats_data,
-                              features_histogram_data, cluster_analysis_data, featuregroup_type,
-                              featuregroup_dto_type):
+def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
+                                            feature_corr_data, featuregroup_desc_stats_data,
+                                            features_histogram_data, cluster_analysis_data, featuregroup_type,
+                                            featuregroup_dto_type):
     """
     Sends a REST call to hopsworks to synchronize a Hive table with the feature store
 
@@ -629,13 +764,54 @@ def _sync_hive_table_with_featurestore(featuregroup, featurestore_id, descriptio
     if sys.version_info > (3, 0):
         if response.code != 201 and response.code != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
+            raise RestAPIError("Could not sync hive table with featurestore (url: {}), server response: \n " \
                                "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.code, response.reason, error_code, error_msg, user_msg))
     else:  # for python 2
         if response.status != 201 and response.status != 200:
             error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-            raise RestAPIError("Could not create feature group (url: {}), server response: \n " \
+            raise RestAPIError("Could not sync hive table with featurestore (url: {}), server response: \n " \
                                "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
                 resource_url, response.status, response.reason, error_code, error_msg, user_msg))
+    return response_object
+
+
+def _get_online_featurestore_jdbc_connector_rest(featurestore_id):
+    """
+    Makes a REST call to Hopsworks to get the JDBC connection to the online feature store
+
+    Args:
+        :featurestore_id: the id of the featurestore
+
+    Returns:
+        the http response
+
+    """
+    method = constants.HTTP_CONFIG.HTTP_GET
+    connection = util._get_http_connection(https=True)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_STORAGE_CONNECTORS_RESOURCE +
+                    constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_ONLINE_FEATURESTORE_STORAGE_CONNECTOR_RESOURCE)
+    response = util.send_request(connection, method, resource_url)
+    resp_body = response.read()
+    response_object = json.loads(resp_body)
+    # for python 3
+    if sys.version_info > (3, 0):
+        if response.code != 200:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not fetch online featurestore connector (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
+    else:  # for python 2
+        if response.status != 200:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not fetch online featurestore connector (url: {}), server response: \n " \
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+                resource_url, response.code, response.reason, error_code, error_msg, user_msg))
     return response_object

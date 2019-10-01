@@ -1,0 +1,10 @@
+{
+  "type": "featurestoreJdbcConnectorDTO",
+  "description": "JDBC connection to Hopsworks Project Online Feature Store NDB Database for user: demo_featurestore_admin000_meb1",
+  "featurestoreId": 107,
+  "id": 140,
+  "name": "demo_featurestore_admin000_meb1_onlinefeaturestore",
+  "storageConnectorType": "JDBC",
+  "arguments": "password=ccwEdEzjZJVtCmyaIjMKCrVRWwZVbgVA,user=demo_featurestore_admin000_meb1",
+  "connectionString": "jdbc:mysql://10.0.2.15:3306/demo_featurestore_admin000"
+}

@@ -35,3 +35,11 @@ class Featuregroup(FeaturestoreEntity):
 
     def __lt__(self, other):
         return self.name.__lt__(other.name)
+
+
+    def is_online(self):
+        """
+        Returns: true if the feature group has online serving enabled, otherwise false
+        """
+        return (self.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_CACHED_TYPE and
+                self.cached_featuregroup.online_enabled)
