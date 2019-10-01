@@ -1908,7 +1908,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
                                  featurestore=None, featuregroup_version=1, jobs=[], descriptive_statistics=True,
                                  feature_correlation=True, feature_histograms=True, cluster_analysis=True,
                                  stat_columns=None, num_bins=20, corr_method='pearson', num_clusters=5,
-                                 partition_by=[]):
+                                 partition_by=[], online=False, online_types=None, offline=True):
     """
     Imports an external dataset of features into a feature group in Hopsworks.
     This function will read the dataset using spark and a configured JDBC storage connector for Redshift
@@ -1945,6 +1945,11 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
         :corr_method: the method to compute feature correlation with (pearson or spearman)
         :num_clusters: the number of clusters to use for cluster analysis
         :partition_by: a list of columns to partition_by, defaults to the empty list
+        :online: boolean flag, if this is set to true, a MySQL table for online feature data will be created in
+                 addition to the Hive table for offline feature data
+        :online_types: a dict with feature_name --> online_type, if a feature is present in this dict,
+                            the online_type will be taken from the dict rather than inferred from the spark dataframe.
+        :offline boolean flag whether to insert the data in the offline version of the featuregroup
 
     Returns:
         None
@@ -1961,7 +1966,8 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                             stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                            num_clusters=num_clusters, partition_by=partition_by)
+                            num_clusters=num_clusters, partition_by=partition_by, online=online,
+                            online_type=online_types, offline=offline)
     except: # retry with updated metadata
         spark_df = core._do_get_redshift_featuregroup(storage_connector, query,
                                                       core._get_featurestore_metadata(featurestore, update_cache=True),
@@ -1971,7 +1977,8 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                             stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                            num_clusters=num_clusters, partition_by=partition_by)
+                            num_clusters=num_clusters, partition_by=partition_by, online=online,
+                            online_types=online_types, offline=offline)
 
     fs_utils._log("Feature group imported successfully")
 
@@ -1980,7 +1987,8 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
                            featuregroup_version=1, jobs=[],
                            descriptive_statistics=True, feature_correlation=True,
                            feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                           corr_method='pearson', num_clusters=5, partition_by=[], data_format="parquet"):
+                           corr_method='pearson', num_clusters=5, partition_by=[], data_format="parquet", online=False,
+                           online_types=None, offline=True):
     """
     Imports an external dataset of features into a feature group in Hopsworks.
     This function will read the dataset using spark and a configured storage connector (e.g to an S3 bucket)
@@ -1995,7 +2003,8 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
     >>>                                  feature_correlation=False, feature_histograms=False, cluster_analysis=False,
-    >>>                                  stat_columns=None, partition_by=[], data_format="parquet")
+    >>>                                  stat_columns=None, partition_by=[], data_format="parquet", online=False, 
+    >>>                                  online_types=None, offline=True)
 
     Args:
         :storage_connector: the storage connector used to connect to the external storage
@@ -2019,6 +2028,11 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
         :num_clusters: the number of clusters to use for cluster analysis
         :partition_by: a list of columns to partition_by, defaults to the empty list
         :data_format: the format of the external dataset to read
+        :online: boolean flag, if this is set to true, a MySQL table for online feature data will be created in
+                 addition to the Hive table for offline feature data
+        :online_types: a dict with feature_name --> online_type, if a feature is present in this dict,
+                            the online_type will be taken from the dict rather than inferred from the spark dataframe.
+        :offline boolean flag whether to insert the data in the offline version of the featuregroup
 
     Returns:
         None
@@ -2036,7 +2050,8 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                             stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                            num_clusters=num_clusters, partition_by=partition_by)
+                            num_clusters=num_clusters, partition_by=partition_by, online=online,
+                            online_types=online_types, offline=offline)
     except: # retry with updated metadata
         spark_df = core._do_get_s3_featuregroup(storage_connector, path,
                                                 core._get_featurestore_metadata(featurestore, update_cache=True),
@@ -2046,7 +2061,8 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
                             stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                            num_clusters=num_clusters, partition_by=partition_by)
+                            num_clusters=num_clusters, partition_by=partition_by, online=online,
+                            online_types=online_types, offline=offline)
 
     fs_utils._log("Feature group imported successfully")
 
