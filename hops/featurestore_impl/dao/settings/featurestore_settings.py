@@ -99,4 +99,6 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE]
         self.feature_import_connectors = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_IMPORT_CONNECTORS]
+        self.online_enabled = \
+            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ONLINE_ENABLED]
 

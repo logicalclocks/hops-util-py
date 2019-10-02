@@ -77,7 +77,10 @@ class FeaturestoreMetadata(object):
                 storage_connectors[sc[constants.REST_CONFIG.JSON_FEATURESTORE_CONNECTOR_NAME]] = \
                     HopsfsStorageConnector(sc)
         featurestore = Featurestore(metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE])
-        online_featurestore_connector = JDBCStorageConnector(
-            metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_CONNECTOR])
+        if constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_CONNECTOR in metadata_json:
+            online_featurestore_connector = JDBCStorageConnector(
+                metadata_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_CONNECTOR])
+        else:
+            online_featurestore_connector = None
         return featuregroups, training_datasets, features_to_featuregroups, \
                featurestore, settings, storage_connectors, online_featurestore_connector

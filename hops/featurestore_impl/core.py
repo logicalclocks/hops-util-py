@@ -29,7 +29,8 @@ from hops.featurestore_impl.exceptions.exceptions import FeaturegroupNotFound, H
     FeatureCorrelationsNotComputed, FeatureClustersNotComputed, DescriptiveStatisticsNotComputed, HiveNotEnabled, \
     StorageConnectorNotFound, CannotInsertIntoOnDemandFeatureGroup, CannotUpdateStatisticsOfOnDemandFeatureGroup, \
     CannotGetPartitionsOfOnDemandFeatureGroup, StorageConnectorTypeNotSupportedForFeatureImport, \
-    CannotDisableOnlineFeatureServingForOnDemandFeatureGroup, CannotEnableOnlineFeatureServingForOnDemandFeatureGroup
+    CannotDisableOnlineFeatureServingForOnDemandFeatureGroup, CannotEnableOnlineFeatureServingForOnDemandFeatureGroup, \
+    OnlineFeaturestoreNotEnabled
 from hops.featurestore_impl.featureframes.FeatureFrame import FeatureFrame
 from hops.featurestore_impl.query_planner import query_planner
 from hops.featurestore_impl.query_planner.f_query import FeatureQuery, FeaturesQuery
@@ -382,6 +383,10 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
         A spark dataframe with the feature
 
     """
+    if online and ((not featurestore_metadata.settings.online_enabled) or
+                       (not featurestore_metadata.featurestore.online_enabled)):
+        raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                           "talk to an administrator to enable it")
     spark = util._find_spark()
     _verify_hive_enabled(spark)
     _use_featurestore(spark, featurestore)
@@ -419,9 +424,12 @@ def _run_and_log_sql(spark, sql_str, online=False, featurestore=None):
         return spark.sql(sql_str)
     else:
         fs_utils._log("Running sql: {} against online feature store".format(sql_str))
-        storage_connector = _do_get_online_featurestore_connector(featurestore,
-                                                                  _get_featurestore_metadata(featurestore,
-                                                                                             update_cache=False))
+        featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
+        if online and ((not featurestore_metadata.settings.online_enabled) or
+                           (not featurestore_metadata.featurestore.online_enabled)):
+            raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                               "talk to an administrator to enable it")
+        storage_connector = _do_get_online_featurestore_connector(featurestore, featurestore_metadata)
         return online_featurestore._read_jdbc_dataframe(spark, storage_connector, "({}) tmp".format(sql_str))
 
 
@@ -513,6 +521,10 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
     Raises:
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
+    if online and ((not featurestore_metadata.settings.online_enabled) or
+                       (not featurestore_metadata.featurestore.online_enabled)):
+        raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                           "talk to an administrator to enable it")
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
 
@@ -582,6 +594,10 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
         A spark dataframe with all the features
 
     """
+    if online and ((not featurestore_metadata.settings.online_enabled) or
+                       (not featurestore_metadata.featurestore.online_enabled)):
+        raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                           "talk to an administrator to enable it")
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
     spark = util._find_spark()
@@ -744,6 +760,10 @@ def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=
         a spark dataframe with the contents of the featurestore
 
     """
+    if online and ((not featurestore_metadata.settings.online_enabled) or
+                       (not featurestore_metadata.featurestore.online_enabled)):
+        raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                           "talk to an administrator to enable it")
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
@@ -1770,6 +1790,10 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
     Raises:
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
+    if online and ((not featurestore_metadata.settings.online_enabled) or
+                       (not featurestore_metadata.featurestore.online_enabled)):
+        raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
+                                           "talk to an administrator to enable it")
     try:
         spark_df = fs_utils._convert_dataframe_to_spark(df)
     except Exception as e:
