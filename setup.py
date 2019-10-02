@@ -22,7 +22,9 @@ setup(
         'hops-petastorm',
         'opencv-python',
         'boto3',
-        'pyopenssl'
+        'pyopenssl',
+        'idna',
+        'cryptography'
     ],
     extras_require={
         'pydoop': ['pydoop'],
