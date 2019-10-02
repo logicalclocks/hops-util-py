@@ -21,7 +21,8 @@ setup(
         'confluent-kafka',
         'hops-petastorm',
         'opencv-python',
-        'boto3'
+        'boto3',
+        'pyopenssl'
     ],
     extras_require={
         'pydoop': ['pydoop'],

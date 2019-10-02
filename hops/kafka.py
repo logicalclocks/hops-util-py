@@ -50,6 +50,7 @@ Similarly, you can define a pyspark kafka consumer as follows, using the spark s
 
 import os
 from hops import constants, tls, util, hdfs
+from hops.exceptions import RestAPIError
 import json
 import sys
 
@@ -121,7 +122,6 @@ def get_schema(topic):
         Avro schema as a string object in JSON format
     """
     method = constants.HTTP_CONFIG.HTTP_GET
-    connection = util._get_http_connection(https=True)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -129,9 +129,15 @@ def get_schema(topic):
                    constants.REST_CONFIG.HOPSWORKS_KAFKA_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    topic + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
-    response = util.send_request(connection, method, resource_url)
-    resp_body = response.read()
-    response_object = json.loads(resp_body)
+    response = util.send_request(method, resource_url)
+    response_object = response.json()
+
+    if response.status_code != 200:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get Avro schema (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
     return response_object
 
 
