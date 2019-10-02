@@ -137,3 +137,8 @@ class CannotDisableOnlineFeatureServingForOnDemandFeatureGroup(Exception):
     This exception will be raised if the user calls featurestore.disable_featuregroup_online(fg1)
     where fg1 is an on-demand feature group
     """
+
+class OnlineFeaturestoreNotEnabled(Exception):
+    """
+    This exception will be raised if the user tries to interact with the online featurestore but it is not enabled
+    """

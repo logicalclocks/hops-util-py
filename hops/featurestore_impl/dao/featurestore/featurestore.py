@@ -19,3 +19,27 @@ class Featurestore(object):
         self.hdfs_path = featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_HDFS_PATH]
         self.project_name = featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_PROJECT_NAME]
         self.inode_id = featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_INODE_ID]
+        if constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_ENABLED in featurestore_json:
+            self.online_enabled = featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_ENABLED]
+        else:
+            self.online_enabled = False
+        if constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_FEATURESTORE_TYPE in featurestore_json:
+            self.online_featurestore_type = \
+                featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_FEATURESTORE_TYPE]
+        else:
+            self.online_featurestore_type = None
+        if constants.REST_CONFIG.JSON_FEATURESTORE_OFFLINE_FEATURESTORE_TYPE in featurestore_json:
+            self.offline_featurestore_type = \
+                featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_OFFLINE_FEATURESTORE_TYPE]
+        else:
+            self.offline_featurestore_type = None
+        if constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_FEATURESTORE_NAME in featurestore_json:
+            self.online_featurestore_name = \
+                featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_ONLINE_FEATURESTORE_NAME]
+        else:
+            self.online_featurestore_name = None
+        if constants.REST_CONFIG.JSON_FEATURESTORE_OFFLINE_FEATURESTORE_NAME in featurestore_json:
+            self.offline_featurestore_name = \
+                featurestore_json[constants.REST_CONFIG.JSON_FEATURESTORE_OFFLINE_FEATURESTORE_NAME]
+        else:
+            self.offline_featurestore_name = None
