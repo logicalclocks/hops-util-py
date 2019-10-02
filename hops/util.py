@@ -357,14 +357,11 @@ def _put_elastic(project, appid, elastic_id, json_data):
     if not elastic_endpoint:
         return
     headers = {'Content-type': 'application/json'}
-
+    session_elastic = requests.Session()
     retries = 3
     resp=None
     while retries > 0:
-        resp = requests.put(constants.HTTP_CONFIG.HTTP_PUT, "http://" + elastic_endpoint + "/" +
-                                  project.lower() +
-                           "_experiments/experiments/" + appid + "_" + str(elastic_id), data=json_data,
-                           headers=headers, verify=False)
+        resp = session_elastic.put("http://" + elastic_endpoint + "/" +  project.lower() + "_experiments/experiments/" + appid + "_" + str(elastic_id), headers=headers, data=json_data, verify=False)
         if resp.status_code == 200:
             return
         else:
