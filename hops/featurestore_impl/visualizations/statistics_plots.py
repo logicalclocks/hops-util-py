@@ -96,8 +96,8 @@ def _stylize_axes(ax, title, xlabel, ylabel):
     """
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.xaxis.set_tick_params(top='off', direction='out', width=1)
-    ax.yaxis.set_tick_params(right='off', direction='out', width=1)
+    ax.xaxis.set_tick_params(top=False, direction='out', width=1)
+    ax.yaxis.set_tick_params(right=False, direction='out', width=1)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
