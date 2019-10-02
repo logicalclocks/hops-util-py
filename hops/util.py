@@ -240,7 +240,7 @@ def send_request(method, resource, data=None, headers=None):
     req = requests.Request(method, url, data=data, headers=headers)
     prepped = session.prepare_request(req)
 
-    response = session.send(prepped, verify=get_requests_verify(host, port))
+    response = session.send(prepped, verify=verify)
 
     if response.status_code == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
         set_auth_header(headers)
