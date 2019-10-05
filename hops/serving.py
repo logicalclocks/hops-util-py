@@ -299,8 +299,7 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
     response = util.send_request(method, resource_url, data=json_embeddable, headers=headers)
 
     if response.status_code != 201 and response.status_code != 200:
-        resp_body = response.read()
-        response_object = json.loads(resp_body)
+        response_object = response.json()
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
                                       "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "

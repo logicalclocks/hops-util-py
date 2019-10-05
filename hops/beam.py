@@ -54,7 +54,7 @@ def start_beam_jobserver(flink_session_name,
                    "?limit=1&offset=0&sort_by=submissionTime:desc"
     response = util.send_request(method, resource_url)
     response_object = response.json()
-    flink_master_url = json.loads(response_object)['items'][0]['flinkMasterURL']
+    flink_master_url = response_object['items'][0]['flinkMasterURL']
     artifact_port = randint(10000, 65000)
     expansion_port = randint(10000, 65000)
     job_port = randint(10000, 65000)
