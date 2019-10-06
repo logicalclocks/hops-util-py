@@ -146,9 +146,11 @@ def _count_rocm_gpus():
 def get_num_gpus():
     """ Get the number of GPUs available in the environment and consequently by the application
     Assuming there is one GPU in the environment
+
     >>> from hops import devices
     >>> devices.get_num_gpus()
     >>> 1
+
     Returns:
         Number of GPUs available in the environment
     """
