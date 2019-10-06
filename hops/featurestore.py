@@ -1101,6 +1101,7 @@ def get_latest_training_dataset_version(training_dataset, featurestore=None):
     Utility method to get the latest version of a particular training dataset
 
     Example usage:
+
     >>> featurestore.get_latest_training_dataset_version("team_position_prediction")
 
     Args:
@@ -1127,6 +1128,7 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
     Utility method to get the latest version of a particular featuregroup
 
     Example usage:
+
     >>> featurestore.get_latest_featuregroup_version("teams_features_spanish")
 
     Args:
@@ -1229,12 +1231,14 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
     Gets the partitions of a featuregroup
 
     Example usage:
+
     >>> partitions = featurestore.get_featuregroup_partitions("trx_summary_features")
     >>> #You can also explicitly define version, featurestore and type of the returned dataframe:
     >>> featurestore.get_featuregroup_partitions("trx_summary_features",
     >>>                                          featurestore=featurestore.project_featurestore(),
     >>>                                          featuregroup_version = 1,
     >>>                                          dataframe_type="spark")
+
      Args:
         :featuregroup: the featuregroup to get partitions for
         :featurestore: the featurestore where the featuregroup resides, defaults to the project's featurestore
@@ -1775,6 +1779,7 @@ def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregro
     Gets the computed statistics (if any) of a featuregroup
 
     Example usage:
+
     >>> stats = featurestore.get_featuregroup_statistics("trx_summary_features")
     >>> # You can also explicitly define version and featurestore
     >>> stats = featurestore.get_featuregroup_statistics("trx_summary_features",
@@ -1803,6 +1808,7 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
     Gets the computed statistics (if any) of a training dataset
 
     Example usage:
+
     >>> stats = featurestore.get_training_dataset_statistics("AML_dataset")
     >>> # You can also explicitly define version and featurestore
     >>> stats = featurestore.get_training_dataset_statistics("AML_dataset",
@@ -1830,6 +1836,7 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     Connects to a feature store from a remote environment such as Amazon SageMaker
 
     Example usage:
+
     >>> featurestore.connect("hops.site", "my_feature_store")
 
     Args:
@@ -1857,6 +1864,7 @@ def sync_hive_table_with_featurestore(featuregroup, description="", featurestore
     Synchronizes an existing Hive table with a Feature Store.
 
     Example usage:
+    
     >>> # Save Hive Table
     >>> sample_df.write.mode("overwrite").saveAsTable("hive_fs_sync_example_1")
     >>> # Synchronize with Feature Store
@@ -1915,6 +1923,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
     and then writes the data to Hopsworks Feature Store (Hive) and registers its metadata.
 
     Example usage:
+
     >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name)
     >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:
     >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name, primary_key="id",
@@ -1995,6 +2004,7 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
     and then writes the data to Hopsworks Feature Store (Hive) and registers its metadata.
 
     Example usage:
+
     >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name,
     >>>                                  data_format=s3_bucket_data_format)
     >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:

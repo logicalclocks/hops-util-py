@@ -176,7 +176,6 @@ def get_requests_verify(hostname, port):
     """
     Get verification method for sending HTTP requests to Hopsworks.
     Credit to https://gist.github.com/gdamjan/55a8b9eec6cf7b771f92021d93b87b2c
-    Дамјан Георгиевски gdamjan
     Returns:
         if env var HOPS_UTIL_VERIFY is not false
             then if hopsworks certificate is self-signed, return the path to the truststore (PEM)
