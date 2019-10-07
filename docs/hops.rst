@@ -93,6 +93,15 @@ hops.util module
     :show-inheritance:
 
 
+hops.beam module
+------------------------
+
+.. automodule:: hops.beam
+        :members:
+        :undoc-members:
+        :show-inheritance:
+
+
 Module contents
 ---------------
 

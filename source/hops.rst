@@ -1,6 +1,14 @@
 hops package
 ============
 
+Subpackages
+-----------
+
+.. toctree::
+
+    hops.distribute
+    hops.featurestore_impl
+
 Submodules
 ----------
 
@@ -12,10 +20,26 @@ hops.beam module
     :undoc-members:
     :show-inheritance:
 
+hops.constants module
+---------------------
+
+.. automodule:: hops.constants
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.devices module
 -------------------
 
 .. automodule:: hops.devices
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops.differential\_evolution module
+-----------------------------------
+
+.. automodule:: hops.differential_evolution
     :members:
     :undoc-members:
     :show-inheritance:
@@ -40,6 +64,14 @@ hops.featurestore module
 ------------------------
 
 .. automodule:: hops.featurestore
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops.grid\_search module
+------------------------
+
+.. automodule:: hops.grid_search
     :members:
     :undoc-members:
     :show-inheritance:
@@ -76,6 +108,14 @@ hops.kafka module
     :undoc-members:
     :show-inheritance:
 
+hops.launcher module
+--------------------
+
+.. automodule:: hops.launcher
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.numpy\_helper module
 -------------------------
 
@@ -88,6 +128,14 @@ hops.pandas\_helper module
 --------------------------
 
 .. automodule:: hops.pandas_helper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops.random\_search module
+--------------------------
+
+.. automodule:: hops.random_search
     :members:
     :undoc-members:
     :show-inheritance:
@@ -120,6 +168,14 @@ hops.util module
 ----------------
 
 .. automodule:: hops.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops.version module
+-------------------
+
+.. automodule:: hops.version
     :members:
     :undoc-members:
     :show-inheritance:

@@ -26,8 +26,7 @@ jobserver_port = -1
 
 def start_beam_jobserver(flink_session_name,
                          artifacts_dir="Resources",
-                         jobserver_jar=os.path.join(util.get_flink_conf_dir(),
-                                                     "beam-runners-flink-1.8-job-server-2.15.0.jar"),
+                         jobserver_jar=None,
                          sdk_worker_parallelism=1):
     """
     Start the Java Beam job server that connects to the flink session cluster. User needs to provide the
@@ -42,6 +41,8 @@ def start_beam_jobserver(flink_session_name,
     Returns:
         artifact_port, expansion_port, job_host, job_port, jobserver.pid
     """
+    if jobserver_jar is None:
+        jobserver_jar = os.path.join(util.get_flink_conf_dir(), "beam-runners-flink-1.8-job-server-2.15.0.jar")
     # Get Flink master URL (flink session cluster) from an ExecutionDTO
     method = constants.HTTP_CONFIG.HTTP_GET
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
