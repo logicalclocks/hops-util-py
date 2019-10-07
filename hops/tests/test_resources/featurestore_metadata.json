@@ -2296,7 +2296,7 @@
     "onDemandFeaturegroupNameMaxLength": 1000,
     "onDemandFeaturegroupSqlQueryMaxLength": 11000,
     "onDemandFeaturegroupType": "ON_DEMAND_FEATURE_GROUP",
-    "onlineFeaturestoreEnabled": false,
+    "onlineFeaturestoreEnabled": true,
     "s3BucketTrainingDatasetsFolder": "TRAINING_DATASETS",
     "s3ConnectorDtoType": "featurestoreS3ConnectorDTO",
     "s3ConnectorType": "S3",
