@@ -753,6 +753,33 @@ def get_features_list(featurestore=None, online=False):
         return fs_utils._do_get_features_list(core._get_featurestore_metadata(featurestore, update_cache=True),
                                               online=online)
 
+def get_featuregroup_features_list(featuregroup, version=None, featurestore=None):
+    """
+    Gets a list of the names of the features in a featuregroup.
+
+    Args:
+        :featuregroup: Name of the featuregroup to get feature names for.
+        :version: Version of the featuregroup to use. Defaults to the latest version.
+        :featurestore: The featurestore to list features for. Defaults to project-featurestore.
+        :online: Flag whether to filter the features that have online serving enabled. Defaults to False.
+    Returns:
+        A list of names of the features in this featuregroup.
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        if version is None:
+            version = fs_utils._do_get_latest_featuregroup_version(
+                featuregroup, core._get_featurestore_metadata(featurestore, update_cache=False))
+        return fs_utils._do_get_featuregroup_features_list(
+            featuregroup, version, core._get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        if version is None:
+            version = fs_utils._do_get_latest_featuregroup_version(
+                featuregroup, core._get_featurestore_metadata(featurestore, update_cache=True))
+        return fs_utils._do_get_featuregroup_features_list(
+            featuregroup, core._get_featurestore_metadata(featurestore, update_cache=False))
+
 
 def get_training_datasets(featurestore=None):
     """
