@@ -339,6 +339,22 @@ def _do_get_features_list(featurestore_metadata, online):
     features = list(map(lambda f: f.name, features))
     return features
 
+def _do_get_featuregroup_features_list(featuregroup, version, featurestore_metadata):
+    """
+    Gets a list of all names of features in a featuregroup in a featurestore.
+
+    Args:
+        :featuregroup: Featuregroup name.
+        :version: Version of the featuregroup to use.
+        :featurestore_metadata: Metadata of the featurestore.
+
+    Returns:
+        A list of names of the features in this featuregroup.
+    """
+    featuregroup_version = featuregroup + '_' + str(version)
+    features = featurestore_metadata.featuregroups[featuregroup_version].features
+    return list(map(lambda f: f.name, features))
+
 
 def _log(x):
     """
