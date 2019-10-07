@@ -24,7 +24,8 @@ setup(
         'boto3',
         'pyopenssl',
         'idna',
-        'cryptography'
+        'cryptography',
+        'pyarrow==0.14.1'
     ],
     extras_require={
         'pydoop': ['pydoop'],

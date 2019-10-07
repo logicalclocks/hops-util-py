@@ -731,7 +731,7 @@ class TestFeaturestoreSuite(object):
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1, None,
                                                           None, None, None, [])
-        assert result == {}
+        assert result == data
         response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1,
@@ -2605,8 +2605,8 @@ class TestFeaturestoreSuite(object):
     def test_enable_featuregroup_online_rest(self, sample_metadata, sample_featuregroup):
         """ Test _enable_featuregroup_online_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        connection = mock.Mock()
-        util._get_http_connection = mock.MagicMock(return_value=connection)
+        response = mock.Mock()
+        util.send_request = mock.MagicMock(return_value=response)
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
         core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
@@ -2617,14 +2617,11 @@ class TestFeaturestoreSuite(object):
             jwt = jwt.read()
         util.get_jwt = mock.MagicMock(return_value=jwt)
         os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
-        connection.request = mock.MagicMock(return_value=True)
-        response = mock.Mock()
         response.status_code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
-        connection.getresponse = mock.MagicMock(return_value=response)
+        response.json = mock.MagicMock(return_value=data)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value=data)
         sample_featuregroup_dto = Featuregroup(sample_featuregroup)
         sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
         result = rest_rpc._enable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
@@ -2632,8 +2629,8 @@ class TestFeaturestoreSuite(object):
                                                            sample_metadata_dto.settings.cached_featuregroup_dto_type,
                                                            sample_metadata_dto.settings.cached_featuregroup_type,
                                                            [])
-        assert result == {}
-        response.status_code = 200
+        assert result == data
+        response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             result = rest_rpc._enable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
                                                                featurestore_id,
@@ -2648,8 +2645,8 @@ class TestFeaturestoreSuite(object):
     def test_disable_featuregroup_online_rest(self, sample_metadata, sample_featuregroup):
         """ Test _disable_featuregroup_online_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        connection = mock.Mock()
-        util._get_http_connection = mock.MagicMock(return_value=connection)
+        response = mock.Mock()
+        util.send_request = mock.MagicMock(return_value=response)
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
         core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
@@ -2660,14 +2657,11 @@ class TestFeaturestoreSuite(object):
             jwt = jwt.read()
         util.get_jwt = mock.MagicMock(return_value=jwt)
         os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
-        connection.request = mock.MagicMock(return_value=True)
-        response = mock.Mock()
         response.status_code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
-        connection.getresponse = mock.MagicMock(return_value=response)
+        response.json = mock.MagicMock(return_value=data)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value=data)
         sample_featuregroup_dto = Featuregroup(sample_featuregroup)
         sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
         result = rest_rpc._disable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
@@ -2675,7 +2669,7 @@ class TestFeaturestoreSuite(object):
                                                            sample_metadata_dto.settings.cached_featuregroup_dto_type,
                                                            sample_metadata_dto.settings.cached_featuregroup_type)
         assert result == {}
-        response.status_code = 200
+        response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             result = rest_rpc._disable_featuregroup_online_rest(sample_featuregroup_dto.name, 1, featuregroup_id,
                                                                featurestore_id,
@@ -2690,8 +2684,8 @@ class TestFeaturestoreSuite(object):
     def test_sync_hive_table_with_featurestore_rest(self, sample_metadata, sample_featuregroup):
         """ Test _sync_hive_table_with_featurestore_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        connection = mock.Mock()
-        util._get_http_connection = mock.MagicMock(return_value=connection)
+        response = mock.Mock()
+        util.send_request = mock.MagicMock(return_value=response)
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
         core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
@@ -2702,14 +2696,11 @@ class TestFeaturestoreSuite(object):
             jwt = jwt.read()
         util.get_jwt = mock.MagicMock(return_value=jwt)
         os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
-        connection.request = mock.MagicMock(return_value=True)
-        response = mock.Mock()
         response.status_code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
-        connection.getresponse = mock.MagicMock(return_value=response)
+        response.json = mock.MagicMock(return_value=data)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value=data)
         sample_featuregroup_dto = Featuregroup(sample_featuregroup)
         sample_metadata_dto = FeaturestoreMetadata(sample_metadata)
         result = rest_rpc._sync_hive_table_with_featurestore_rest(sample_featuregroup_dto.name, featurestore_id,
@@ -2719,8 +2710,8 @@ class TestFeaturestoreSuite(object):
                                                                   sample_metadata_dto.settings. \
                                                                   cached_featuregroup_type
                                                                   )
-        assert result == {}
-        response.status_code = 200
+        assert result == data
+        response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             result = rest_rpc._sync_hive_table_with_featurestore_rest(sample_featuregroup_dto.name, featurestore_id,
                                                                       "test", 1, [], None, None, None, None,
@@ -2733,11 +2724,11 @@ class TestFeaturestoreSuite(object):
         # unmock for later tests
         core._get_featuregroup_id = self.unmocked_get_featuregroup_id
 
-    def test_get_online_featurestore_jdbc_connector_rest(self, sample_metadata, sample_featuregroup):
+    def test_get_online_featurestore_jdbc_connector_rest(self, sample_metadata):
         """ Test _sync_hive_table_with_featurestore_rest"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        connection = mock.Mock()
-        util._get_http_connection = mock.MagicMock(return_value=connection)
+        response = mock.Mock()
+        util.send_request = mock.MagicMock(return_value=response)
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         featurestore_id = FeaturestoreMetadata(sample_metadata).featurestore.id
         core._get_featurestore_id = mock.MagicMock(return_value=featurestore_id)
@@ -2745,17 +2736,14 @@ class TestFeaturestoreSuite(object):
             jwt = jwt.read()
         util.get_jwt = mock.MagicMock(return_value=jwt)
         os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = "1"
-        connection.request = mock.MagicMock(return_value=True)
-        response = mock.Mock()
         response.status_code = 200
         data = {}
-        response.read = mock.MagicMock(return_value=json.dumps(data))
-        connection.getresponse = mock.MagicMock(return_value=response)
+        response.json = mock.MagicMock(return_value=data)
         hdfs.project_name = mock.MagicMock(return_value="test_project")
-        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
+        tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value=data)
         result = rest_rpc._get_online_featurestore_jdbc_connector_rest(featurestore_id)
-        assert result == {}
-        response.status_code = 200
+        assert result == data
+        response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             result = rest_rpc._get_online_featurestore_jdbc_connector_rest(featurestore_id)
             assert "Could not sync hive table with featurestore" in ex.value
