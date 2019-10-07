@@ -1079,6 +1079,21 @@ class TestFeaturestoreSuite(object):
         assert len(result) == 3
         assert set(result) == set(["average_position", "sum_position", "team_id"])
 
+    def test_get_featuregroup_features_list(self, featuregroup, version=None, featurestore=None):
+        """ Test get_featuregroup_features_list()"""
+        result = featurestore.get_featuregroup_features_list('season_scores_features')
+        assert len(result) == 3
+        assert set(result) == set(["average_position", "sum_position", "team_id"])
+        result = featurestore.get_featuregroup_features_list('season_scores_features', 1)
+        assert len(result) == 3
+        assert set(result) == set(["average_position", "sum_position", "team_id"])
+        result = featurestore.get_featuregroup_features_list('season_scores_features', 1, 'demo_featurestore_admin000_featurestore')
+        assert len(result) == 3
+        assert set(result) == set(["average_position", "sum_position", "team_id"])
+        result = featurestore.get_featuregroup_features_list('players_features_on_demand')
+        assert len(result) == 0
+        assert set(result) == set([])
+
     def test_get_project_featurestores(self, sample_featurestores):
         """ Test get_project_featurestores()"""
         rest_rpc._get_featurestores = mock.MagicMock(return_value=sample_featurestores)
