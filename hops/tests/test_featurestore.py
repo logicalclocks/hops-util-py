@@ -1079,7 +1079,7 @@ class TestFeaturestoreSuite(object):
         assert len(result) == 3
         assert set(result) == set(["average_position", "sum_position", "team_id"])
 
-    def test_get_featuregroup_features_list(self, featuregroup, version=None, featurestore=None):
+    def test_get_featuregroup_features_list(self):
         """ Test get_featuregroup_features_list()"""
         result = featurestore.get_featuregroup_features_list('season_scores_features')
         assert len(result) == 3
