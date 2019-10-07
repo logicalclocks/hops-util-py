@@ -1079,8 +1079,9 @@ class TestFeaturestoreSuite(object):
         assert len(result) == 3
         assert set(result) == set(["average_position", "sum_position", "team_id"])
 
-    def test_get_featuregroup_features_list(self):
+    def test_get_featuregroup_features_list(self, sample_metadata):
         """ Test get_featuregroup_features_list()"""
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         result = featurestore.get_featuregroup_features_list('season_scores_features')
         assert len(result) == 3
         assert set(result) == set(["average_position", "sum_position", "team_id"])
