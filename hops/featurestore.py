@@ -908,6 +908,33 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
                                              dataframe_type=dataframe_type)
 
 
+def get_training_dataset_features_list(training_dataset, featurestore=None, version=None):
+    """
+    Gets a list of the names of the features in a training dataset.
+
+    Args:
+        :training_dataset: Name of the training dataset to get feature names for.
+        :version: Version of the training dataset to use. Defaults to the latest version.
+        :featurestore: The featurestore to look for the dataset for. Defaults to project-featurestore.
+
+    Returns:
+        A list of names of the features in this training dataset.
+    """
+    if featurestore is None:
+        featurestore = project_featurestore()
+    try:
+        if version is None:
+            version = fs_utils._do_get_latest_training_dataset_version(
+                training_dataset, core._get_featurestore_metadata(featurestore, update_cache=False))
+        return fs_utils._do_get_training_dataset_features_list(
+            training_dataset, version, core._get_featurestore_metadata(featurestore, update_cache=False))
+    except:
+        if version is None:
+            version = fs_utils._do_get_latest_training_dataset_version(
+                training_dataset, core._get_featurestore_metadata(featurestore, update_cache=True))
+        return fs_utils._do_get_training_dataset_features_list(
+            training_dataset, version, core._get_featurestore_metadata(featurestore, update_cache=True))
+
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
                             data_format="tfrecords", training_dataset_version=1,
                             jobs=[], descriptive_statistics=True, feature_correlation=True,
