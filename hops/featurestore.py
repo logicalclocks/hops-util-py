@@ -779,7 +779,7 @@ def get_featuregroup_features_list(featuregroup, version=None, featurestore=None
             version = fs_utils._do_get_latest_featuregroup_version(
                 featuregroup, core._get_featurestore_metadata(featurestore, update_cache=True))
         return fs_utils._do_get_featuregroup_features_list(
-            featuregroup, core._get_featurestore_metadata(featurestore, update_cache=False))
+            featuregroup, version, core._get_featurestore_metadata(featurestore, update_cache=True))
 
 
 def get_training_datasets(featurestore=None):
