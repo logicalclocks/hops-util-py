@@ -1095,6 +1095,36 @@ class TestFeaturestoreSuite(object):
         assert len(result) == 0
         assert set(result) == set([])
 
+    def test_do_get_training_dataset_features_list(self, sample_metadata):
+        """Test do_get_training_dataset_features_list"""
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        result = fs_utils._do_get_training_dataset_features_list('team_position_prediction_petastorm', 1, featurestore_metadata)
+        assert len(result) == 12
+        assert set(result) == set(["average_player_age", "sum_player_age", "team_position", "average_player_rating",
+            "sum_attendance", "sum_position", "sum_player_worth", "average_player_worth", "average_attendance",
+            "sum_player_rating", "average_position", "team_budget"])
+
+    def test_get_training_dataset_features_list(self, sample_metadata):
+        """ Test get_training_dataset_features_list()"""
+        core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
+        result = featurestore.get_training_dataset_features_list('team_position_prediction_petastorm')
+        desired_result = ["average_player_age", "sum_player_age", "team_position", "average_player_rating",
+            "sum_attendance", "sum_position", "sum_player_worth", "average_player_worth", "average_attendance",
+            "sum_player_rating", "average_position", "team_budget"]
+        assert len(result) == 12
+        assert set(result) == set(desired_result)
+        result = featurestore.get_training_dataset_features_list('team_position_prediction_petastorm', 1)
+        assert len(result) == 12
+        assert set(result) == set(desired_result)
+        result = featurestore.get_training_dataset_features_list('team_position_prediction_petastorm', 1,
+            'demo_featurestore_admin000_featurestore')
+        assert len(result) == 12
+        assert set(result) == set(desired_result)
+        result = featurestore.get_training_dataset_features_list('team_position_prediction_petastorm', None,
+            'demo_featurestore_admin000_featurestore')
+        assert len(result) == 12
+        assert set(result) == set(desired_result)
+
     def test_get_project_featurestores(self, sample_featurestores):
         """ Test get_project_featurestores()"""
         rest_rpc._get_featurestores = mock.MagicMock(return_value=sample_featurestores)
