@@ -908,7 +908,7 @@ def get_training_dataset(training_dataset, featurestore=None, training_dataset_v
                                              dataframe_type=dataframe_type)
 
 
-def get_training_dataset_features_list(training_dataset, featurestore=None, version=None):
+def get_training_dataset_features_list(training_dataset, version=None, featurestore=None):
     """
     Gets a list of the names of the features in a training dataset.
 
