@@ -1082,7 +1082,7 @@ def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, da
     return path
 
 
-def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket):
+def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket, path):
     """
     Utility function for getting the S3 path of a training dataset in the feature store
 
@@ -1090,16 +1090,27 @@ def _get_external_training_dataset_path(training_dataset_name, training_dataset_
         :training_dataset_name: name of the training dataset
         :training_dataset_version: version of the training dataset
         :bucket: the s3 bucket
+        :path: user-supplied path
 
     Returns:
         the s3 path to the training dataset
     """
-    path = ""
-    if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
-        path = constants.S3_CONFIG.S3_FILE_PREFIX
-    path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + constants.S3_CONFIG.S3_TRAINING_DATASETS_FOLDER \
-           + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name, training_dataset_version)
+    if path is None or path is "":
+        path = ""
+        if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
+            path = constants.S3_CONFIG.S3_FILE_PREFIX
+        path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + constants.S3_CONFIG.S3_TRAINING_DATASETS_FOLDER \
+               + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name, training_dataset_version)
+    else:
+        if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
+            path = constants.S3_CONFIG.S3_FILE_PREFIX + bucket + constants.DELIMITERS.SLASH_DELIMITER + path
+        else:
+            path = bucket + constants.DELIMITERS.SLASH_DELIMITER + path
+        path = path + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name,
+                                                                             training_dataset_version)
     return path
+
+
 
 
 def _setup_s3_credentials_for_spark(access_key, secret_key, spark):

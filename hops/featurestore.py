@@ -940,7 +940,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
                             data_format="tfrecords", training_dataset_version=1,
                             jobs=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
-                            corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True, sink=None):
+                            corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True, sink=None, path=None):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -954,7 +954,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     >>>                                      training_dataset_version=1,
     >>>                                      descriptive_statistics=False, feature_correlation=False,
     >>>                                      feature_histograms=False, cluster_analysis=False, stat_columns=None,
-    >>>                                      sink = None)
+    >>>                                      sink = None, path=None)
 
     Args:
         :df: the dataframe to create the training dataset from
@@ -979,6 +979,9 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
         :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
         :sink: name of storage connector to store the training dataset
         :jobs: list of Hopsworks jobs linked to the training dataset
+        :path: path to complement the sink storage connector with, e.g if the storage connector points to an
+               S3 bucket, this path can be used to define a sub-directory inside the bucket to place the training
+               dataset.
 
     Returns:
         None
@@ -993,7 +996,8 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     core._do_create_training_dataset(df, training_dataset, description, featurestore, data_format,
                                      training_dataset_version, jobs, descriptive_statistics,
                                      feature_correlation, feature_histograms, cluster_analysis, stat_columns,
-                                     num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector)
+                                     num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector,
+                                     path)
 
 
 def get_storage_connectors(featurestore = None):

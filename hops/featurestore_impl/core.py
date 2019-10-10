@@ -855,7 +855,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                 jobs=[], descriptive_statistics=True, feature_correlation=True,
                                 feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                                 corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True,
-                                storage_connector=None):
+                                storage_connector=None, path=None):
     """
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
@@ -883,6 +883,9 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                          petastorm format. Required parameters are: 'schema'
         :fixed: boolean flag indicating whether array columns should be treated with fixed size or variable size
         :storage_connector: the storage connector where the training dataset is stored
+        :path: path to complement the sink storage connector with, e.g if the storage connector points to an
+               S3 bucket, this path can be used to define a sub-directory inside the bucket to place the training
+               dataset.
 
     Returns:
         None
@@ -948,8 +951,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
     else:
         s3_connector = _do_get_storage_connector(td.external_training_dataset.s3_connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
-        path = fs_utils._get_external_training_dataset_path(td.name, td.version,
-                                                            s3_connector.bucket)
+        path = fs_utils._get_external_training_dataset_path(td.name, td.version, s3_connector.bucket, path)
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
