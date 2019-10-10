@@ -935,6 +935,7 @@ def get_training_dataset_features_list(training_dataset, version=None, featurest
         return fs_utils._do_get_training_dataset_features_list(
             training_dataset, version, core._get_featurestore_metadata(featurestore, update_cache=True))
 
+
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
                             data_format="tfrecords", training_dataset_version=1,
                             jobs=[], descriptive_statistics=True, feature_correlation=True,
