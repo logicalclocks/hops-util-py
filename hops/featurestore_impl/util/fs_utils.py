@@ -955,7 +955,7 @@ def _do_get_project_training_datasets_sink():
 
     """
     project_name = hdfs.project_name()
-    training_datasets_sink = project_name.lower() + constants.FEATURE_STORE.TRAINING_DATASETS_SUFFIX
+    training_datasets_sink = project_name + constants.FEATURE_STORE.TRAINING_DATASETS_SUFFIX
     return training_datasets_sink
 
 
