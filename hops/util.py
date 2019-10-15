@@ -24,7 +24,6 @@ from OpenSSL import SSL
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 import idna
-from socket import socket
 
 verify = None
 #! Needed for hops library backwards compatability
@@ -186,7 +185,7 @@ def get_requests_verify(hostname, port):
         constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] == 'true':
 
         hostname_idna = idna.encode(hostname)
-        sock = socket()
+        sock = socket.socket()
 
         sock.connect((hostname, int(port)))
         ctx = SSL.Context(SSL.SSLv23_METHOD)
