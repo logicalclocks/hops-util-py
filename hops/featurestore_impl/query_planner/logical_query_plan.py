@@ -103,9 +103,6 @@ class LogicalQueryPlan(object):
                                  )
                              ]]
             self.featuregroups = featuregroups
-            for feature in self.query.features:
-                for fg in self.featuregroups:
-                    fg.features
 
         if len(self.query.featuregroups_version_dict) > 1:
             if self.query.join_key != None:

@@ -147,7 +147,7 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
     else:
         f_type_online = None
     f_desc = ""
-    if (f_name == primary_key):
+    if f_name == primary_key:
         f_primary = True
     else:
         f_primary = False
@@ -157,13 +157,25 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
     if f_desc == "":
         f_desc = "-"  # comment must be non-empty
     f_partition = f_name in partition_by
+    f_fg = ""
+    if constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP \
+            in field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]:
+        f_fg = field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+            constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP]
+    f_version = None
+    if constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION \
+            in field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]:
+        f_version = field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+            constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION]
     return {
         constants.REST_CONFIG.JSON_FEATURE_NAME: f_name,
         constants.REST_CONFIG.JSON_FEATURE_TYPE: f_type,
         constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION: f_desc,
         constants.REST_CONFIG.JSON_FEATURE_PRIMARY: f_primary,
         constants.REST_CONFIG.JSON_FEATURE_PARTITION: f_partition,
-        constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE: f_type_online
+        constants.REST_CONFIG.JSON_FEATURE_ONLINE_TYPE: f_type_online,
+        constants.REST_CONFIG.JSON_FEATURE_FEATUREGROUP: f_fg,
+        constants.REST_CONFIG.JSON_FEATURE_VERSION: f_version
     }
 
 
@@ -401,9 +413,12 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
         logical_query_plan.featuregroups))
     _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args)
     logical_query_plan.construct_sql()
+    feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
+                                                                                      featurestore_metadata)
     result = _run_and_log_sql(spark, logical_query_plan.sql_str, online=online, featurestore=featurestore)
+    result_w_provenance = fs_utils._add_provenance_metadata_to_dataframe(result, feature_to_featuregroup_mapping)
     spark.sparkContext.setJobGroup("", "")
-    return fs_utils._return_dataframe_type(result, dataframe_type)
+    return fs_utils._return_dataframe_type(result_w_provenance, dataframe_type)
 
 
 def _run_and_log_sql(spark, sql_str, online=False, featurestore=None):
@@ -614,9 +629,12 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
         logical_query_plan.featuregroups))
     _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args)
     logical_query_plan.construct_sql()
+    feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
+                                                                                      featurestore_metadata)
     result = _run_and_log_sql(spark, logical_query_plan.sql_str, online=online, featurestore=featurestore)
+    result_w_provenance = fs_utils._add_provenance_metadata_to_dataframe(result, feature_to_featuregroup_mapping)
     spark.sparkContext.setJobGroup("", "")
-    return fs_utils._return_dataframe_type(result, dataframe_type)
+    return fs_utils._return_dataframe_type(result_w_provenance, dataframe_type)
 
 
 def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
@@ -687,7 +705,7 @@ def _do_get_on_demand_featuregroup(featuregroup, featurestore, jdbc_args = {}):
     jdbc_connector = _do_get_storage_connector(featuregroup.on_demand_featuregroup.jdbc_connector_name,
                                                featurestore=featurestore)
     connection_string = jdbc_connector.connection_string
-    connection_string_arguments = jdbc_connector.arguments.split(",")
+    connection_string_arguments = jdbc_connector.arguments.split(constants.DELIMITERS.COMMA_DELIMITER)
 
     # Fill in connection string arguments at runtime
     for connection_string_arg in connection_string_arguments:
@@ -774,8 +792,8 @@ def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=
     if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
         return _do_get_on_demand_featuregroup(fg, featurestore, jdbc_args)
     if fg.featuregroup_type == featurestore_metadata.settings.cached_featuregroup_type:
-        return _do_get_cached_featuregroup(featuregroup_name, featurestore, featuregroup_version, dataframe_type,
-                                           online=online)
+        return _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata,
+                                           featurestore, featuregroup_version, dataframe_type, online=online)
 
     raise ValueError("The feature group type: "
                      + fg.featuregroup_type + " was not recognized. Recognized types include: {} and {}" \
@@ -783,8 +801,8 @@ def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=
                              featurestore_metadata.settings.cached_featuregroup_type))
 
 
-def _do_get_cached_featuregroup(featuregroup_name, featurestore=None, featuregroup_version=1, dataframe_type="spark",
-                                online=False):
+def _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore=None,
+                                featuregroup_version=1, dataframe_type="spark", online=False):
     """
     Gets a cached featuregroup from a featurestore as a spark dataframe
 
@@ -795,6 +813,7 @@ def _do_get_cached_featuregroup(featuregroup_name, featurestore=None, featuregro
         :dataframe_type: the type of the returned dataframe (spark, pandas, python or numpy)
         :online: a boolean flag whether to fetch the online feature group or the offline one (assuming that the
                  feature group has online serving enabled)
+        :featurestore_metadata: metadata of the featurestore
 
     Returns:
         a spark dataframe with the contents of the feature group
@@ -807,9 +826,12 @@ def _do_get_cached_featuregroup(featuregroup_name, featurestore=None, featuregro
     logical_query_plan = LogicalQueryPlan(featuregroup_query)
     logical_query_plan.create_logical_plan()
     logical_query_plan.construct_sql()
+    feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
+                                                                                      featurestore_metadata)
     result = _run_and_log_sql(spark, logical_query_plan.sql_str, online=online, featurestore=featurestore)
+    result_w_provenance = fs_utils._add_provenance_metadata_to_dataframe(result, feature_to_featuregroup_mapping)
     spark.sparkContext.setJobGroup("", "")
-    return fs_utils._return_dataframe_type(result, dataframe_type)
+    return fs_utils._return_dataframe_type(result_w_provenance, dataframe_type)
 
 
 def _do_get_training_dataset(training_dataset_name, featurestore_metadata, training_dataset_version=1,
@@ -998,7 +1020,8 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
         featurestore = fs_utils._do_get_project_featurestore()
 
     if spark_df is None:
-        spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore, featuregroup_version,
+        spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore,
+                                               featuregroup_version,
                                                dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
 
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
@@ -1867,7 +1890,7 @@ def _do_enable_featuregroup_online(featuregroup_name, featuregroup_version, feat
                                                             "operation is only supported for cached feature groups."
                                                            .format(featuregroup_name, featuregroup_version))
 
-    spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore, featuregroup_version,
+    spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore, featuregroup_version,
                                        constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,online=False)
     primary_key = None
     for feature in fg.features:

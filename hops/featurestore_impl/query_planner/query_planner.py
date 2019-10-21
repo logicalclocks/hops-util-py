@@ -2,6 +2,8 @@
 Query Planner functions for inferring how to perform user queries to the featurestore
 """
 from hops import constants
+from hops.featurestore_impl.query_planner.f_query import FeaturesQuery, FeatureQuery
+from hops.featurestore_impl.query_planner.fg_query import FeaturegroupQuery
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl.exceptions.exceptions import FeatureNotFound, FeatureNameCollisionError, InferJoinKeyError, \
     TrainingDatasetNotFound, FeaturegroupNotFound
@@ -23,7 +25,7 @@ def _find_featuregroup_that_contains_feature(featuregroups, feature):
     for fg in featuregroups:
         for f in fg.features:
             fg_table_name = fs_utils._get_table_name(fg.name, fg.version)
-            full_name = fg_table_name + "." + f.name
+            full_name = fg_table_name + constants.DELIMITERS.DOT_DELIMITER + f.name
             if f.name == feature or full_name == feature or (f.name in feature and fg.name in feature):
                 matches.append(fg)
                 break
@@ -222,3 +224,48 @@ def _find_featuregroup(featuregroups, featuregroup_name, featuregroup_version):
             featuregroup_name,
             featuregroup_version,
             featuregroup_names))
+
+
+def _get_feature_featuregroup_mapping(logical_query_plan, featurestore, featurestore_metadata):
+    """
+    Extracts a mapping of feature to featuregroup from the logical query plan.
+
+    Args:
+        :logical_query_plan: the logical query plan containing information about the features to be fetched
+        :featurestore: the featurestore
+        :featurestore_metadata: featurestore metadata
+
+    Returns:
+        a map of feature name to featuregroup
+    """
+    mapping = {}
+    if isinstance(logical_query_plan.query, FeatureQuery):
+        fg = logical_query_plan.featuregroups[0]
+        mapping[_get_feature_short_name(logical_query_plan.query.feature)] = fs_utils._get_table_name(fg.name, fg.version)
+    if isinstance(logical_query_plan.query, FeaturesQuery):
+        for f in logical_query_plan.query.features:
+            fg = _find_feature(f, featurestore, logical_query_plan.featuregroups)
+            mapping[_get_feature_short_name(f)] = fs_utils._get_table_name(fg.name, fg.version)
+    if isinstance(logical_query_plan.query, FeaturegroupQuery):
+        fg = _find_featuregroup(featurestore_metadata.featuregroups, logical_query_plan.query.featuregroup,
+                                logical_query_plan.query.featuregroup_version)
+        for f in fg.features:
+            mapping[_get_feature_short_name(f.name)] = fs_utils._get_table_name(fg.name, fg.version)
+    return mapping
+
+
+def _get_feature_short_name(feature_name):
+    """
+    Convert feature name to short name. If the feature name is on the form: fg.feature then it will return just the
+    feature suffix. If the name does not include the featuregroup, this method does nothing.
+
+    Args:
+        :feature_name: name of the feature to get the short name of
+
+    Returns:
+        the short name of the feature
+    """
+    if constants.DELIMITERS.DOT_DELIMITER in feature_name:
+        return feature_name.split(constants.DELIMITERS.DOT_DELIMITER)[1]
+    return feature_name
+
