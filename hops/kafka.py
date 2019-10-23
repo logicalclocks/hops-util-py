@@ -106,6 +106,7 @@ def get_kafka_default_config():
         constants.KAFKA_SSL_CONFIG.SSL_CA_LOCATION_CONFIG: tls.get_ca_chain_location(),
         constants.KAFKA_SSL_CONFIG.SSL_CERTIFICATE_LOCATION_CONFIG: tls.get_client_certificate_location(),
         constants.KAFKA_SSL_CONFIG.SSL_PRIVATE_KEY_LOCATION_CONFIG: tls.get_client_key_location(),
+        constants.KAFKA_SSL_CONFIG.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG: "",
         "group.id": "something"
     }
     return default_config
