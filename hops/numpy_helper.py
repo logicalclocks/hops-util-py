@@ -11,7 +11,7 @@ def load(hdfs_filename, **kwds):
 
      Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
-       :**kwds: You can add any additional args found in numpy.read(...) 
+       :**kwds: You can add any additional args found in numpy.load(...) 
 
      Returns:
       A numpy array
@@ -22,6 +22,101 @@ def load(hdfs_filename, **kwds):
     hdfs_path = hdfs._expand_path(hdfs_filename)
     local_path = hdfs.copy_to_local(hdfs_path)
     return np.load(local_path, **kwds)
+
+
+def loadtxt(hdfs_filename, **kwds):
+    """
+    Load data from a text file in HDFS into a Numpy Array. 
+    Each row in the text file must have the same number of values.
+
+     Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :**kwds: You can add any additional args found in numpy.loadtxt(...) 
+
+     Returns:
+      A numpy array
+
+     Raises:
+      IOError: If the file does not exist
+    """
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return np.loadtxt(local_path, **kwds)
+
+def genfromtxt(hdfs_filename, **kwds):
+    """
+    Load data from a HDFS text file, with missing values handled as specified.
+    Each line past the first skip_header lines is split at the delimiter character, and characters following the comments character are discarded.
+
+     Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :**kwds: You can add any additional args found in numpy.loadtxt(...) 
+
+     Returns:
+      A numpy array
+
+     Raises:
+      IOError: If the file does not exist
+    """
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return np.genfromtxt(local_path, **kwds)
+
+def fromregex(hdfs_filename, **kwds):
+    """
+    Construct an array from a text file, using regular expression parsing.
+
+     Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :**kwds: You can add any additional args found in numpy.loadtxt(...) 
+
+     Returns:
+      A numpy array
+
+     Raises:
+      IOError: If the file does not exist
+    """
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return np.fromregex(local_path, **kwds)
+
+def fromfile(hdfs_filename, **kwds):
+    """
+    Construct an array from data in a text or binary file.
+
+     Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :**kwds: You can add any additional args found in numpy.loadtxt(...) 
+
+     Returns:
+      A numpy array
+
+     Raises:
+      IOError: If the file does not exist
+    """
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return np.fromregex(local_path, **kwds)
+
+
+def memmap(hdfs_filename, **kwds):
+    """
+    Create a memory-map to an array stored in a binary file on disk.
+
+     Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS).
+       :**kwds: You can add any additional args found in numpy.loadtxt(...) 
+
+     Returns:
+      A memmap with dtype and shape that matches the data.
+
+     Raises:
+      IOError: If the file does not exist
+    """
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return np.fromregex(local_path, **kwds)
+
 
 def save(hdfs_filename, data):
     """
