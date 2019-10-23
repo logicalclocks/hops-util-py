@@ -7,7 +7,7 @@ import json
 import numpy as np
 from hops.featurestore_impl.exceptions.exceptions import InferTFRecordSchemaError, \
     InvalidPrimaryKey, SparkToHiveSchemaConversionError, CouldNotConvertDataframe, \
-    SparkToMySQLSchemaConversionError
+    SparkToMySQLSchemaConversionError, FeatureNotFound
 import pandas as pd
 import math
 import re
@@ -31,6 +31,7 @@ try:
     from pyspark.mllib.stat import Statistics
     from pyspark.ml.feature import VectorAssembler, PCA
     from pyspark.ml.clustering import KMeans
+    from pyspark.sql.functions import col
 except:
     pass
 
@@ -1152,3 +1153,45 @@ def _get_bucket_path(bucket, dataset_path):
             path = constants.S3_CONFIG.S3_FILE_PREFIX
         path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + dataset_path
         return path
+
+
+def _add_provenance_metadata_to_dataframe(spark_df, feature_to_featuregroup_mapping):
+    """
+    Adds metadata of which featuregroup a certain feature was fetched from to the spark dataframe metadata.
+    This metadata is used by hopsworks provenance framework to track which features were used to create training
+    datasets
+
+    Args:
+        :spark_df: the spark dataframe to add the metadata to
+        :feature_to_featuregroup_mapping: a mapping of feature to featuregroup
+
+    Returns:
+        the updated spark dataframe with the added metadata
+    """
+    for f, fg in feature_to_featuregroup_mapping.items():
+        meta = _get_column_metadata(json.loads(spark_df.schema.json()), f)
+        parts = fg.rsplit('_',1)
+        fg_name = parts[0]
+        fg_version = parts[1]
+        meta[constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP] = fg_name
+        meta[constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION] = fg_version
+        spark_df = spark_df.withColumn(f, col(f).alias("", metadata=meta))
+    return spark_df
+
+
+def _get_column_metadata(spark_schema, column_name):
+    """
+    Gets the metadata of a given column from the spark schema
+
+    Args:
+        :spark_schema: the spark schema
+        :column_name: the name of the column to get the metadata of
+        :featuregroup_name: name of the featuregroup
+
+    Returns:
+        the metadata dict
+    """
+    for field in spark_schema[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]:
+        if field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_NAME] == column_name:
+            return field[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+    raise FeatureNotFound("feature {} was not found".format(column_name))

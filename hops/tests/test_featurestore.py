@@ -2799,3 +2799,53 @@ class TestFeaturestoreSuite(object):
         assert result.arguments == reference_connector.arguments
 
 
+    def test_training_dataset_provenance(self):
+        """ Test feature provenance for training datasets """
+        hdfs.project_name = mock.MagicMock(return_value="test_project")
+        teams_features_df = featurestore.get_featuregroup("teams_features")
+        assert len(teams_features_df.schema.fields) == 3
+        schema_dict = json.loads(teams_features_df.schema.json())
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][0][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][1][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][2][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][0][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][1][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][2][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][0][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP in \
+               schema_dict[
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][1][constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA]
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][0][
+            constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+            constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP] == "teams_features"
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][1][
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+                   constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP] == "teams_features"
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][2][
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+                   constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP] == "teams_features"
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][0][
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+                   constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION] == "1"
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][1][
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+                   constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION] == "1"
+        assert schema_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS][2][
+                   constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_METADATA][
+                   constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION] == "1"
+
+
