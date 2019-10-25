@@ -586,7 +586,7 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
     fs_utils._log("Feature group created successfully")
 
 
-def create_featuregroup(df, featuregroup, primary_key=None, description="", featurestore=None,
+def create_featuregroup(df, featuregroup, primary_keys=[], description="", featurestore=None,
                         featuregroup_version=1, jobs=[],
                         descriptive_statistics=True, feature_correlation=True,
                         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
@@ -614,8 +614,8 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
         :featuregroup: the name of the new featuregroup
-        :primary_key: the primary key of the new featuregroup, if not specified, the first column in the dataframe will
-                      be used as primary
+        :primary_keys: a list of primary keys of the new featuregroup, if not specified,
+                       the first column in the dataframe will be used as primary
         :description: a description of the featuregroup
         :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
@@ -647,7 +647,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     # Try with the cache first
     try:
         core._do_create_featuregroup(df, core._get_featurestore_metadata(featurestore, update_cache=False),
-                                     featuregroup, primary_key=primary_key, description= description,
+                                     featuregroup, primary_keys=primary_keys, description= description,
                                      featurestore=featurestore, featuregroup_version=featuregroup_version,
                                      jobs=jobs, descriptive_statistics=descriptive_statistics,
                                      feature_correlation=feature_correlation, feature_histograms=feature_histograms,
@@ -657,7 +657,7 @@ def create_featuregroup(df, featuregroup, primary_key=None, description="", feat
     # If it fails, update cache and retry
     except:
         core._do_create_featuregroup(df, core._get_featurestore_metadata(featurestore, update_cache=True),
-                                     featuregroup, primary_key=primary_key, description= description,
+                                     featuregroup, primary_keys=primary_keys, description= description,
                                      featurestore=featurestore, featuregroup_version=featuregroup_version,
                                      jobs=jobs, descriptive_statistics=descriptive_statistics,
                                      feature_correlation=feature_correlation, feature_histograms=feature_histograms,
@@ -1972,7 +1972,7 @@ def sync_hive_table_with_featurestore(featuregroup, description="", featurestore
     fs_utils._log("Hive Table: {} was successfully synchronized with Feature Store: {}".format(featuregroup,
                                                                                                featurestore))
 
-def import_featuregroup_redshift(storage_connector, query, featuregroup, primary_key=None, description="",
+def import_featuregroup_redshift(storage_connector, query, featuregroup, primary_keys=[], description="",
                                  featurestore=None, featuregroup_version=1, jobs=[], descriptive_statistics=True,
                                  feature_correlation=True, feature_histograms=True, cluster_analysis=True,
                                  stat_columns=None, num_bins=20, corr_method='pearson', num_clusters=5,
@@ -1986,7 +1986,8 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
 
     >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name)
     >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:
-    >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name, primary_key="id",
+    >>> featurestore.import_featuregroup_redshift(my_jdbc_connector_name, sql_query, featuregroup_name,
+    >>>                                  primary_keys=["id"],
     >>>                                  description="trx_summary_features without the column count_trx",
     >>>                                  featurestore=featurestore.project_featurestore(), featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
@@ -1997,7 +1998,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
         :storage_connector: the storage connector used to connect to the external storage
         :query: the queury extracting data from Redshift
         :featuregroup: name of the featuregroup to import the dataset into the featurestore
-        :primary_key: primary key of the featuregroup
+        :primary_keys: primary keys of the featuregroup
         :description: metadata description of the feature group to import
         :featurestore: name of the featurestore database to import the feature group into
         :featuregroup_version: version of the feature group
@@ -2030,7 +2031,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
         spark_df = core._do_get_redshift_featuregroup(storage_connector, query,
                                             core._get_featurestore_metadata(featurestore, update_cache=False),
                                             featurestore=featurestore)
-        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+        create_featuregroup(spark_df, featuregroup, primary_keys=primary_keys, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
@@ -2041,7 +2042,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
         spark_df = core._do_get_redshift_featuregroup(storage_connector, query,
                                                       core._get_featurestore_metadata(featurestore, update_cache=True),
                                                       featurestore=featurestore)
-        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+        create_featuregroup(spark_df, featuregroup, primary_keys=primary_keys, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
@@ -2052,7 +2053,7 @@ def import_featuregroup_redshift(storage_connector, query, featuregroup, primary
     fs_utils._log("Feature group imported successfully")
 
 
-def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=None, description="", featurestore=None,
+def import_featuregroup_s3(storage_connector, path, featuregroup, primary_keys=[], description="", featurestore=None,
                            featuregroup_version=1, jobs=[],
                            descriptive_statistics=True, feature_correlation=True,
                            feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
@@ -2068,7 +2069,7 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
     >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name,
     >>>                                  data_format=s3_bucket_data_format)
     >>> # You can also be explicitly specify featuregroup metadata and what statistics to compute:
-    >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name, primary_key="id",
+    >>> featurestore.import_featuregroup_s3(my_s3_connector_name, s3_path, featuregroup_name, primary_keys=["id"],
     >>>                                  description="trx_summary_features without the column count_trx",
     >>>                                  featurestore=featurestore.project_featurestore(),featuregroup_version=1,
     >>>                                  jobs=[], descriptive_statistics=False,
@@ -2080,7 +2081,7 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
         :storage_connector: the storage connector used to connect to the external storage
         :path: the path to read from the external storage
         :featuregroup: name of the featuregroup to import the dataset into the featurestore
-        :primary_key: primary key of the featuregroup
+        :primary_keys: primary keys of the featuregroup
         :description: metadata description of the feature group to import
         :featurestore: name of the featurestore database to import the feature group into
         :featuregroup_version: version of the feature group
@@ -2115,7 +2116,7 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
         spark_df = core._do_get_s3_featuregroup(storage_connector, path,
                                                 core._get_featurestore_metadata(featurestore, update_cache=False),
                                                 featurestore=featurestore, data_format=data_format)
-        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+        create_featuregroup(spark_df, featuregroup, primary_keys=primary_keys, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
@@ -2126,7 +2127,7 @@ def import_featuregroup_s3(storage_connector, path, featuregroup, primary_key=No
         spark_df = core._do_get_s3_featuregroup(storage_connector, path,
                                                 core._get_featurestore_metadata(featurestore, update_cache=True),
                                                 featurestore=featurestore, data_format=data_format)
-        create_featuregroup(spark_df, featuregroup, primary_key=primary_key, description=description,
+        create_featuregroup(spark_df, featuregroup, primary_keys=primary_keys, description=description,
                             featurestore=featurestore, featuregroup_version=featuregroup_version, jobs=jobs,
                             descriptive_statistics=descriptive_statistics, feature_correlation=feature_correlation,
                             feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
