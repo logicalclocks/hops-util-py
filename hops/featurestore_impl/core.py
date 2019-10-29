@@ -126,7 +126,7 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
 
     Args:
         :field_dict: the dict of spark field to convert
-        :primary_key: name of the primary key feature
+        :primary_key: list of the names of the primary key
         :partition_by: a list of columns to partition_by, defaults to the empty list
         :online: boolean flag whether the feature is to be used for online serving
         :online_types: dict with feature name --> online_type. If the field name is present in this dict,
@@ -147,7 +147,7 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
     else:
         f_type_online = None
     f_desc = ""
-    if f_name == primary_key:
+    if f_name in primary_key:
         f_primary = True
     else:
         f_primary = False
@@ -179,13 +179,13 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
     }
 
 
-def _parse_spark_features_schema(spark_schema, primary_key, partition_by=[], online=False, online_types = None):
+def _parse_spark_features_schema(spark_schema, primary_key=[], partition_by=[], online=False, online_types = None):
     """
     Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
 
     Args:
         :spark_schema: the spark schema to parse
-        :primary_key: the column in the dataframe that should be the primary key
+        :primary_key: list of the columns in the dataframe that should be the primary key
         :partition_by: a list of columns to partition_by, defaults to the empty list
         :online: whether the features are to be used for online serving
         :online_types: a dict with feature_name --> online_type, if a feature is present in this dict,
@@ -936,7 +936,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             num_bins=num_bins,
             corr_method=corr_method,
             num_clusters=num_clusters)
-    features_schema = _parse_spark_features_schema(spark_df.schema, None)
+    features_schema = _parse_spark_features_schema(spark_df.schema)
     featurestore_id = _get_featurestore_id(featurestore)
     featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     hopsfs_connector_id = None
@@ -1771,7 +1771,7 @@ def _do_get_online_featurestore_connector(featurestore, featurestore_metadata):
         return JDBCStorageConnector(response_object)
 
 
-def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key=None, description="", featurestore=None,
+def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key=[], description="", featurestore=None,
                             featuregroup_version=1, jobs=[],
                             descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
@@ -1785,8 +1785,8 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
     Args:
         :df: the dataframe to create the featuregroup for (used to infer the schema)
         :featuregroup: the name of the new featuregroup
-        :primary_key: the primary key of the new featuregroup, if not specified, the first column in the dataframe will
-                      be used as primary
+        :primary_key: list of names of columns to be the primary key of the new featuregroup, if not specified,
+                      the first column in the dataframe will be used as primary
         :description: a description of the featuregroup
         :featurestore: the featurestore of the featuregroup (defaults to the project's featurestore)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
@@ -1829,8 +1829,8 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
 
     fs_utils._validate_metadata(featuregroup, spark_df.dtypes, description)
 
-    if primary_key is None:
-        primary_key = fs_utils._get_default_primary_key(spark_df)
+    if len(primary_key) == 0:
+        primary_key = [fs_utils._get_default_primary_key(spark_df)]
     if util.get_job_name() is not None:
         jobs.append(util.get_job_name())
 
@@ -1894,10 +1894,10 @@ def _do_enable_featuregroup_online(featuregroup_name, featuregroup_version, feat
 
     spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore, featuregroup_version,
                                        constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,online=False)
-    primary_key = None
+    primary_key = []
     for feature in fg.features:
         if feature.primary:
-            primary_key = feature.name
+            primary_key.append(feature.name)
     features_schema = _parse_spark_features_schema(spark_df.schema, primary_key, [], online=True,
                                                    online_types=online_types)
     featuregroup_id = fg.id

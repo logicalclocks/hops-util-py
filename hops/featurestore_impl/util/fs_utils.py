@@ -285,21 +285,22 @@ def _validate_primary_key(featuregroup_df, primary_key):
 
     Args:
         :featuregroup_df: the featuregroup_df that should contain the primary key
-        :primary_key: the name of the primary key
+        :primary_key: list of names of the columns of the primary key
 
     Returns:
         True if the validation succeeded, otherwise raises an error
 
     Raises:
-        :InvalidPrimaryKey: when the primary key does not exist in the dataframe
+        :InvalidPrimaryKey: when one or more of the primary keys does not exist in the dataframe
     """
     cols = list(map(lambda x: x[0], featuregroup_df.dtypes))
-    if primary_key in cols:
-        return True
-    else:
-        raise InvalidPrimaryKey(
-            "Invalid primary key: {}, the specified primary key does not exists among the available columns: {}" \
-                .format(primary_key,cols))
+    for pk in primary_key:
+        if pk not in cols:
+            raise InvalidPrimaryKey(
+                "Invalid primary key: {}, the specified primary key does not exists among the available columns: {}" \
+                    .format(primary_key, cols))
+    return True
+
 
 
 def _do_get_featuregroups(featurestore_metadata, online):
