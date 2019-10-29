@@ -19,8 +19,7 @@ def load(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.load(local_path, **kwds)
 
 
@@ -39,8 +38,7 @@ def loadtxt(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.loadtxt(local_path, **kwds)
 
 def genfromtxt(hdfs_filename, **kwds):
@@ -58,8 +56,7 @@ def genfromtxt(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.genfromtxt(local_path, **kwds)
 
 def fromregex(hdfs_filename, **kwds):
@@ -76,8 +73,7 @@ def fromregex(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.fromregex(local_path, **kwds)
 
 def fromfile(hdfs_filename, **kwds):
@@ -94,8 +90,7 @@ def fromfile(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.fromregex(local_path, **kwds)
 
 
@@ -113,8 +108,7 @@ def memmap(hdfs_filename, **kwds):
      Raises:
       IOError: If the file does not exist
     """
-    hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = _copyHdfsToLocalOverwrite(hdfs_filename)
     return np.fromregex(local_path, **kwds)
 
 
@@ -131,9 +125,65 @@ def save(hdfs_filename, data):
     """
     local_file = os.path.basename(hdfs_filename)
     np.save(local_file, data)
+    _copyToHdfsOverwrite(hdfs_filename):
+
+def savez(hdfs_filename, *args, **kwds):
+    """
+    Save several arrays into a single file in uncompressed .npz format in HDFS
+    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc. 
+    If keyword arguments are given, the corresponding variable names, in the .npz file will match the keyword names.
+
+    Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
+       :args : Arguments, optional
+               Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
+               the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
+       :kwds : Keyword arguments, optional
+               Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
+
+    Returns: None
+
+    Raises:
+      IOError: If the local file does not exist
+    """
+    local_file = os.path.basename(hdfs_filename)
+    np.savez(local_file, *args, **kwds)
+    _copyToHdfsOverwrite(hdfs_filename):    
+
+def savez_compressed(hdfs_filename, *args, **kwds):
+    """
+    Save several arrays into a single file in uncompressed .npz format in HDFS
+    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc. 
+    If keyword arguments are given, the corresponding variable names, in the .npz file will match the keyword names.
+
+    Args:
+       :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
+       :args : Arguments, optional
+               Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
+               the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
+       :kwds : Keyword arguments, optional
+               Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
+
+    Returns: None
+
+    Raises:
+      IOError: If the local file does not exist
+    """
+    local_file = os.path.basename(hdfs_filename)
+    np.savez_compressed(local_file, *args, **kwds)
+    _copyToHdfsOverwrite(hdfs_filename):    
+
+
+def _copyHdfsToLocalOverwrite(hdfs_filename):
+    hdfs_path = hdfs._expand_path(hdfs_filename)
+    local_path = hdfs.copy_to_local(hdfs_path)
+    return local_path
+    
+def _copyToHdfsOverwrite(hdfs_filename):
+    local_file = os.path.basename(hdfs_filename)
     hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)
     if local_file in hdfs_path:
         # copy_to_hdfs expects directory to copy to, excluding the file name
         hdfs_path = hdfs_path.replace(local_file, "")
     hdfs.copy_to_hdfs(local_file, hdfs_path, overwrite=True)
-
+    
