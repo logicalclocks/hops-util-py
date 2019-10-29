@@ -788,9 +788,9 @@ class TestFeaturestoreSuite(object):
         teams_features_df = featurestore.get_featuregroup("teams_features")
         raw_schema = json.loads(teams_features_df.schema.json())
         raw_fields = raw_schema[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]
-        primary_keys = ["team_id"]
+        primary_key = ["team_id"]
         partition_by = []
-        parsed_feature = core._convert_field_to_feature_json(raw_fields[0], primary_keys, partition_by)
+        parsed_feature = core._convert_field_to_feature_json(raw_fields[0], primary_key, partition_by)
         assert constants.REST_CONFIG.JSON_FEATURE_NAME in parsed_feature
         assert constants.REST_CONFIG.JSON_FEATURE_TYPE in parsed_feature
         assert constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION in parsed_feature
@@ -933,15 +933,15 @@ class TestFeaturestoreSuite(object):
         teams_features_df = featurestore.get_featuregroup("teams_features")
         assert fs_utils._get_default_primary_key(teams_features_df) == "team_budget"
 
-    def test_validate_primary_keys(self):
-        """ Test _validate_primary_keys"""
+    def test_validate_primary_key(self):
+        """ Test _validate_primary_key"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         teams_features_df = featurestore.get_featuregroup("teams_features")
-        assert fs_utils._validate_primary_keys(teams_features_df, ["team_budget"])
-        assert fs_utils._validate_primary_keys(teams_features_df, ["team_id"])
-        assert fs_utils._validate_primary_keys(teams_features_df, ["team_position"])
+        assert fs_utils._validate_primary_key(teams_features_df, ["team_budget"])
+        assert fs_utils._validate_primary_key(teams_features_df, ["team_id"])
+        assert fs_utils._validate_primary_key(teams_features_df, ["team_position"])
         with pytest.raises(InvalidPrimaryKey) as ex:
-            fs_utils._validate_primary_keys(teams_features_df, ["wrong_key"])
+            fs_utils._validate_primary_key(teams_features_df, ["wrong_key"])
             assert "Invalid primary key" in ex.value
 
     def test_delete_table_contents(self):
@@ -2855,6 +2855,6 @@ class TestFeaturestoreSuite(object):
         rest_rpc._create_featuregroup_rest = mock.MagicMock(return_value=None)
         core._get_featurestore_metadata = mock.MagicMock(return_value=FeaturestoreMetadata(sample_metadata))
         teams_features_df = featurestore.get_featuregroup("teams_features")
-        featurestore.create_featuregroup(teams_features_df, "teams_features", primary_keys=["team_budget", "team_id"])
+        featurestore.create_featuregroup(teams_features_df, "teams_features", primary_key=["team_budget", "team_id"])
 
 

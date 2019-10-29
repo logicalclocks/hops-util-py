@@ -279,13 +279,13 @@ def _get_default_primary_key(featuregroup_df):
     return featuregroup_df.dtypes[0][0]
 
 
-def _validate_primary_keys(featuregroup_df, primary_keys):
+def _validate_primary_key(featuregroup_df, primary_key):
     """
     Validates a user-supplied primary key
 
     Args:
         :featuregroup_df: the featuregroup_df that should contain the primary key
-        :primary_keys: the name of the primary keys
+        :primary_key: list of names of the columns of the primary key
 
     Returns:
         True if the validation succeeded, otherwise raises an error
@@ -294,11 +294,11 @@ def _validate_primary_keys(featuregroup_df, primary_keys):
         :InvalidPrimaryKey: when one or more of the primary keys does not exist in the dataframe
     """
     cols = list(map(lambda x: x[0], featuregroup_df.dtypes))
-    for pk in primary_keys:
+    for pk in primary_key:
         if pk not in cols:
             raise InvalidPrimaryKey(
                 "Invalid primary key: {}, the specified primary key does not exists among the available columns: {}" \
-                    .format(primary_keys, cols))
+                    .format(primary_key, cols))
     return True
 
 
