@@ -127,7 +127,7 @@ def write_csv(hdfs_filename, dataframe, **kwds):
       dataframe.to_csv(f, **kwds)
 
 
-def write_parquet(hdfs_filename, dataframe, **kwargs **kwds):
+def write_parquet(hdfs_filename, dataframe, **kwds):
     """
       Writes a pandas dataframe to a parquet file in HDFS. Overwrites the file if it already exists
 
@@ -145,7 +145,7 @@ def write_parquet(hdfs_filename, dataframe, **kwargs **kwds):
       dataframe.to_parquet(f, **kwds)
 
 
-def write_json(hdfs_filename, dataframe, **kwargs **kwds):
+def write_json(hdfs_filename, dataframe, **kwds):
     """
       Writes a pandas dataframe to a JSON file in HDFS. Overwrites the file if it already exists
 
@@ -162,7 +162,7 @@ def write_json(hdfs_filename, dataframe, **kwargs **kwds):
     with h.open_file(hdfs_path, "wt") as f:
       dataframe.to_json(f, **kwds)
 
-def write_hdf(hdfs_filename, dataframe, **kwargs **kwds):
+def write_hdf(hdfs_filename, dataframe, **kwds):
     """
       Writes a pandas dataframe to a HDF file in HDFS. Overwrites the file if it already exists
 
