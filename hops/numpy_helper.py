@@ -125,7 +125,7 @@ def save(hdfs_filename, data):
     """
     local_file = os.path.basename(hdfs_filename)
     np.save(local_file, data)
-    _copyToHdfsOverwrite(hdfs_filename):
+    _copyToHdfsOverwrite(hdfs_filename)
 
 def savez(hdfs_filename, *args, **kwds):
     """
@@ -148,7 +148,7 @@ def savez(hdfs_filename, *args, **kwds):
     """
     local_file = os.path.basename(hdfs_filename)
     np.savez(local_file, *args, **kwds)
-    _copyToHdfsOverwrite(hdfs_filename):    
+    _copyToHdfsOverwrite(hdfs_filename)
 
 def savez_compressed(hdfs_filename, *args, **kwds):
     """
@@ -171,7 +171,7 @@ def savez_compressed(hdfs_filename, *args, **kwds):
     """
     local_file = os.path.basename(hdfs_filename)
     np.savez_compressed(local_file, *args, **kwds)
-    _copyToHdfsOverwrite(hdfs_filename):    
+    _copyToHdfsOverwrite(hdfs_filename)
 
 
 def _copyHdfsToLocalOverwrite(hdfs_filename):
