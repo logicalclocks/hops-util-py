@@ -135,10 +135,10 @@ def savez(hdfs_filename, *args, **kwds):
 
     Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
-       :args : Arguments, optional
+       :args: Arguments, optional
                Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
                the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
-       :kwds : Keyword arguments, optional
+       :kwds: Keyword arguments, optional
                Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
 
     Returns: None
@@ -158,10 +158,10 @@ def savez_compressed(hdfs_filename, *args, **kwds):
 
     Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
-       :args : Arguments, optional
+       :*args: Arguments, optional
                Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
                the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
-       :kwds : Keyword arguments, optional
+       :**kwds: Keyword arguments, optional
                Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
 
     Returns: None
@@ -186,4 +186,3 @@ def _copyToHdfsOverwrite(hdfs_filename):
         # copy_to_hdfs expects directory to copy to, excluding the file name
         hdfs_path = hdfs_path.replace(local_file, "")
     hdfs.copy_to_hdfs(local_file, hdfs_path, overwrite=True)
-    
