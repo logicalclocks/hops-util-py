@@ -64,28 +64,6 @@ def read_json(hdfs_filename, **kwds):
       data = pd.read_json(f, **kwds)
     return data
 
-def read_hdf(hdfs_filename, **kwds):
-    """
-      Retrieve pandas object stored in HDFS file, optionally based on where criteria
-
-
-
-      Args:
-         :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
-         :**kwds: You can add any additional args found in pandas.read_csv(...) 
-
-      Returns:
-        A pandas dataframe
-
-      Raises:
-        IOError: If the file does not exist
-    """
-    hdfs_path = hdfs._expand_path(hdfs_filename)    
-    h = hdfs.get_fs()
-    with h.open_file(hdfs_path, "rt") as f:
-      data = pd.read_hdf(f, **kwds)
-    return data
-
 def read_excel(hdfs_filename, **kwds):
     """
       Retrieve pandas object stored in HDFS file, optionally based on where criteria
@@ -162,21 +140,4 @@ def write_json(hdfs_filename, dataframe, **kwds):
     with h.open_file(hdfs_path, "wt") as f:
       dataframe.to_json(f, **kwds)
 
-def write_hdf(hdfs_filename, key, dataframe, **kwds):
-    """
-      Writes a pandas dataframe to a HDF file in HDFS. Overwrites the file if it already exists
-
-      Args:
-         :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
-         :key Identifier for the group in the store
-         :dataframe: a Pandas dataframe
-         :**kwds: You can add any additional args found in pandas.to_hdf(...) 
-
-      Raises:
-        IOError: If the file does not exist
-    """
-    hdfs_path = hdfs._expand_path(hdfs_filename, exists=False)    
-    h = hdfs.get_fs()
-    with h.open_file(hdfs_path, "wt") as f:
-      dataframe.to_hdf(f, key, **kwds)
       
