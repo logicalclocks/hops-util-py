@@ -4,22 +4,17 @@ Utility functions to manage the lifecycle of TensorFlow Extended (TFX) and Beam.
 
 """
 import subprocess
-import json
 import os
 import socket
 from random import randint
 import time
 import atexit
 
-from hops import constants
-from hops import util
-from hops import hdfs as hopsfs
-from hops import jobs
-from hops.exceptions import RestAPIError
+from hops import constants, util,hdfs as hopsfs, jobs, exceptions
 
 # Dict of running jobserver and their flink clusters
 clusters = []
-kill_runners = False
+cleanup_runners = False
 jobserver_host = ""
 jobserver_port = -1
 
@@ -64,7 +59,7 @@ def start_beam_jobserver(flink_session_name,
     if 'LOG_DIRS' in os.environ:
         log_base_path += os.environ['LOG_DIRS'] + "/"
 
-    beam_jobserver_log = log_base_path + "beamjobserver-" + hopsfs.project_name() + "-" + flink_session_name + \
+    beam_jobserver_log = log_base_path + "beamjobserver-" + hopsfs.project_name().lower() + "-" + flink_session_name + \
                           "-" + str(job_port) + ".log"
     # copy jar to local
     with open(beam_jobserver_log, "wb") as out, open(beam_jobserver_log, "wb") as err:
@@ -97,8 +92,8 @@ def start_beam_jobserver(flink_session_name,
 @atexit.register
 def exit_handler():
     global clusters
-    global kill_runners
-    if kill_runners:
+    global cleanup_runners
+    if cleanup_runners:
         for cluster in clusters:
             stop_runner(cluster)
 
@@ -164,7 +159,8 @@ def stop_runner(runner_name):
 
 
 def start(runner_name="runner", jobmanager_heap_size=1024,
-          num_of_taskmanagers=1, taskmanager_heap_size=4096, num_task_slots=1, kill_runner=False):
+          num_of_taskmanagers=1, taskmanager_heap_size=4096, num_task_slots=1, cleanup_runner=False,
+          ignore_running=False):
     """
     Creates and starts a Beam runner and then starts the beam job server.
 
@@ -176,21 +172,20 @@ def start(runner_name="runner", jobmanager_heap_size=1024,
         num_of_taskmanagers: The number of TaskManagers of the Flink cluster.
         taskmanager_heap_size: The memory(mb) of the each TaskManager in the Flink cluster.
         num_task_slots: Number of slots of the Flink cluster.
-        kill_runner: Kill runner when Python terminates
+        cleanup_runner: Kill runner when Python terminates
+        ignore_running: Ignore currently running instances of Runner
     Returns:
         The artifact_port, expansion_port, job_host, job_port, jobserver.pid
     """
-    global kill_runners
-    kill_runners = kill_runner
-    # If runner exists and is running, skip creating.
+    global cleanup_runners
+    cleanup_runners = cleanup_runner
     execution_found = True
-    try:
-        execution = jobs.get_current_execution(runner_name)
-        if 'items' in execution and execution['items'][0]['state'] != 'RUNNING':
-            execution_found = False
-    except RestAPIError as err:
-        if "HTTP code: 404" in err.args[0]:
-            execution_found = False
+    execution = jobs.get_executions(runner_name,
+                                    "?filter_by=state:INITIALIZING,RUNNING,ACCEPTED,NEW,NEW_SAVING,SUBMITTED,"
+                                    "STARTING_APP_MASTER,AGGREGATING_LOGS&sort_by=id:desc")
+    if ignore_running == False and execution['count'] > 0 :
+        raise exceptions.RestAPIError("Runner is already in state running, set ignore_running to True to start a "
+                                      "new instance")
 
     if not execution_found:
         job = create_runner(runner_name, jobmanager_heap_size, num_of_taskmanagers, taskmanager_heap_size, num_task_slots)
@@ -198,7 +193,8 @@ def start(runner_name="runner", jobmanager_heap_size=1024,
         # Wait 90 seconds until runner is in status "RUNNING", then start the jobserver
         wait = 90
         wait_count = 0
-        while wait_count < wait and jobs.get_current_execution(job['name'])['items'][0]['state'] != "RUNNING":
+        while wait_count < wait and jobs.get_executions(runner_name,
+                                                        "&offset=0&limit=1&sort_by=id:desc")['items'][0]['state'] != "RUNNING":
             time.sleep(5)
             wait_count += 5
 
