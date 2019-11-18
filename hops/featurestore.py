@@ -2245,3 +2245,91 @@ def disable_featuregroup_online(featuregroup_name, featuregroup_version=1, featu
                                             core._get_featurestore_metadata(featurestore, update_cache=True))
 
     fs_utils._log("Online Feature Serving disabled successfully for featuregroup: {}".format(featuregroup_name))
+
+
+def add_metadata(featuregroup_name, metadata, featuregroup_version=1, featurestore=None):
+    """
+    Attach custom metadata to a feature group
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> featurestore.add_metadata(featuregroup_name, {"attr1" : "val1", "attr2" : "val2"})
+    >>> # You can also explicitly override the default arguments:
+    >>> featurestore.add_metadata(featuregroup_name, {"attr1" : "val1", "attr2" : "val2"}, featuregroup_version=1, featurestore=featurestore)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :metadata: a dictionary of attributes to attach to the featuregroup
+        :featuregroup_version: version of the featuregroup
+        :featurestore: the featurestore that the featuregroup belongs to
+
+    Returns:
+        None
+    """
+    if type(metadata) is not dict:
+        raise ValueError("metadata should be a dictionary")
+
+    for k, v in metadata.items():
+        core._do_add_metadata(featuregroup_name, k, v, featurestore, featuregroup_version)
+
+
+def get_metadata(featuregroup_name, keys=[], featuregroup_version=1, featurestore=None):
+    """
+    Gets the custom metadata attached to a feature group
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> metadata = featurestore.get_metadata(featuregroup_name, ["attr1", "attr2"])
+    >>> # The API will return all associated metadata if no keys are supplied
+    >>> metadata = featurestore.get_metadata(featuregroup_name)
+    >>> # You can also explicitly override the default arguments:
+    >>> metadata = featurestore.get_metadata(featuregroup_name, ["attr1", "attr2"], featuregroup_version=1, featurestore=featurestore)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :keys: array of attribute names to read for the featuregroup associated metadata
+        :featuregroup_version: version of the featuregroup
+        :featurestore: the featurestore that the featuregroup belongs to
+
+    Returns:
+        The metadata dictionary attached to the featuregroup
+    """
+    if not keys:
+        return core._do_get_metadata(featuregroup_name=featuregroup_name, name=None, featurestore=featurestore, featuregroup_version=featuregroup_version)
+
+    if type(keys) is not list:
+        raise ValueError("keys should be a list")
+
+    vals = {}
+    for k in keys:
+        vals.update(core._do_get_metadata(featuregroup_name, k, featurestore, featuregroup_version))
+    return vals
+
+
+def remove_metadata(featuregroup_name, keys, featuregroup_version=1, featurestore=None):
+    """
+    Removes the custom metadata attached to a feature group
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> metadata = featurestore.remove_metadata(featuregroup_name, ["attr1", "attr2"])
+    >>> # You can also explicitly override the default arguments:
+    >>> metadata = featurestore.remove_metadata(featuregroup_name, ["attr1", "attr2"], featuregroup_version=1, featurestore=featurestore)
+
+    Args:
+        :featuregroup_name: name of the featuregroup
+        :keys: array of attribute names to be deleted from the featuregroup associated metadata
+        :featuregroup_version: version of the featuregroup
+        :featurestore: the featurestore that the featuregroup belongs to
+
+    Returns:
+        None
+    """
+    if type(keys) is not list:
+        raise ValueError("keys should be a list")
+
+    for k in keys:
+        core._do_remove_metadata(featuregroup_name, k, featurestore, featuregroup_version)
