@@ -32,7 +32,7 @@ webhdfs_address = None
 
 def get_plain_path(abs_path):
     """
-    Convert absolute HDFS path to plain path (dropping hdfs:// and ip)
+    Convert absolute HDFS/HOPSFS path to plain path (dropping prefix and ip)
 
     Example use-case:
 
@@ -40,10 +40,10 @@ def get_plain_path(abs_path):
     >>> # returns: "/Projects/demo_deep_learning_admin000/Models/"
 
      Args:
-         :abs_path: the absolute HDFS path containing hdfs:// and/or ip
+         :abs_path: the absolute HDFS/hopsfs path containing prefix and/or ip
 
     Returns:
-          the plain path without hdfs:// and ip
+          the plain path without prefix and ip
     """
     return path.split(path.abspath(abs_path))[2]
 
@@ -151,10 +151,10 @@ def _expand_path(hdfs_path, project="", exists=True):
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
     if hdfs_path.startswith("/Projects/") or hdfs_path.startswith("/Projects"):
         hdfs_path = "hdfs://" + hdfs_path
-    elif not hdfs_path.startswith("hdfs://"):
+    elif not (hdfs_path.startswith("hdfs://") or hdfs_path.startswith("hopsfs://")):
         # if the file URL type is not HDFS, throw an error
         if "://" in hdfs_path:
-            raise IOError("path %s must be a full hdfs path or a relative path" % hdfs_path)
+            raise IOError("path %s must be a full hopsfs path or a relative path" % hdfs_path)
         proj_path = project_path(project)
         hdfs_path = proj_path + hdfs_path
     if exists == True and not hdfs.path.exists(hdfs_path):
