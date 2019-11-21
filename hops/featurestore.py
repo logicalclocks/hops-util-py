@@ -402,14 +402,14 @@ def sql(query, featurestore=None, dataframe_type="spark", online=False):
     return fs_utils._return_dataframe_type(result, dataframe_type)
 
 
-def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append",
-                             descriptive_statistics=True, feature_correlation=True, feature_histograms=True,
-                             cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
-                             num_clusters=5, online=False, offline=True):
+def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append", online=False,
+                             offline=True):
     """
     Saves the given dataframe to the specified featuregroup. Defaults to the project-featurestore
-    This will append to  the featuregroup. To overwrite a featuregroup, create a new version of the featuregroup
-    from the UI and append to that table.
+    This will append to the featuregroup. To overwrite a featuregroup, create a new version of the featuregroup
+    from the UI and append to that table. Statistics will be updated depending on the settings made at creation time of
+    the feature group. To update and recompute previously disabled statistics, use the `update_featuregroup_stats`
+    method.
 
     Example usage:
 
@@ -429,17 +429,6 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
         :featurestore: the featurestore to save the featuregroup to (hive database)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
         :mode: the write mode, only 'overwrite' and 'append' are supported
-        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
-                                for the featuregroup
-        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
-                              in the featuregroup
-        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
-                          featuregroup
-        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        :num_bins: number of bins to use for computing histograms
-        :num_clusters: number of clusters to use for cluster analysis
-        :corr_method: the method to compute feature correlation with (pearson or spearman)
         :online: boolean flag whether to insert the data in the online version of the featuregroup
                  (assuming the featuregroup already has online feature serving enabled)
         :offline boolean flag whether to insert the data in the offline version of the featuregroup
@@ -455,29 +444,21 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
         core._do_insert_into_featuregroup(df, featuregroup,
                                           core._get_featurestore_metadata(featurestore, update_cache=False),
                                           featurestore=featurestore, featuregroup_version=featuregroup_version,
-                                          mode=mode, descriptive_statistics=descriptive_statistics,
-                                          feature_correlation=feature_correlation,
-                                          feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                          stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                          num_clusters=num_clusters, online=online, offline=offline)
+                                          mode=mode, online=online, offline=offline)
     except:
         # Retry with updated cache
         core._do_insert_into_featuregroup(df, featuregroup,
                                           core._get_featurestore_metadata(featurestore, update_cache=True),
                                           featurestore=featurestore, featuregroup_version=featuregroup_version,
-                                          mode=mode, descriptive_statistics=descriptive_statistics,
-                                          feature_correlation=feature_correlation,
-                                          feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                          stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                          num_clusters=num_clusters, online=online, offline=offline)
+                                          mode=mode, online=online, offline=offline)
 
 
-def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=True,
-                              feature_correlation=True, feature_histograms=True, cluster_analysis=True,
-                              stat_columns=None, num_bins=20, num_clusters=5, corr_method='pearson'):
+def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=None,
+                              feature_correlation=None, feature_histograms=None, cluster_analysis=None,
+                              stat_columns=None, num_bins=None, num_clusters=None, corr_method=None):
     """
-    Updates the statistics of a featuregroup by computing the statistics with spark and then saving it to Hopsworks by
-    making a REST call.
+    Updates the statistics settings of a featuregroup and recomputes the specified statistics with spark and then saves
+    them to Hopsworks by making a REST call. Leaving a setting set to `None` will keep the previous value.
 
     Example usage:
 
@@ -517,30 +498,21 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
         None
     """
     try:
+        # always update cache to get the metadata to have most recent settings
         core._do_update_featuregroup_stats(featuregroup,
-                                           core._get_featurestore_metadata(featurestore, update_cache=False),
+                                           core._get_featurestore_metadata(featurestore, update_cache=True),
                                            featuregroup_version=featuregroup_version, featurestore=featurestore,
                                            descriptive_statistics=descriptive_statistics,
                                            feature_correlation=feature_correlation,
-                                           feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                           stat_columns=stat_columns, num_bins=num_bins, num_clusters=num_clusters,
-                                           corr_method=corr_method)
-    except:
-        # Retry with updated cache
-        try:
-            core._do_update_featuregroup_stats(featuregroup,
-                                               core._get_featurestore_metadata(featurestore, update_cache=True),
-                                               featuregroup_version=featuregroup_version, featurestore=featurestore,
-                                               descriptive_statistics=descriptive_statistics,
-                                               feature_correlation=feature_correlation,
-                                               feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                               stat_columns=stat_columns, num_bins=num_bins, num_clusters=num_clusters,
-                                               corr_method=corr_method)
-        except Exception as e:
-            raise StatisticsComputationError("There was an error in computing the statistics for feature group: {}"
-                                             " , with version: {} in featurestore: {}. "
-                                             "Error: {}".format(featuregroup, featuregroup_version,
-                                                                featurestore, str(e)))
+                                           feature_histograms=feature_histograms,
+                                           cluster_analysis=cluster_analysis,
+                                           stat_columns=stat_columns, num_bins=num_bins,
+                                           corr_method=corr_method, num_clusters=num_clusters)
+    except Exception as e:
+        raise StatisticsComputationError("There was an error in computing the statistics for feature group: {}"
+                                         " , with version: {} in featurestore: {}. "
+                                         "Error: {}".format(featuregroup, featuregroup_version,
+                                                            featurestore, str(e)))
 
 
 def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, featurestore=None,
@@ -576,8 +548,8 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
     featurestore_id = core._get_featurestore_id(featurestore)
     featuregroup_type, featuregroup_type_dto = fs_utils._get_on_demand_featuregroup_type_info(featurestore_metadata)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
-                                       None, None, None, None, None, featuregroup_type, featuregroup_type_dto,
-                                       sql_query, jdbc_connector.id, False)
+                                       None, None, None, None, None, None, None, None, None, None, None, None, None,
+                                       featuregroup_type, featuregroup_type_dto, sql_query, jdbc_connector.id, False)
     # update metadata cache
     try:
         core._get_featurestore_metadata(featurestore, update_cache=True)
@@ -595,7 +567,10 @@ def create_featuregroup(df, featuregroup, primary_key=[], description="", featur
     """
     Creates a new cached featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call
     to create the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly
-    created table)
+    created table).
+
+    The settings for the computation of summary statistics will be saved and applied when new data is inserted. To
+    change the settings or recompute the statistics, use the `update_featuregroup_stats` method.
 
     Example usage:
 
@@ -1977,6 +1952,7 @@ def sync_hive_table_with_featurestore(featuregroup, description="", featurestore
 
     fs_utils._log("Hive Table: {} was successfully synchronized with Feature Store: {}".format(featuregroup,
                                                                                                featurestore))
+
 
 def import_featuregroup_redshift(storage_connector, query, featuregroup, primary_key=[], description="",
                                  featurestore=None, featuregroup_version=1, jobs=[], descriptive_statistics=True,
