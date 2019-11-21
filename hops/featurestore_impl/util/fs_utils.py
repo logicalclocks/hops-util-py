@@ -935,6 +935,46 @@ def _structure_feature_corr_json(feature_corr_dict):
     return correlation_matrix_dict
 
 
+def _do_prepare_stats_settings(featuregroup, featuregroup_version, featurestore_metadata, descriptive_statistics,
+                               feature_correlation, feature_histograms, cluster_analysis, stat_columns, num_bins,
+                               num_clusters, corr_method):
+    """
+    Sanetises the input and replaces the None settings with the current setting instead.
+
+    Args:
+        :featuregroup: the featuregroup concerned
+        :featuregroup_version: the version of the featuregroup
+        :featurestore_metadata: the featurestore metadata to compare against
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
+                                 for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
+                              in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
+                           featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use in clustering analysis (k-means)
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+
+    Returns:
+        [type]: [description]
+    """
+    table_name = _get_table_name(featuregroup, featuregroup_version)
+    fg = featurestore_metadata.featuregroups[table_name]
+    result = {
+        "desc_stats_enabled": descriptive_statistics if descriptive_statistics else fg.desc_stats_enabled,
+        "feat_corr_enabled": feature_correlation if feature_correlation else fg.feat_corr_enabled,
+        "feat_hist_enabled": feature_histograms if feature_histograms else fg.feat_hist_enabled,
+        "cluster_analysis_enabled": cluster_analysis if cluster_analysis else fg.cluster_analysis_enabled,
+        "stat_columns": stat_columns if stat_columns else fg.stat_columns,
+        "num_bins": num_bins if num_bins else fg.num_bins,
+        "num_clusters": num_clusters if num_clusters else fg.num_clusters,
+        "corr_method": corr_method if corr_method else fg.corr_method
+    }
+    return result
+
+
 def _do_get_project_featurestore():
     """
     Gets the project's featurestore name (project_featurestore)

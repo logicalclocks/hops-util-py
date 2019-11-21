@@ -165,8 +165,10 @@ def _pre_process_jobs_list(jobNames):
 
 def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                               features_schema, feature_corr_data, featuregroup_desc_stats_data,
-                              features_histogram_data, cluster_analysis_data, featuregroup_type,
-                              featuregroup_dto_type, sql_query, jdbc_connector_id, online_fg):
+                              features_histogram_data, cluster_analysis_data, feature_corr_enabled,
+                              featuregroup_desc_stats_enabled, features_histogram_enabled,
+                              cluster_analysis_enabled, stat_columns, num_bins, num_clusters, corr_method,
+                              featuregroup_type, featuregroup_dto_type, sql_query, jdbc_connector_id, online_fg):
     """
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
@@ -181,6 +183,14 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
         :featuregroup_desc_stats_data: json-string with the descriptive statistics of the featurergroup
         :features_histogram_data: list of json-strings with histogram data for the features in the featuregroup
         :cluster_analysis_data: cluster analysis for the featuregroup
+        :feature_corr_enabled: boolean to save feature correlation setting of the featuregroup
+        :featuregroup_desc_stats_enabled: boolean to save descriptive statistics setting of the featuregroup
+        :features_histogram_enabled: boolean to save features histogram setting of the featuregroup
+        :cluster_analysis_enabled: boolean to save cluster analysis setting of the featuregroup
+        :stat_columns: a list of columns to compute statistics for
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use for cluster analysis
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
         :featuregroup_type: type of the featuregroup (on-demand or cached)
         :featuregroup_dto_type: type of the JSON DTO for the backend
         :sql_query: SQL Query for On-demand feature groups
@@ -204,7 +214,15 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_ONLINE: online_fg
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_ONLINE: online_fg,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_CLUSTER_ANALYSIS_ENABLED: cluster_analysis_enabled,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED: featuregroup_desc_stats_enabled,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED: feature_corr_enabled,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_HISTOGRAM_ENABLED: features_histogram_enabled,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_STATISTIC_COLUMNS: stat_columns,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS: num_bins,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method
                      }
     if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
@@ -234,7 +252,9 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
 
 def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_corr,
                                     featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data,
-                                    featuregroup_type, featuregroup_dto_type, jobs):
+                                    descriptive_statistics, feature_correlation, feature_histograms, cluster_analysis,
+                                    stat_columns, num_bins, num_clusters, corr_method, featuregroup_type,
+                                    featuregroup_dto_type, jobs):
     """
     Makes a REST call to hopsworks appservice for updating the statistics of a particular featuregroup
 
@@ -245,6 +265,14 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
         :featuregroup_desc_stats_data: the descriptive statistics of the featuregroup
         :features_histogram_data: the histograms of the features in the featuregroup
         :cluster_analysis_data: the clusters from cluster analysis on the featuregroup
+        :descriptive_statistics: the setting to be saved for descripte statistics of the featuregroup
+        :feature_correlation: the setting to be saved for feature correlation of the featuregroup
+        :feature_histograms: the setting to be saved for feature histograms of the featuregroup
+        :cluster_analysis: the setting to be saved for cluster analysis of the featuregroup
+        :stat_columns: the columns to compute statistics of the featuregroup for
+        :num_bins: the number of bins to use for the histograms of the featuregroup
+        :num_clusters: the number of clusters to use for the cluster analysis of the featuregroup
+        :corr_method: the correlation method to use for the correlation analysis of the featuregroup
         :featuregroup_type: type of the featuregroup (on-demand or cached)
         :featuregroup_dto_type: type of the JSON DTO for the backend
         :jobs: a list of jobs for updating the feature group stats
@@ -260,6 +288,14 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED: feature_correlation,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED: descriptive_statistics,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_HISTOGRAM_ENABLED: feature_histograms,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_CLUSTER_ANALYSIS_ENABLED: cluster_analysis,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_STATISTIC_COLUMNS: stat_columns,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS: num_bins,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
                      }
@@ -281,6 +317,8 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                     constants.REST_CONFIG.JSON_FEATURESTORE_ENABLE_ONLINE_QUERY_PARAM
                     + "=false" + constants.DELIMITERS.AMPERSAND_DELIMITER +
                     constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM + "=false"
+                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATISTICS_SETTINGS + "=true"
                     )
     response = util.send_request(method, resource_url, data=json_embeddable, headers=headers)
     response_object = response.json()
