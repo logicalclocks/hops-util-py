@@ -939,7 +939,7 @@ def _do_prepare_stats_settings(featuregroup, featuregroup_version, featurestore_
                                feature_correlation, feature_histograms, cluster_analysis, stat_columns, num_bins,
                                num_clusters, corr_method):
     """
-    Sanitises the input and replaces the None settings with the current setting instead.
+    Sanitizes the input and replaces the None settings with the current setting instead.
 
     Args:
         :featuregroup: the featuregroup concerned

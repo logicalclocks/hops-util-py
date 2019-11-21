@@ -1021,7 +1021,7 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
                                                            "feature groups."
                                                            .format(featuregroup_name, featuregroup_version))
 
-    # Sanitise input and check for changed settings
+    # Sanitize input and check for changed settings
     group_settings = fs_utils._do_prepare_stats_settings(
             featuregroup_name, featuregroup_version, featurestore_metadata, descriptive_statistics, feature_correlation,
             feature_histograms, cluster_analysis, stat_columns, num_bins, num_clusters, corr_method)
