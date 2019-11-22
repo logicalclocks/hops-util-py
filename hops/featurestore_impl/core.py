@@ -914,7 +914,12 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
 
     if storage_connector is None:
         storage_connector = _do_get_storage_connector(fs_utils._do_get_project_training_datasets_sink(), featurestore)
-    fs_utils._validate_metadata(training_dataset, spark_df.dtypes, description)
+
+    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
+
+    fs_utils._validate_metadata(
+        training_dataset, spark_df.dtypes, description, featurestore_metadata.settings)
+
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, training_dataset, version=training_dataset_version,
@@ -925,7 +930,6 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             num_clusters=num_clusters)
     features_schema = _parse_spark_features_schema(spark_df.schema)
     featurestore_id = _get_featurestore_id(featurestore)
-    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     hopsfs_connector_id = None
     s3_connector_id = None
     if storage_connector.type == featurestore_metadata.settings.hopsfs_connector_type:
@@ -1823,7 +1827,8 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
             "the Feature Store, error: {}".format(
                 str(e)))
 
-    fs_utils._validate_metadata(featuregroup, spark_df.dtypes, description)
+    fs_utils._validate_metadata(
+        featuregroup, spark_df.dtypes, description, featurestore_metadata.settings)
 
     if len(primary_key) == 0:
         primary_key = [fs_utils._get_default_primary_key(spark_df)]
