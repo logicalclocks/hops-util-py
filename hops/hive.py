@@ -23,7 +23,7 @@ def setup_hive_connection(database=None):
         'keystore_password' : tls._get_cert_pw()
     }
 
-    database_name = database if database != None else os.environ['PROJECT_NAME']
+    database_name = database if database else os.environ['PROJECT_NAME']
 
     os.environ['DATABASE_URL'] = "hive://" + os.environ['HIVE_ENDPOINT'] + "/" + database_name + '?'
     os.environ['DATABASE_URL'] = os.environ['DATABASE_URL'] + '&'.join(['%s=%s' % (key, value) for (key, value) in connection_conf.items()])
