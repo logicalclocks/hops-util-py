@@ -250,7 +250,8 @@ def _compute_dataframe_stats(spark_df, name, version=1, descriptive_statistics=T
             fs_utils._log("computing descriptive statistics for : {}, version: {}".format(name, version))
             spark.sparkContext.setJobGroup("Descriptive Statistics Computation",
                                            "Analyzing Dataframe Statistics for : {}, version: {}".format(name, version))
-            desc_stats_json = fs_utils._compute_descriptive_statistics(spark_df)
+            spark_df_filtered = fs_utils._filter_spark_df_numeric(spark_df)
+            desc_stats_json = fs_utils._compute_descriptive_statistics(spark_df_filtered)
             desc_stats_data = fs_utils._structure_descriptive_stats_json(desc_stats_json)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
