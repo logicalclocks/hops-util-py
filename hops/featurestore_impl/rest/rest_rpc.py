@@ -3,7 +3,8 @@ REST calls to Hopsworks Feature Store Service
 """
 
 from hops import constants, util, hdfs
-from hops.exceptions import RestAPIError, StatisticsComputationError
+from hops.exceptions import RestAPIError
+from hops.featurestore_impl.exceptions.exceptions import StatisticsComputationError
 import json
 
 
