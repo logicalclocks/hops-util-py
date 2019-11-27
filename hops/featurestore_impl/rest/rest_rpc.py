@@ -3,7 +3,7 @@ REST calls to Hopsworks Feature Store Service
 """
 
 from hops import constants, util, hdfs
-from hops.exceptions import RestAPIError
+from hops.exceptions import RestAPIError, StatisticsComputationError
 import json
 
 
@@ -227,13 +227,13 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
     if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID] = jdbc_connector_id
-
     try:
         json_embeddable = json.dumps(json_contents, allow_nan=False)
     except ValueError as e:
-        raise ValueError(
-            "Featuregroup statistics are out of range (nan, inf, -inf). Consider removing String type columns from " +
-            "statistics computation.")
+        # add more information to message for user
+        raise StatisticsComputationError(
+            "Feature group statistics are out of range (nan, inf, -inf are not supported). {}. Consider excluding "
+            "string type columns from statistics computation.".format(str(e)))
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
@@ -304,7 +304,13 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
                      }
-    json_embeddable = json.dumps(json_contents, allow_nan=False)
+    try:
+        json_embeddable = json.dumps(json_contents, allow_nan=False)
+    except ValueError as e:
+        # add more information to message for user
+        raise StatisticsComputationError(
+            "Feature group statistics are out of range (nan, inf, -inf are not supported). {}. Consider excluding "
+            "string type columns from statistics computation.".format(str(e)))
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
@@ -494,7 +500,13 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
         json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_S3_CONNECTOR_ID] = s3_connector_id
     if training_dataset_type == settings.hopsfs_training_dataset_type:
         json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_HOPSFS_CONNECTOR_ID] = hopsfs_connector_id
-    json_embeddable = json.dumps(json_contents, allow_nan=False)
+    try:
+        json_embeddable = json.dumps(json_contents, allow_nan=False)
+    except ValueError as e:
+        # add more information to message for user
+        raise StatisticsComputationError(
+            "Training dataset statistics are out of range (nan, inf, -inf are not supported). {}. Consider excluding "
+            "string type columns from statistics computation.".format(str(e)))
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
@@ -547,7 +559,13 @@ def _update_training_dataset_stats_rest(
                      constants.REST_CONFIG.JSON_TYPE: training_dataset_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBS: _pre_process_jobs_list(jobs)}
-    json_embeddable = json.dumps(json_contents, allow_nan=False)
+    try:
+        json_embeddable = json.dumps(json_contents, allow_nan=False)
+    except ValueError as e:
+        # add more information to message for user
+        raise StatisticsComputationError(
+            "Training dataset statistics are out of range (nan, inf, -inf are not supported). {}. Consider excluding "
+            "string type columns from statistics computation.".format(str(e)))
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
