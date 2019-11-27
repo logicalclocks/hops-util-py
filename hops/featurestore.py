@@ -508,6 +508,9 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
                                            cluster_analysis=cluster_analysis,
                                            stat_columns=stat_columns, num_bins=num_bins,
                                            corr_method=corr_method, num_clusters=num_clusters)
+    except ValueError:
+        # keep original stacktrace
+        raise
     except Exception as e:
         raise StatisticsComputationError("There was an error in computing the statistics for feature group: {}"
                                          " , with version: {} in featurestore: {}. "
@@ -1262,7 +1265,7 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
                                                    num_clusters=num_clusters)
         except Exception as e:
             raise StatisticsComputationError("There was an error in computing the statistics for training dataset: {}"
-                                            " , with version: {} in featurestore: {}. "
+                                            ", with version: {} in featurestore: {}. "
                                             "Error: {}".format(training_dataset, training_dataset_version,
                                                                featurestore, str(e)))
 
