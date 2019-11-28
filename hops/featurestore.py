@@ -1262,7 +1262,7 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
                                                    num_clusters=num_clusters)
         except Exception as e:
             raise StatisticsComputationError("There was an error in computing the statistics for training dataset: {}"
-                                            " , with version: {} in featurestore: {}. "
+                                            ", with version: {} in featurestore: {}. "
                                             "Error: {}".format(training_dataset, training_dataset_version,
                                                                featurestore, str(e)))
 
