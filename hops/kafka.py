@@ -128,8 +128,9 @@ def get_schema(topic):
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_KAFKA_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_TOPICS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    topic + constants.DELIMITERS.SLASH_DELIMITER + \
-                   constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
+                   constants.REST_CONFIG.HOPSWORKS_SUBJECTS_RESOURCE
     response = util.send_request(method, resource_url)
     response_object = response.json()
 
@@ -139,7 +140,7 @@ def get_schema(topic):
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
-    return response_object
+    return response_object['schema']
 
 
 def parse_avro_msg(msg, avro_schema):
