@@ -1964,6 +1964,60 @@ def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_me
                                                                    .format(storage_connector.type))
 
 
+def _do_add_metadata(featuregroup_name, name, value, featurestore=None, featuregroup_version=1):
+    """
+    Attach custom metadata to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :value: the value of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          None
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    rest_rpc._add_metadata(featurestore_id, featuregroup_id, name, value)
+
+
+def _do_get_metadata(featuregroup_name, name=None, featurestore=None, featuregroup_version=1):
+    """
+    Get the custom metadata attached to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          A dictionary containing the metadata attached to the featuregroup
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    return rest_rpc._get_metadata(featurestore_id, featuregroup_id, name)
+
+
+def _do_remove_metadata(featuregroup_name, name, featurestore=None, featuregroup_version=1):
+    """
+    Remove the custom metadata attached to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          None
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    rest_rpc._remove_metadata(featurestore_id, featuregroup_id, name)
+
 # Fetch on-load and cache it on the client
 try:
     metadata_cache = _get_featurestore_metadata(featurestore=fs_utils._do_get_project_featurestore())
