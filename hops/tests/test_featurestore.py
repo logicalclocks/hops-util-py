@@ -590,6 +590,26 @@ class TestFeaturestoreSuite(object):
                                         "description", featurestore_metadata.settings)
             assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("",
+                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("TEST",
+                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("test",
+                                        [('TEAM_BUDGET', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("test",
+                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [],
                                         "description", featurestore_metadata.settings)
