@@ -661,8 +661,8 @@ def _validate_metadata(name, dtypes, description, featurestore_settings):
     Raises:
         :ValueError: if the metadata does not match the required validation rules
     """
-    name_pattern = re.compile(featurestore_settings.featurestore_regex)
-    if len(name) > 256 or name == "" or not name_pattern.match(name):
+    name_pattern = featurestore_settings.featurestore_regex
+    if len(name) > 256 or not name_pattern.match(name):
         raise ValueError("Name of feature group/training dataset cannot be empty, cannot contain upper case characters,"
                          " cannot exceed 256 characters, and must match the regular expression: {}, the provided name: "
                          "{} is not valid".format(featurestore_settings.featurestore_regex, name))
@@ -670,7 +670,7 @@ def _validate_metadata(name, dtypes, description, featurestore_settings):
         raise ValueError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
+        if len(dtype[0]) > 767 or not name_pattern.match(dtype[0]):
             raise ValueError("Name of feature column cannot be empty, cannot contain upper case characters, cannot "
                              "exceed 767 characters, and must match the regular expression: {}, the provided "
                              "feature name: {} is not valid"

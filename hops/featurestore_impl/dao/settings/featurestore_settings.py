@@ -1,5 +1,7 @@
 from hops import constants
 
+import re
+
 class FeaturestoreSettings():
     """
     Represents a feature store settings
@@ -30,7 +32,8 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_EXTERNAL_TRAINING_DATASET_TYPE]
         self.featuregroup_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE]
-        self.featurestore_regex = settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATURESTORE_REGEX]
+        self.featurestore_regex = re.compile(
+            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATURESTORE_REGEX])
         self.max_correlations = settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_MAX_CORRELATIONS]
         self.hopsfs_connector_dto_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HOPSFS_CONNECTOR_DTO_TYPE]
