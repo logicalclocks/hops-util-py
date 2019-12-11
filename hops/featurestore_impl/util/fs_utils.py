@@ -644,7 +644,7 @@ def _convert_dataframe_to_spark(dataframe):
             type(dataframe)))
 
 
-def _validate_metadata(name, dtypes, description):
+def _validate_metadata(name, dtypes, description, featurestore_settings):
     """
     Function for validating metadata when creating new feature groups and training datasets.
     Raises and assertion exception if there is some error in the metadata.
@@ -653,6 +653,7 @@ def _validate_metadata(name, dtypes, description):
         :name: the name of the feature group/training dataset
         :dtypes: the dtypes in the provided spark dataframe
         :description: the description
+        :featurestore_regex: Regex string to match featuregroup/training dataset and feature names with
 
     Returns:
         None
@@ -660,19 +661,20 @@ def _validate_metadata(name, dtypes, description):
     Raises:
         :ValueError: if the metadata does not match the required validation rules
     """
-    name_pattern = re.compile("^[a-zA-Z0-9_]+$")
-    if len(name) > 256 or name == "" or not name_pattern.match(name):
-        raise ValueError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters,"
-                         " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} "
-                         "is not valid".format(name))
+    name_pattern = featurestore_settings.featurestore_regex
+    if len(name) > 256 or not name_pattern.match(name):
+        raise ValueError("Name of feature group/training dataset cannot be empty, cannot contain upper case characters,"
+                         " cannot exceed 256 characters, and must match the regular expression: {}, the provided name: "
+                         "{} is not valid".format(featurestore_settings.featurestore_regex, name))
     if len(dtypes) == 0:
         raise ValueError("Cannot create a feature group from an empty spark dataframe")
 
     for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
-            raise ValueError("Name of feature column cannot be empty, cannot exceed 767 characters,"
-                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
-                             "feature name: {} is not valid".format(dtype[0]))
+        if len(dtype[0]) > 767 or not name_pattern.match(dtype[0]):
+            raise ValueError("Name of feature column cannot be empty, cannot contain upper case characters, cannot "
+                             "exceed 767 characters, and must match the regular expression: {}, the provided "
+                             "feature name: {} is not valid"
+                             .format(featurestore_settings.featurestore_regex, dtype[0]))
 
     if len(description) > 2000:
         raise ValueError(

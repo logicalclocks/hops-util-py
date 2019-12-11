@@ -578,36 +578,57 @@ class TestFeaturestoreSuite(object):
         assert result["num_clusters"] == 10
         assert result["corr_method"] == "spearman"
 
-    def test_validate_metadata(self):
+    def test_validate_metadata(self, sample_metadata):
         """ Test the validate_metadata() function"""
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
         fs_utils._validate_metadata("test",
                                     [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    "description")
+                                    "description", featurestore_metadata.settings)
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test-",
                                         [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
-            assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("",
+                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("TEST",
+                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("test",
+                                        [('TEAM_BUDGET', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("test",
+                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [],
-                                        "description")
+                                        "description", featurestore_metadata.settings)
             assert "Cannot create a feature group from an empty spark dataframe" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [('team_budget-', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
-            assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
+                                        "description", featurestore_metadata.settings)
+            assert "must match the regular expression: ^[a-z0-9_]+$" in ex.value
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
+                                        "description", featurestore_metadata.settings)
             assert "Name of feature column cannot be empty" in ex.value
         description = ''.join(choice(ascii_uppercase) for i in range(3000))
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        description)
+                                        description, featurestore_metadata.settings)
             assert "Feature group/Training dataset description should " \
                    "not exceed the maximum length of 2000 characters" in ex.value
 

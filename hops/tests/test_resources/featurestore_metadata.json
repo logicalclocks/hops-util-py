@@ -2441,7 +2441,7 @@
       "S3"
     ],
     "featuregroupType": "FEATURE GROUP",
-    "featurestoreRegex": "^[a-zA-Z0-9_]+$",
+    "featurestoreRegex": "^[a-z0-9_]+$",
     "featurestoreStatisticsMaxCorrelations": 50,
     "featurestoreUtil4jArgsDataset": "Resources",
     "featurestoreUtil4jExecutable": "/user/spark/hops-examples-featurestore-util4j-1.0.0-SNAPSHOT.jar",
