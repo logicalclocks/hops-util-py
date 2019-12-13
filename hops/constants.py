@@ -525,6 +525,8 @@ class REST_CONFIG:
     HOPSWORKS_EXECUTIONS_RESOURCE = "executions"
 
     HOPSWORKS_XATTR_RESOURCE = "xattrs"
+    HOPSWORKS_ELASTIC_RESOURCE = "elastic"
+    HOPSWORKS_ELASTIC_JWT_RESOURCE = "jwt"
 
     JSON_DESCRIPTIVE_STATS_FEATURE_NAME= "featureName"
     JSON_DESCRIPTIVE_STATS_METRIC_VALUES= "metricValues"
@@ -606,3 +608,14 @@ class AWS:
 
 class XATTRS:
     XATTRS_PARAM_NAME = 'name'
+
+class ELASTICSEARCH_CONFIG:
+    SSL_CONFIG = "es.net.ssl"
+    NODES_WAN_ONLY = "es.nodes.wan.only"
+    NODES = "es.nodes"
+    SSL_KEYSTORE_LOCATION = "es.net.ssl.keystore.location"
+    SSL_KEYSTORE_PASSWORD = "es.net.ssl.keystore.pass"
+    SSL_TRUSTSTORE_LOCATION = "es.net.ssl.truststore.location"
+    SSL_TRUSTSTORE_PASSWORD = "es.net.ssl.truststore.pass"
+    HTTP_AUTHORIZATION = "es.net.http.header.Authorization"
+    INDEX = "es.resource"
