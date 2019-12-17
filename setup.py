@@ -48,7 +48,7 @@ setup(
     },
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
-    description='A helper library for Hops that facilitates development by hiding the complexity of discovering services and setting up security.',
+    description='Client library for interacting with Hopsworks, a full-stack platform for scale-out data science.',
     license='Apache License 2.0',
     keywords='Hops, Hadoop, TensorFlow, Spark',
     url='https://github.com/logicalclocks/hops-util-py',

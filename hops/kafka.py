@@ -175,8 +175,6 @@ def convert_json_schema_to_avro(json_schema):
         return avro.schema.parse(json_schema)
 
 
-
-
 class KafkaTopicDTO(object):
     """
     Represents a KafkaTopic in Hopsworks
@@ -190,4 +188,3 @@ class KafkaTopicDTO(object):
             :kafka_topic_dto_json: JSON data about the kafka topic returned from Hopsworks REST API
         """
         self.name = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_NAME]
-        self.schema_version = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_SCHEMA_VERSION]

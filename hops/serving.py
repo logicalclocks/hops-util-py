@@ -4,6 +4,7 @@ in the project.
 """
 
 from hops import hdfs, constants, util, exceptions, kafka
+from hops.experiment_impl.util import experiment_utils
 import os
 import json
 import re
@@ -25,8 +26,7 @@ def exists(serving_name):
            True if the serving exists, otherwise false
     """
     try:
-        get_id(serving_name)
-        return True
+        return get_id(serving_name) is not None
     except ServingNotFound as e:
         print("No serving with name {} was found in the project {}".format(serving_name, hdfs.project_name()))
         return False
@@ -162,9 +162,9 @@ def _start_or_stop_serving_rest(serving_id, action):
 
 def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", model_version=1,
                              batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
-                             instances = 1, update = False):
+                             instances = 1):
     """
-    Creates or updates a serving in Hopsworks
+    Creates a serving in Hopsworks if it does not exist, otherwise update the existing one.
 
     Example use-case:
 
@@ -177,16 +177,13 @@ def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", mod
         :serving_type: type of the serving, e.g "TENSORFLOW" or "SKLEARN"
         :model_version: version of the model to serve
         :batching_enabled: boolean flag whether to enable batching for the inference requests
-        :update: boolean flag whether to update existing serving, otherwise it will try to create a new serving
         :instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
 
     Returns:
           None
     """
-    serving_id = None
-    if update:
-        serving_id = get_id(serving_name)
+    serving_id = get_id(serving_name)
     artifact_path = hdfs._expand_path(artifact_path)
     _validate_user_serving_input(artifact_path, serving_name, serving_type, model_version, batching_enabled,
                                  num_partitions, num_replicas, instances)
@@ -306,139 +303,6 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
                                       "user msg: {}".format(resource_url, response.status_code, response.reason,
                                                             error_code, error_msg, user_msg))
 
-
-def export(model_path, model_name, model_version=1, overwrite=False):
-    """
-    Copies a trained model to the Models directory in the project and creates the directory structure of:
-
-    >>> Models
-    >>>      |
-    >>>      - model_name
-    >>>                 |
-    >>>                 - version_x
-    >>>                 |
-    >>>                 - version_y
-
-    For example if you run this:
-
-    >>> serving.export("iris_knn.pkl", "irisFlowerClassifier", 1, overwrite=True)
-
-    it will copy the local model file "iris_knn.pkl" to /Projects/projectname/Models/irisFlowerClassifier/1/iris.knn.pkl
-    on HDFS, and overwrite in case there already exists a file with the same name in the directory.
-
-    If you run:
-
-    >>> serving.export("Resources/iris_knn.pkl", "irisFlowerClassifier", 1, overwrite=True)
-
-    it will first check if the path Resources/iris_knn.pkl exists on your local filesystem in the current working
-    directory. If the path was not found, it will check in your project's HDFS directory and if it finds the model there
-    it will copy it to /Projects/projectname/Models/irisFlowerClassifier/1/iris.knn.pkl
-
-    If "model" is a directory on the local path exported by tensorflow, and you run:
-:
-    >>> serving.export("/model/", "mnist", 1, overwrite=True)
-
-    It will copy the model directory contents to /Projects/projectname/Models/mnist/1/ , e.g the "model.pb" file and
-    the "variables" directory.
-
-    Args:
-        :model_path: path to the trained model (HDFS or local)
-        :model_name: name of the model/serving
-        :model_version: version of the model/serving
-        :overwrite: boolean flag whether to overwrite in case a serving already exists in the exported directory
-
-    Returns:
-        The path to where the model was exported
-
-    Raises:
-        :ValueError: if there was an error with the exportation of the model due to invalid user input
-    """
-
-    if not hdfs.exists(model_path) and not os.path.exists(model_path):
-        raise ValueError("the provided model_path: {} , does not exist in HDFS or on the local filesystem".format(
-            model_path))
-
-    # Create directory in HDFS to put the model files
-    project_path = hdfs.project_path()
-    model_dir_hdfs = project_path + constants.MODEL_SERVING.MODELS_DATASET + \
-                     constants.DELIMITERS.SLASH_DELIMITER + str(model_name) + \
-                     constants.DELIMITERS.SLASH_DELIMITER + str(model_version) + \
-                     constants.DELIMITERS.SLASH_DELIMITER
-    if not hdfs.exists(model_dir_hdfs):
-        hdfs.mkdir(model_dir_hdfs)
-
-    if (not overwrite) and hdfs.exists(model_dir_hdfs) and hdfs.isfile(model_dir_hdfs):
-        raise ValueError("Could not create model directory: {}, the path already exists and is a file, "
-                         "set flag overwrite=True "
-                         "to remove the file and create the correct directory structure".format(model_dir_hdfs))
-
-    if overwrite and hdfs.exists(model_dir_hdfs) and hdfs.isfile(model_dir_hdfs):
-        hdfs.delete(model_dir_hdfs)
-        hdfs.mkdir(model_dir_hdfs)
-
-
-    # Export the model files
-    if os.path.exists(model_path):
-        return _export_local_model(model_path, model_dir_hdfs, overwrite)
-    else:
-        return _export_hdfs_model(model_path, model_dir_hdfs, overwrite)
-
-
-def _export_local_model(local_model_path, model_dir_hdfs, overwrite):
-    """
-    Exports a local directory of model files to Hopsworks "Models" dataset
-
-     Args:
-        :local_model_path: the path to the local model files
-        :model_dir_hdfs: path to the directory in HDFS to put the model files
-        :overwrite: boolean flag whether to overwrite existing model files
-
-    Returns:
-           the path to the exported model files in HDFS
-    """
-    if os.path.isdir(local_model_path):
-        if not local_model_path.endswith(constants.DELIMITERS.SLASH_DELIMITER):
-            local_model_path = local_model_path + constants.DELIMITERS.SLASH_DELIMITER
-        for filename in os.listdir(local_model_path):
-            hdfs.copy_to_hdfs(local_model_path + filename, model_dir_hdfs, overwrite=overwrite)
-
-    if os.path.isfile(local_model_path):
-        hdfs.copy_to_hdfs(local_model_path, model_dir_hdfs, overwrite=overwrite)
-
-    return model_dir_hdfs
-
-
-def _export_hdfs_model(hdfs_model_path, model_dir_hdfs, overwrite):
-    """
-    Exports a hdfs directory of model files to Hopsworks "Models" dataset
-
-     Args:
-        :hdfs_model_path: the path to the model files in hdfs
-        :model_dir_hdfs: path to the directory in HDFS to put the model files
-        :overwrite: boolean flag whether to overwrite in case a model already exists in the exported directory
-
-    Returns:
-           the path to the exported model files in HDFS
-    """
-    if hdfs.isdir(hdfs_model_path):
-        for file_source_path in hdfs.ls(hdfs_model_path):
-            model_name = file_source_path
-            if constants.DELIMITERS.SLASH_DELIMITER in file_source_path:
-                last_index = model_name.rfind(constants.DELIMITERS.SLASH_DELIMITER)
-                model_name = model_name[last_index + 1:]
-            dest_path = model_dir_hdfs + constants.DELIMITERS.SLASH_DELIMITER + model_name
-            hdfs.cp(file_source_path, dest_path)
-    elif hdfs.isfile(hdfs_model_path):
-        model_name = hdfs_model_path
-        if constants.DELIMITERS.SLASH_DELIMITER in hdfs_model_path:
-            last_index = model_name.rfind(constants.DELIMITERS.SLASH_DELIMITER)
-            model_name = model_name[last_index + 1:]
-        dest_path = model_dir_hdfs + constants.DELIMITERS.SLASH_DELIMITER + model_name
-        hdfs.cp(hdfs_model_path, dest_path, overwrite=overwrite)
-
-    return model_dir_hdfs
-
-
 def get_id(serving_name):
     """
     Gets the id of a serving with a given name
@@ -452,11 +316,14 @@ def get_id(serving_name):
         :serving_name: name of the serving to get the id for
 
     Returns:
-         the id of the serving
+         the id of the serving, None if Serving does not exist
     """
-    servings = get_all()
-    serving = _find_serving_with_name(serving_name, servings)
-    return serving.id
+    try:
+        servings = get_all()
+        serving = _find_serving_with_name(serving_name, servings)
+        return serving.id
+    except ServingNotFound:
+        return None
 
 
 def get_artifact_path(serving_name):

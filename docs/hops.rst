@@ -20,8 +20,16 @@ hops.experiment module
     :undoc-members:
     :show-inheritance:
 
+hops.model module
+-----------------
+
+.. automodule:: hops.model
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.numpy_helper module
-----------------------
+------------------------
 
 .. automodule:: hops.numpy_helper
     :members:
@@ -29,7 +37,7 @@ hops.numpy_helper module
     :show-inheritance:
 
 hops.pandas_helper module
-----------------------
+-------------------------
 
 .. automodule:: hops.pandas_helper
     :members:
@@ -92,15 +100,13 @@ hops.util module
     :undoc-members:
     :show-inheritance:
 
-
 hops.beam module
-------------------------
+----------------
 
 .. automodule:: hops.beam
         :members:
         :undoc-members:
         :show-inheritance:
-
 
 Module contents
 ---------------
