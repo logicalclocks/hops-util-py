@@ -93,7 +93,7 @@ def start_job(name, args=None):
     return response_object
 
 
-def stop_job(name, action="stop"):
+def stop_job(name):
     """
     Stop the current execution of the job.
     Returns:
@@ -137,9 +137,11 @@ def get_executions(name, query=None):
                    constants.REST_CONFIG.HOPSWORKS_EXECUTIONS_RESOURCE + query
     response = util.send_request(method, resource_url)
     response_object = response.json()
-    if response.status_code >= 400:
+    if response.status_code >= 500:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise RestAPIError("Could not get current job's execution (url: {}), server response: \n "
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+    if response.status_code >= 400:
+        return None
     return response_object
