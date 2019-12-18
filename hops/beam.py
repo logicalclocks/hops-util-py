@@ -179,24 +179,22 @@ def start(runner_name="runner", jobmanager_heap_size=1024,
     """
     global cleanup_runners
     cleanup_runners = cleanup_runner
-    execution_found = True
     execution = jobs.get_executions(runner_name,
                                     "?filter_by=state:INITIALIZING,RUNNING,ACCEPTED,NEW,NEW_SAVING,SUBMITTED,"
                                     "STARTING_APP_MASTER,AGGREGATING_LOGS&sort_by=id:desc")
-    if ignore_running == False and execution is not None and execution['count'] > 0 :
+    if ignore_running is False and execution is not None and execution['count'] > 0 :
         raise exceptions.RestAPIError("Runner is already in state running, set ignore_running to True to start a "
                                       "new instance")
 
-    if not execution_found:
-        create_runner(runner_name, jobmanager_heap_size, num_of_taskmanagers, taskmanager_heap_size, num_task_slots)
-        start_runner(runner_name)
-        # Wait 90 seconds until runner is in status "RUNNING", then start the jobserver
-        wait = 90
-        wait_count = 0
-        while wait_count < wait and jobs.get_executions(runner_name,
-                                                        "&offset=0&limit=1&sort_by=id:desc")['items'][0]['state'] != "RUNNING":
-            time.sleep(5)
-            wait_count += 5
+    create_runner(runner_name, jobmanager_heap_size, num_of_taskmanagers, taskmanager_heap_size, num_task_slots)
+    start_runner(runner_name)
+    # Wait 90 seconds until runner is in status "RUNNING", then start the jobserver
+    wait = 90
+    wait_count = 0
+    while wait_count < wait and jobs.get_executions(runner_name,
+                                                    "?offset=0&limit=1&sort_by=id:desc")['items'][0]['state'] != "RUNNING":
+        time.sleep(5)
+        wait_count += 5
 
     return start_beam_jobserver(runner_name)
 
