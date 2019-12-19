@@ -916,10 +916,8 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         storage_connector = _do_get_storage_connector(fs_utils._do_get_project_training_datasets_sink(), featurestore)
 
     featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
-
-    fs_utils._validate_metadata(
-        training_dataset, spark_df.dtypes, description, featurestore_metadata.settings)
-
+    features_schema = _parse_spark_features_schema(spark_df.schema)
+    fs_utils._validate_metadata(training_dataset, features_schema, description, featurestore_metadata.settings)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, training_dataset, version=training_dataset_version,
@@ -928,7 +926,6 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             num_bins=num_bins,
             corr_method=corr_method,
             num_clusters=num_clusters)
-    features_schema = _parse_spark_features_schema(spark_df.schema)
     featurestore_id = _get_featurestore_id(featurestore)
     hopsfs_connector_id = None
     s3_connector_id = None
@@ -1827,9 +1824,6 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
             "the Feature Store, error: {}".format(
                 str(e)))
 
-    fs_utils._validate_metadata(
-        featuregroup, spark_df.dtypes, description, featurestore_metadata.settings)
-
     if len(primary_key) == 0:
         primary_key = [fs_utils._get_default_primary_key(spark_df)]
     if util.get_job_name() is not None:
@@ -1838,6 +1832,7 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
     fs_utils._validate_primary_key(spark_df, primary_key)
     features_schema = _parse_spark_features_schema(spark_df.schema, primary_key, partition_by, online=online,
                                                    online_types= online_types)
+    fs_utils._validate_metadata(featuregroup, features_schema, description, featurestore_metadata.settings)
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, featuregroup, version=featuregroup_version,
