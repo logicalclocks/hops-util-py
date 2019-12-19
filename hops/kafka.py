@@ -170,9 +170,9 @@ def convert_json_schema_to_avro(json_schema):
          the avro schema
     """
     if sys.version_info > (3, 0): # for python 3
-        return avro.schema.Parse(literal_eval(json.dumps(json_schema["contents"])))
+        return avro.schema.Parse(json_schema)
     else: # for python 2
-        return avro.schema.parse(literal_eval(json.dumps(json_schema["contents"])))
+        return avro.schema.parse(json_schema)
 
 
 
