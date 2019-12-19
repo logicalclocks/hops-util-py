@@ -4,10 +4,8 @@ API for interacting with the file system on Hops (HopsFS).
 It is a wrapper around pydoop together with utility functions that are Hops-specific.
 """
 import socket
-import datetime
 from six import string_types
 import shutil
-import stat as local_stat
 import fnmatch
 import os
 import errno
@@ -26,7 +24,6 @@ except:
 import re
 from xml.dom import minidom
 
-fd = None
 tls_enabled = None
 webhdfs_address = None
 
@@ -146,6 +143,8 @@ def _expand_path(hdfs_path, project="", exists=True):
     Returns:
         path expanded with HDFS and project
     """
+    if not isinstance(hdfs_path, string_types):
+        hdfs_path = hdfs_path.decode()
     if project == "":
         project = project_name()
     # Check if a full path is supplied. If not, assume it is a relative path for this project - then build its full path and return it.
@@ -160,107 +159,6 @@ def _expand_path(hdfs_path, project="", exists=True):
     if exists == True and not hdfs.path.exists(hdfs_path):
         raise IOError("path %s not found" % hdfs_path)
     return hdfs_path
-
-
-def _init_logger():
-    """
-    Initialize the logger by opening the log file and pointing the global fd to the open file
-    """
-    logfile = os.environ['EXEC_LOGFILE']
-    fs_handle = get_fs()
-    global fd
-    try:
-        fd = fs_handle.open_file(logfile, mode='w')
-    except:
-        fd = fs_handle.open_file(logfile, flags='w')
-
-
-def log(string):
-    """
-    Logs a string to the log file
-
-    Args:
-        :string: string to log
-    """
-    global fd
-    if fd:
-        if isinstance(string, string_types):
-            fd.write(('{0}: {1}'.format(datetime.datetime.now().isoformat(), string) + '\n').encode())
-        else:
-            fd.write(('{0}: {1}'.format(datetime.datetime.now().isoformat(),
-                                        'ERROR! Attempting to write a non-string object to logfile') + '\n').encode())
-
-
-def _kill_logger():
-    """
-    Closes the logfile
-    """
-    global fd
-    if fd:
-        try:
-            fd.flush()
-            fd.close()
-        except:
-            pass
-
-
-def _create_directories(app_id, run_id, param_string, type, sub_type=None):
-    """
-    Creates directories for an experiment, if Experiments folder exists it will create directories
-    below it, otherwise it will create them in the Logs directory.
-
-    Args:
-        :app_id: YARN application ID of the experiment
-        :run_id: Experiment ID
-        :param_string: name of the new directory created under parent directories
-        :type: type of the new directory parent, e.g differential_evolution
-        :sub_type: type of sub directory to parent, e.g generation
-
-    Returns:
-        The new directories for the yarn-application and for the execution (hdfs_exec_logdir, hdfs_appid_logdir)
-    """
-
-    pyhdfs_handle = get()
-
-    if pyhdfs_handle.exists(project_path() + "Experiments"):
-        hdfs_events_parent_dir = project_path() + "Experiments"
-    elif pyhdfs_handle.exists(project_path() + "Logs"):
-        hdfs_events_parent_dir = project_path() + "Logs/TensorFlow"
-        try:
-            st = hdfs.stat(hdfs_events_parent_dir)
-            if not bool(st.st_mode & local_stat.S_IWGRP):  # if not group writable make it so
-                hdfs.chmod(hdfs_events_parent_dir, "g+w")
-        except IOError:
-            # If this happens then the permission is set correct already since the creator of the /Logs/TensorFlow already set group writable
-            pass
-
-    hdfs_appid_logdir = hdfs_events_parent_dir + "/" + app_id
-    # if not pyhdfs_handle.exists(hdfs_appid_logdir):
-    # pyhdfs_handle.create_directory(hdfs_appid_logdir)
-
-    hdfs_run_id_logdir = hdfs_appid_logdir + "/" + type + "/run." + str(run_id)
-
-    # determine directory structure based on arguments
-    if sub_type:
-        hdfs_exec_logdir = hdfs_run_id_logdir + "/" + str(sub_type) + '/' + str(param_string)
-    elif not param_string and not sub_type:
-        hdfs_exec_logdir = hdfs_run_id_logdir + '/'
-    else:
-        hdfs_exec_logdir = hdfs_run_id_logdir + '/' + str(param_string)
-
-    # Need to remove directory if it exists (might be a task retry)
-    if pyhdfs_handle.exists(hdfs_exec_logdir):
-        delete(hdfs_exec_logdir, recursive=True)
-
-    # create the new directory
-    pyhdfs_handle.create_directory(hdfs_exec_logdir)
-
-    # update logfile
-    logfile = hdfs_exec_logdir + '/' + 'logfile'
-    os.environ['EXEC_LOGFILE'] = logfile
-
-    return hdfs_exec_logdir, hdfs_appid_logdir
-
 
 def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
     """
@@ -457,21 +355,6 @@ def cp(src_hdfs_path, dest_hdfs_path, overwrite=False):
         delete(dest_hdfs_path, recursive=True)
 
     hdfs.cp(src_hdfs_path, dest_hdfs_path)
-
-
-def _get_experiments_dir():
-    """
-    Gets the folder where the experiments are writing their results
-
-    Returns:
-        the folder where the experiments are writing results
-    """
-    pyhdfs_handle = get()
-    if pyhdfs_handle.exists(project_path() + "Experiments"):
-        return project_path() + "Experiments"
-    elif pyhdfs_handle.exists(project_path() + "Logs"):
-        return project_path() + "Logs/TensorFlow"
-
 
 def glob(hdfs_path, recursive=False, project=None):
     """

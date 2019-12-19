@@ -42,7 +42,7 @@ def _get_gpu_info():
     elif _count_rocm_gpus() > 0 and not 'HIP_VISIBLE_DEVICES' in os.environ:
         return subprocess.check_output(["/opt/rocm/bin/rocm-smi", "--showallinfo"], shell=True).decode("utf-8")
     else:
-        return '\nCould not find any GPUs accessible for the container\n'
+        return 'Could not find any GPUs accessible for the container'
 
 def _get_nvidia_gpu_util():
     """
@@ -141,7 +141,6 @@ def _count_rocm_gpus():
     except Exception as err:
         print(err)
     return 0
-
 
 def get_num_gpus():
     """ Get the number of GPUs available in the environment and consequently by the application

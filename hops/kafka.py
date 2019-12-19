@@ -175,8 +175,6 @@ def convert_json_schema_to_avro(json_schema):
         return avro.schema.parse(json_schema)
 
 
-
-
 class KafkaTopicDTO(object):
     """
     Represents a KafkaTopic in Hopsworks
