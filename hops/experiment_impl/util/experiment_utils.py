@@ -1,7 +1,13 @@
 """
 Utility functions for experiments
 """
-import builtins as __builtin__
+from __future__ import print_function
+try:
+    import __builtin__
+except ImportError:
+    # Python 3
+    import builtins as __builtin__
+
 import os
 import signal
 from ctypes import cdll
