@@ -130,7 +130,7 @@ def save(hdfs_filename, data):
 def savez(hdfs_filename, *args, **kwds):
     """
     Save several arrays into a single file in uncompressed .npz format in HDFS
-    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc. 
+    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc.
     If keyword arguments are given, the corresponding variable names, in the .npz file will match the keyword names.
 
     Args:
