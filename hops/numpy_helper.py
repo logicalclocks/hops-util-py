@@ -130,14 +130,14 @@ def save(hdfs_filename, data):
 def savez(hdfs_filename, *args, **kwds):
     """
     Save several arrays into a single file in uncompressed .npz format in HDFS
-    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc.
+    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are 'arr_0', 'arr_1', etc.
     If keyword arguments are given, the corresponding variable names, in the .npz file will match the keyword names.
 
     Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
        :args: Arguments, optional
                Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
-               the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
+               the arrays will be saved with names 'arr_0', 'arr_1', and so on. These arguments can be any expression.
        :kwds: Keyword arguments, optional
                Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
 
@@ -153,14 +153,14 @@ def savez(hdfs_filename, *args, **kwds):
 def savez_compressed(hdfs_filename, *args, **kwds):
     """
     Save several arrays into a single file in uncompressed .npz format in HDFS
-    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are ‘arr_0’, ‘arr_1’, etc. 
+    If arguments are passed in with no keywords, the corresponding variable names, in the .npz file, are 'arr_0', 'arr_1', etc.
     If keyword arguments are given, the corresponding variable names, in the .npz file will match the keyword names.
 
     Args:
        :hdfs_filename: You can specify either a full hdfs pathname or a relative one (relative to your Project's path in HDFS)
        :*args: Arguments, optional
                Arrays to save to the file. Since it is not possible for Python to know the names of the arrays outside savez, 
-               the arrays will be saved with names “arr_0”, “arr_1”, and so on. These arguments can be any expression.
+               the arrays will be saved with names 'arr_0', 'arr_1', and so on. These arguments can be any expression.
        :**kwds: Keyword arguments, optional
                Arrays to save to the file. Arrays will be saved in the file with the keyword names.       :data: numpy array
 
