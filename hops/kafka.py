@@ -188,3 +188,4 @@ class KafkaTopicDTO(object):
             :kafka_topic_dto_json: JSON data about the kafka topic returned from Hopsworks REST API
         """
         self.name = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_NAME]
+        self.schema_version = kafka_topic_dto_json[constants.REST_CONFIG.JSON_KAFKA_TOPIC_SCHEMA_VERSION]
