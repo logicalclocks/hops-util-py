@@ -21,23 +21,20 @@ jobserver_port = -1
 
 def start_beam_jobserver(flink_session_name,
                          artifacts_dir="Resources",
-                         jobserver_jar=None,
-                         sdk_worker_parallelism=1):
+                         jobserver_jar=None):
     """
     Start the Java Beam job server that connects to the flink session cluster. User needs to provide the
     job name that started the Flink session and optionally the worker parallelism.
 
     Args:
       :flink_session_name: Job name that runs the Flink session.
-      :sdk_worker_parallelism: Default parallelism for SDK worker processes. This option is only applied when the
-      pipeline option sdkWorkerParallelism is set to 0.Default is 1, If 0, worker parallelism will be dynamically
-      decided by runner.See also: sdkWorkerParallelism Pipeline Option (default: 1). For further documentation,
-      please refer to Apache Beam docs.
+      :artifacts_dir: Default dataset to store artifacts.
+      :jobserver_jar: Portability framework jar filename.
     Returns:
         artifact_port, expansion_port, job_host, job_port, jobserver.pid
     """
     if jobserver_jar is None:
-        jobserver_jar = os.path.join(util.get_flink_conf_dir(), "beam-runners-flink-1.8-job-server-2.15.0.jar")
+        jobserver_jar = os.path.join(util.get_flink_conf_dir(), "beam-runners-flink-1.9-job-server-2.17.0.jar")
     # Get Flink master URL (flink session cluster) from an ExecutionDTO
     method = constants.HTTP_CONFIG.HTTP_GET
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
@@ -70,8 +67,7 @@ def start_beam_jobserver(flink_session_name,
                                        "--artifact-port=%d" % artifact_port,
                                        "--expansion-port=%d" % expansion_port,
                                        "--job-host=%s" % job_host,
-                                       "--job-port=%d" % job_port,
-                                       "--sdk-worker-parallelism=%d" % sdk_worker_parallelism],
+                                       "--job-port=%d" % job_port],
                                       stdout=out,
                                       stderr=err,
                                       preexec_fn=util._on_executor_exit('SIGTERM'))
@@ -182,19 +178,16 @@ def start(runner_name="runner", jobmanager_heap_size=1024,
     execution = jobs.get_executions(runner_name,
                                     "?filter_by=state:INITIALIZING,RUNNING,ACCEPTED,NEW,NEW_SAVING,SUBMITTED,"
                                     "STARTING_APP_MASTER,AGGREGATING_LOGS&sort_by=id:desc")
-    if ignore_running is False and execution is not None and execution['count'] > 0 :
-        raise exceptions.RestAPIError("Runner is already in state running, set ignore_running to True to start a "
-                                      "new instance")
-
-    create_runner(runner_name, jobmanager_heap_size, num_of_taskmanagers, taskmanager_heap_size, num_task_slots)
-    start_runner(runner_name)
-    # Wait 90 seconds until runner is in status "RUNNING", then start the jobserver
-    wait = 90
-    wait_count = 0
-    while wait_count < wait and jobs.get_executions(runner_name,
-                                                    "?offset=0&limit=1&sort_by=id:desc")['items'][0]['state'] != "RUNNING":
-        time.sleep(5)
-        wait_count += 5
+    if execution is None or execution['count'] == 0:
+        create_runner(runner_name, jobmanager_heap_size, num_of_taskmanagers, taskmanager_heap_size, num_task_slots)
+        start_runner(runner_name)
+        # Wait 90 seconds until runner is in status "RUNNING", then start the jobserver
+        wait = 90
+        wait_count = 0
+        while wait_count < wait and jobs.get_executions(runner_name,
+                                                        "?offset=0&limit=1&sort_by=id:desc")['items'][0]['state'] != "RUNNING":
+            time.sleep(5)
+            wait_count += 5
 
     return start_beam_jobserver(runner_name)
 
