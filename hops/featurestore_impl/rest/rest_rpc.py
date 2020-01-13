@@ -318,6 +318,8 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                     constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM + "=false"
                     + constants.DELIMITERS.AMPERSAND_DELIMITER +
                     constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATISTICS_SETTINGS + "=true"
+                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
+                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_JOB_QUERY_PARAM + "=" + str(len(jobs) > 0)
                     )
     response = util.send_request(method, resource_url, data=json_embeddable, headers=headers)
     response_object = response.json()
