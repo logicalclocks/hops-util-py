@@ -5,7 +5,26 @@ REST calls to Hopsworks Feature Store Service
 from hops import constants, util, hdfs
 from hops.exceptions import RestAPIError
 import json
+from json.decoder import JSONDecodeError
 
+def _http(resource_url, headers=None, method=constants.HTTP_CONFIG.HTTP_GET, data=None):
+    response = util.send_request(method, resource_url, headers=headers, data=data)
+    try:
+        response_object = response.json()
+    except JSONDecodeError:
+        response_object = None
+
+    if (response.status_code // 100) != 2:
+        if response_object:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        else:
+            error_code, error_msg, user_msg = "", "", ""
+
+        raise RestAPIError("Could not execute HTTP request (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    return response_object
 
 def _delete_table_contents(featuregroup_id, featurestore_id):
     """
@@ -120,24 +139,49 @@ def _get_project_info(project_name):
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    method = constants.HTTP_CONFIG.HTTP_GET
-    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    project_name)
-    response = util.send_request(method, resource_url)
-    response_object = response.json()
+    return _http(constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 project_name)
 
-    if response.status_code != 200:
-        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not fetch project metadata for project: {} (url: {}), "
-                           "server response: \n "
-                           "HTTP code: {}, HTTP reason: {}, error code: {}, "
-                           "error msg: {}, user msg: {}".format(
-            project_name, resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+def _get_credentials(project_id):
+    """
+    Makes a REST call to hopsworks for getting the project user certificates needed to connect to services such as Hive
 
-    return response_object
+    Args:
+        :project_name: id of the project
+
+    Returns:
+        JSON response
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    return _http(constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_CREDENTIALS_RESOURCE)
+
+def _get_client(project_id):
+    """
+    """    
+
+    resource_url= (constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                 project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                 constants.REST_CONFIG.HOPSWORKS_PROJECT_CLIENT)
+    response = util.send_request(constants.HTTP_CONFIG.HTTP_GET, resource_url, stream=True)
+    if (response.status_code // 100) != 2:
+        error_code, error_msg, user_msg = "", "", ""
+
+        raise RestAPIError("Could not execute HTTP request (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    return response
 
 def _pre_process_jobs_list(jobNames):
     """

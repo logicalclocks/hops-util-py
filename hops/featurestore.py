@@ -202,6 +202,7 @@ from hops.featurestore_impl import core
 from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDataframe, FeatureVisualizationError, \
     StatisticsComputationError
 import os
+from pathlib import Path
 
 
 def project_featurestore():
@@ -1872,7 +1873,8 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
         core._get_featurestore_metadata(featurestore, update_cache=True)
         return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
 
-def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION):
+def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION,
+            secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops"):
     """
     Connects to a feature store from a remote environment such as Amazon SageMaker
 
@@ -1885,17 +1887,144 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
         :project_name: the name of the project hosting the feature store to be used
         :port: the REST port of the Hopsworks cluster
         :region_name: The name of the AWS region in which the required secrets are stored
+        :secrets_store: The secrets storage to be used. Either secretsmanager, parameterstore or local
+        :api_key_file: path to a file containing an API key. For secrets_store=local only.
 
     Returns:
         None
     """
-    os.environ[constants.ENV_VARIABLES.REMOTE_ENV_VAR] = 'True'
-    os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = host + ':' + str(port)
+    dbfs_folder = "/dbfs/" + cert_folder
+    os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = "https://" + host + ':' + str(port)
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
+    os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
     project_info = rest_rpc._get_project_info(project_name)
-    os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = str(project_info['projectId'])
+    project_id = str(project_info['projectId'])
+    os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
 
+    Path(dbfs_folder).mkdir(parents=True, exist_ok=True)
+
+    get_credential(project_id, dbfs_folder)
+
+def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_name = constants.AWS.DEFAULT_REGION,
+            secrets_store = 'parameterstore', api_key_file=None):
+    """
+    Set up the hopfs and hive connector on a detabricks cluster
+
+    Example usage:
+
+    >>> featurestore.setup_databricks("hops.site", "my_feature_store")
+
+    Args:
+        :host: the hostname of the Hopsworks cluster
+        :project_name: the name of the project hosting the feature store to be used
+        :certs_folder: the folder in dbfs in which to store the Hopsworks certificates and the libraries to be installed when \
+        the cluster restart
+        :port: the REST port of the Hopsworks cluster
+        :region_name: The name of the AWS region in which the required secrets are stored
+        :secrets_store: The secrets storage to be used. Either secretsmanager or parameterstore.
+
+    Returns:
+        None
+    """
+    
+    dbfs_folder = "/dbfs/" + cert_folder
+    os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = "https://" + host + ':' + str(port)
+    os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
+    os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
+    os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
+
+    project_info = rest_rpc._get_project_info(project_name)
+    project_id = str(project_info['projectId'])
+    os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
+
+    Path(dbfs_folder + "/scripts").mkdir(parents=True, exist_ok=True)
+
+    get_credential(project_id, dbfs_folder)
+
+    get_clients(project_id, dbfs_folder)
+    
+    write_init_script(dbfs_folder)
+
+    print_instructions(cert_folder, dbfs_folder, host)
+    
+def get_credential(project_id, dbfs_folder):
+    """
+    get the credential and save them in the dbfs folder
+
+    Args:
+        :project_id: the id of the project for which we want to get credentials
+        :dbfs_folder: the folder in which to save the credentials
+    """
+    credentials = rest_rpc._get_credentials(project_id)
+    util.write_b64_cert_to_bytes(str(credentials['kStore']), path=os.path.join(dbfs_folder, 'keyStore.jks'))
+    util.write_b64_cert_to_bytes(str(credentials['tStore']), path=os.path.join(dbfs_folder, 'trustStore.jks'))
+    with open(os.path.join(dbfs_folder, 'material_passwd'), 'w') as f:
+        f.write(str(credentials['password']))
+        
+def get_clients(project_id, dbfs_folder):
+    """
+    get the libraries and save them in the dbfs folder
+
+    Args:
+        :project_id: the id of the project for which we want to get the clients
+        :dbfs_folder: the folder in which to save the libraries
+    """
+    client = rest_rpc._get_client(project_id)
+    with open(os.path.join(dbfs_folder, 'client.tar.gz'), 'wb') as f:
+        for chunk in client:
+            f.write(chunk)    
+
+def write_init_script(dbfs_folder):
+    """
+    write the init script
+
+    Args:
+        :dbfs_folder: the folder in which to save the script
+    """
+    initScript="""
+        #!/bin/sh
+
+        tar -xvf PATH/client.tar.gz -C /tmp
+        tar -xvf /tmp/client/apache-hive-*-bin.tar.gz -C /tmp
+        mv /tmp/apache-hive-*-bin /tmp/apache-hive-bin
+        chmod -R +xr /tmp/apache-hive-bin
+        cp /tmp/client/hopsfs-client*.jar /databricks/jars/
+    """
+    initScript=initScript.replace("PATH", dbfs_folder)
+    with open(os.path.join(dbfs_folder, 'scripts/initScript.sh'), 'w') as f:
+        f.write(initScript)
+
+def print_instructions(cert_folder, dbfs_folder, host):
+    """
+    print the instructions to set up the hopsfs hive connection on databricks
+
+    Args:
+        :cert_folder: the path in dbfs of the folder in which the credention were saved
+        :dbfs_folder: the folder in which the credential were saved
+        :host: the host of the hive metastore    
+    """
+
+    instructions="""
+    In the advanced options of your databricks cluster configuration 
+    add the following path to Init Scripts: dbfs:/{0}/scripts/initScript.sh
+
+    add the following to the Spark Config:
+    spark.hadoop.fs.hopsfs.impl io.hops.hopsfs.client.HopsFileSystem
+    spark.hadoop.hops.ipc.server.ssl.enabled true
+    spark.hadoop.hops.ssl.hostname.verifier ALLOW_ALL
+    spark.hadoop.hops.rpc.socket.factory.class.default io.hops.hadoop.shaded.org.apache.hadoop.net.HopsSSLSocketFactory
+    spark.hadoop.client.rpc.ssl.enabled.protocol TLSv1.2
+    spark.hadoop.hops.ssl.keystores.passwd.name {1}/material_passwd
+    spark.hadoop.hops.ssl.keystore.name {1}/keyStore.jks
+    spark.hadoop.hops.ssl.trustore.name {1}/trustStore.jks
+    spark.sql.hive.metastore.jars /tmp/apache-hive-bin/lib/*
+    spark.hadoop.hive.metastore.uris thrift://{2}:9083
+
+    Then save and restart the cluster.
+    """.format(cert_folder, dbfs_folder, host)
+
+    print(instructions)
 
 def sync_hive_table_with_featurestore(featuregroup, description="", featurestore=None,
                                       featuregroup_version=1, jobs=[], feature_corr_data = None,

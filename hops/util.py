@@ -24,6 +24,9 @@ from OpenSSL import SSL
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 import idna
+from hops.exceptions import UnkownSecretStorageError
+import base64
+from socket import socket
 
 verify = None
 #! Needed for hops library backwards compatability
@@ -98,8 +101,9 @@ def set_auth_header(headers):
     Args:
         http headers
     """
-    if constants.ENV_VARIABLES.REMOTE_ENV_VAR in os.environ:
-        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + get_api_key_aws(hdfs.project_name())
+    if constants.ENV_VARIABLES.API_KEY_ENV_VAR in os.environ:
+        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + \
+            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR]
     else:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "Bearer " + get_jwt()
 
@@ -118,7 +122,7 @@ def get_requests_verify(hostname, port):
         constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] == 'true':
 
         hostname_idna = idna.encode(hostname)
-        sock = socket.socket()
+        sock = socket()
 
         sock.connect((hostname, int(port)))
         ctx = SSL.Context(SSL.SSLv23_METHOD)
@@ -147,7 +151,7 @@ def get_requests_verify(hostname, port):
     return False
 
 
-def send_request(method, resource, data=None, headers=None):
+def send_request(method, resource, data=None, headers=None, stream=False):
     """
     Sends a request to Hopsworks. In case of Unauthorized response, submit the request once more as jwt might not
     have been read properly from local container.
@@ -171,12 +175,12 @@ def send_request(method, resource, data=None, headers=None):
     req = requests.Request(method, url, data=data, headers=headers)
     prepped = session.prepare_request(req)
 
-    response = session.send(prepped, verify=verify)
+    response = session.send(prepped, verify=verify, stream=stream)
 
     if response.status_code == constants.HTTP_CONFIG.HTTP_UNAUTHORIZED:
         set_auth_header(headers)
         prepped = session.prepare_request(req)
-        response = session.send(prepped)
+        response = session.send(prepped, stream=stream)
     return response
 
 def _parse_rest_error(response_dict):
@@ -221,36 +225,8 @@ def get_jwt():
     with open(constants.REST_CONFIG.JWT_TOKEN, "r") as jwt:
         return jwt.read()
 
-def get_api_key_aws(project_name):
-    import boto3
-
-    def assumed_role():
-        client = boto3.client('sts')
-        response = client.get_caller_identity()
-        # arns for assumed roles in SageMaker follow the following schema
-        # arn:aws:sts::123456789012:assumed-role/my-role-name/my-role-session-name
-        local_identifier = response['Arn'].split(':')[-1].split('/')
-        if len(local_identifier) != 3 or local_identifier[0] != 'assumed-role':
-            raise Exception('Failed to extract assumed role from arn: ' + response['Arn'])
-        return local_identifier[1]
-
-    secret_name = 'hopsworks/project/' + project_name + '/role/' + assumed_role()
-
-    session = boto3.session.Session()
-    if (os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] != constants.AWS.DEFAULT_REGION):
-        region_name = os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR]
-    else:
-        region_name = session.region_name
-
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-    return json.loads(get_secret_value_response['SecretString'])['api-key']
-
 def abspath(hdfs_path):
-    if constants.ENV_VARIABLES.REMOTE_ENV_VAR in os.environ:
+    if constants.ENV_VARIABLES.API_KEY_ENV_VAR in os.environ:
         return hdfs_path
     else:
         return pydoop.hdfs.path.abspath(hdfs_path)
@@ -406,3 +382,76 @@ def _on_executor_exit(signame):
         if result != 0:
             raise Exception('prctl failed with error code %s' % result)
     return set_parent_exit_signal
+
+
+def _assumed_role():
+    client = boto3.client('sts')
+    response = client.get_caller_identity()
+    # arns for assumed roles in SageMaker follow the following schema
+    # arn:aws:sts::123456789012:assumed-role/my-role-name/my-role-session-name
+    local_identifier = response['Arn'].split(':')[-1].split('/')
+    if len(local_identifier) != 3 or local_identifier[0] != 'assumed-role':
+        raise Exception(
+            'Failed to extract assumed role from arn: ' + response['Arn'])
+    return local_identifier[1]
+
+def _get_region():
+    if (os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] != constants.AWS.DEFAULT_REGION):
+        return os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR]
+    else:
+        return None
+
+def _query_secrets_manager(secret_key):
+    secret_name = 'hopsworks/role/' + _assumed_role()
+    args = {'service_name': 'secretsmanager'}
+    region_name = _get_region()
+    if region_name:
+        args['region_name'] = region_name
+    client = boto3.client(**args)
+    get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    return json.loads(get_secret_value_response['SecretString'])[secret_key]
+
+def _query_parameter_store(secret_key):
+    args = {'service_name': 'ssm'}
+    region_name = _get_region()
+    if region_name:
+        args['region_name'] = region_name
+    client = boto3.client(**args)
+    name = '/hopsworks/role/' + _assumed_role() + '/type/' + secret_key
+    return client.get_parameter(Name=name, WithDecryption=True)['Parameter']['Value']
+
+def get_secret(secrets_store, secret_key=None, api_key_file=None):
+    """
+    Returns secret value from the AWS Secrets Manager or Parameter Store
+
+    Args:
+        :secrets_store: the underlying secrets storage to be used, e.g. `secretsmanager` or `parameterstore`
+        :secret_type (str): key for the secret value, e.g. `api-key`, `cert-key`, `trust-store`, `key-store`
+        :api_token_file: path to a file containing an api key
+    Returns:
+        :str: secret value
+    """
+    if secrets_store == constants.AWS.SECRETS_MANAGER:
+        return _query_secrets_manager(secret_key)
+    elif secrets_store == constants.AWS.PARAMETER_STORE:
+        return _query_parameter_store(secret_key)
+    elif secrets_store == constants.LOCAL.LOCAL_STORE:
+        if not api_key_file:
+            raise Exception('api_key_file needs to be set for local mode')
+        with open(api_key_file) as f:
+            return f.readline().strip()
+    else:
+        raise UnkownSecretStorageError(
+            "Secrets storage " + secrets_store + " is not supported.")
+
+def write_b64_cert_to_bytes(b64_string, path):
+    """Converts b64 encoded certificate to bytes file .
+
+    Args:
+        :b64_string (str): b64 encoded string of certificate
+        :path (str): path where file is saved, including file name. e.g. /path/key-store.jks
+    """
+
+    with open(path, 'wb') as f:
+        cert_b64 = base64.b64decode(b64_string)
+        f.write(cert_b64)
