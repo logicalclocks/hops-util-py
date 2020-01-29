@@ -1918,8 +1918,7 @@ def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_
     Args:
         :host: the hostname of the Hopsworks cluster
         :project_name: the name of the project hosting the feature store to be used
-        :certs_folder: the folder in dbfs in which to store the Hopsworks certificates and the libraries to be installed when \
-        the cluster restart
+        :certs_folder: the folder in dbfs in which to store the Hopsworks certificates and the libraries to be installed when the cluster restart
         :port: the REST port of the Hopsworks cluster
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Either secretsmanager or parameterstore.
