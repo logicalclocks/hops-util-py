@@ -5,10 +5,7 @@ REST calls to Hopsworks Feature Store Service
 from hops import constants, util, hdfs
 from hops.exceptions import RestAPIError
 import json
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError
+from json.decoder import JSONDecodeError
 
 def _http(resource_url, headers=None, method=constants.HTTP_CONFIG.HTTP_GET, data=None):
     response = util.send_request(method, resource_url, headers=headers, data=data)

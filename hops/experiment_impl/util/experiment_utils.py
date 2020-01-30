@@ -2,11 +2,8 @@
 Utility functions for experiments
 """
 from __future__ import print_function
-try:
-    import __builtin__
-except ImportError:
-    # Python 3
-    import builtins as __builtin__
+
+import builtins as __builtin__
 
 import os
 import signal
@@ -26,8 +23,6 @@ from hops import constants
 from hops import devices
 from hops import util
 from hops import hdfs
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
 
 import pydoop.hdfs
 

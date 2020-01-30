@@ -168,32 +168,6 @@ To access the Spark executor logs, you will need 4 clicks on your mouse:
     :scale: 75 %
     :figclass: align-center
 
-Logging to file (HDFS) in the Executor or Driver
----------------------------------------------------
-
-You can also write log messages from either an Executor or Driver to the same logfile in HDFS.
-
-.. code-block:: python
-
-  train():
-    # This will write to your Experiments/ directory in your project
-    from hops import hdfs
-    hdfs.log("This is written to the logfile in the Experiments dataset, not output in Jupyter cell.")
-
-You can navigate to the log file created in the Datasets view in Hopsworks for your project, inside the Experiments dataset. The file created will be called “logfile” and if you right-click on it, you can preview its contents to see the first or last 1000 lines in the file. If you have the data-owner role in the project, you will also be allowed to download this file from here.
-
-.. _executor-hdfs-log.png: imgs/executor-hdfs-log.png
-.. figure:: imgs/executor-hdfs-log.png
-    :alt: hdfs-log
-    :target: `executor-hdfs-log.png`_
-    :align: center
-    :scale: 75 %
-    :figclass: align-center
-
-Note that the default log file is the same for all Executors. If many Executors write concurrently to the same file, this may have negative performance implications as Executors may block, waiting for write access to the file. In large-scale experiments, you can configure each Executors to write to its own log file (append a unique ID to the filename).
-
-
-
 Installing Python Libraries in Hopsworks
 ---------------------------------------------
 
