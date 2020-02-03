@@ -125,6 +125,7 @@ class SPARK_CONFIG:
     SPARK_OVERWRITE_MODE = "overwrite"
     SPARK_APPEND_MODE = "append"
     SPARK_WRITE_DELIMITER = "delimiter"
+    SPARK_INFER_SCHEMA = "inferSchema"
     SPARK_WRITE_HEADER = "header"
     SPARK_TF_CONNECTOR_RECORD_TYPE = "recordType"
     SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE = "Example"
