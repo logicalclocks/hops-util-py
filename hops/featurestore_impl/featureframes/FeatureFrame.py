@@ -701,7 +701,7 @@ class TSVFeatureFrame(FeatureFrame):
             spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT) \
                 .option(constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true") \
                 .option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER) \
-                .option(constatns.SPARK_CONFIG.SPARK_INFER_SCHEMA, "true") \
+                .option(constants.SPARK_CONFIG.SPARK_INFER_SCHEMA, "true") \
                 .load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
