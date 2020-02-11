@@ -1,165 +1,38 @@
 """
-Experiment module used for running Experiments, Parallel Experiments and Distributed Training on Hopsworks.
+Experiment module used for running Experiments, Parallel Experiments (hyperparameter optimization) and Distributed Training on Hopsworks.
 
 The programming model is that you wrap the code to run inside a wrapper function.
 Inside that wrapper function provide all imports and parts that make up your experiment, see examples below.
-Whenever a function to run an experiment is invoked it is also registered in the Experiments service along with the provided information.
+Whenever a function to run an experiment is invoked it is also registered in the Experiments service.
 
 *Three different types of experiments*
     - Run a single standalone Experiment using the *launch* function.
     - Run Parallel Experiments performing hyperparameter optimization using *grid_search* or *differential_evolution*.
-    - Run single or multi-machine Distributed Training using *parameter_server* or *collective_all_reduce*.
+    - Run single or multi-machine Distributed Training using *parameter_server*, *collective_all_reduce* or *mirrored*.
 
 """
 
-from hops import hdfs as hopshdfs
+class Direction:
+    MAX = "MAX"
+    MIN = "MIN"
 
-from hops import differential_evolution as diff_evo
-from hops import grid_search as gs
-from hops import launcher as launcher
-from hops import random_search as r_search
-from hops.distribute import allreduce as tf_allreduce
-from hops.distribute import parameter_server as ps
-from hops.distribute import mirrored as mirrored_impl
+from hops.experiment_impl import launcher as launcher
+from hops.experiment_impl.parallel import differential_evolution as diff_evo_impl, grid_search as grid_search_impl, \
+    random_search as r_search_impl
+from hops.experiment_impl.util import experiment_utils
+from hops.experiment_impl.distribute import allreduce as allreduce_impl, parameter_server as ps_impl, mirrored as mirrored_impl
+from hops import util, tensorboard, hdfs
 
-from hops import tensorboard
-
-from hops import util
-
-from datetime import datetime
+import time
 import atexit
 import json
-import pydoop.hdfs
-import os
-import subprocess
 
-elastic_id = 1
+run_id = 1
 app_id = None
 experiment_json = None
 running = False
-driver_tensorboard_hdfs_path = None
-run_id = 0
 
-def _get_logdir(app_id):
-    """
-
-    Args:
-        app_id:
-
-    Returns:
-
-    """
-    global run_id
-    return hopshdfs._get_experiments_dir() + '/' + app_id + '/begin/run.' +  str(run_id)
-
-def begin(name='no-name', local_logdir=False, versioned_resources=None, description=None):
-    """
-    Start a custom Experiment, at the end of the experiment call *end(metric)*.
-
-    *IMPORTANT* - This call should not be combined with other functions in the experiment module, other than *end*.
-    Other experiment functions such as *grid_search* manages the *begin* and *end* functions internally
-
-    Example usage:
-
-    >>> from hops import experiment
-    >>> experiment.begin(name='calculate pi')
-    >>> # Code to calculate pi
-    >>> pi = calc_pi()
-    >>> experiment.end(pi)
-
-    Args:
-        :name: name of the experiment
-        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
-        :description: A longer description for the experiment
-
-    Returns:
-        HDFS path in your project where the experiment is stored
-
-    """
-    global running
-    if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.stop() to stop it.")
-
-    try:
-        global app_id
-        global experiment_json
-        global elastic_id
-        global run_id
-        global driver_tensorboard_hdfs_path
-
-        running = True
-
-        sc = util._find_spark().sparkContext
-        app_id = str(sc.applicationId)
-
-        run_id = run_id + 1
-
-        versioned_path = util._version_resources(versioned_resources, _get_logdir(app_id))
-
-        experiment_json = None
-
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'begin', _get_logdir(app_id), None, versioned_path, description)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-
-        hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, None, 'begin')
-
-        pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-
-        hopshdfs._init_logger()
-
-        driver_tensorboard_hdfs_path,_ = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, 0, local_logdir=local_logdir)
-    except:
-        _exception_handler()
-        raise
-
-    return driver_tensorboard_hdfs_path
-
-def end(metric=None):
-    """
-    End a custom Experiment previously registered with *begin* and register a metric to associate with it.
-
-    Args:
-        :metric: The metric to associate with the Experiment
-
-    """
-    global running
-    global experiment_json
-    global elastic_id
-    global driver_tensorboard_hdfs_path
-    global app_id
-    if not running:
-        raise RuntimeError("An experiment is not running. Did you forget to call experiment.end()?")
-    try:
-        if metric:
-            experiment_json = util._finalize_experiment(experiment_json, None, str(metric))
-            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-        else:
-            experiment_json = util._finalize_experiment(experiment_json, None, None)
-            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-    except:
-        _exception_handler()
-        raise
-    finally:
-        elastic_id +=1
-        running = False
-        handle = hopshdfs.get()
-
-        if tensorboard.tb_pid != 0:
-            subprocess.Popen(["kill", str(tensorboard.tb_pid)])
-
-        if tensorboard.local_logdir_bool:
-            local_tb = tensorboard.local_logdir_path
-            util._store_local_tensorboard(local_tb, tensorboard.events_logdir)
-
-        if not tensorboard.endpoint == None and not tensorboard.endpoint == '' \
-                and handle.exists(tensorboard.endpoint):
-            handle.delete(tensorboard.endpoint)
-        hopshdfs._kill_logger()
-
-
-def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, description=None, metric_key=None):
     """
 
     *Experiment* or *Parallel Experiment*
@@ -171,21 +44,35 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
 
     >>> from hops import experiment
     >>> def train_nn():
+    >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    from hops import tensorboard
-    >>>    logdir = tensorboard.logdir()
-    >>>    # code for preprocessing, training and exporting model
-    >>>    # optionally return a value for the experiment which is registered in Experiments service
+    >>>    # Put all code inside the wrapper function
+    >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
+    >>> experiment.launch(train_nn)
+
+    Returning multiple outputs, including images and logs:
+
+    >>> from hops import experiment
+    >>> def train_nn():
+    >>>    # Do all imports in the function
+    >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
+    >>>    from PIL import Image
+    >>>    f = open('logfile.txt', 'w')
+    >>>    f.write('Starting training...')
+    >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
+    >>>    img = Image.new(.....)
+    >>>    img.save('diagram.png')
+    >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
     >>> experiment.launch(train_nn)
 
     Args:
         :map_fun: The function to run
-        :args_dict: If specified will run the same function multiple times with different arguments, {'a':[1,2], 'b':[5,3]}
-         would run the function two times with arguments (1,5) and (2,3) provided that the function signature contains two arguments like *def func(a,b):*
+        :args_dict: If specified will run the same function multiple times with different arguments, {'a':[1,2], 'b':[5,3]} would run the function two times with arguments (1,5) and (2,3) provided that the function signature contains two arguments like *def func(a,b):*
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: A longer description for the experiment
+        :metric_key: If returning a dict with multiple return values, this key should match the name of the key in the dict for the metric you want to associate with the experiment
 
     Returns:
         HDFS path in your project where the experiment is stored
@@ -199,52 +86,40 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, versione
     if running:
         raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        launcher.run_id = launcher.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, launcher._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
         experiment_json = None
         if args_dict:
-            experiment_json = util._populate_experiment(sc, name, 'experiment', 'launcher', launcher._get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
+            experiment_json = experiment_utils._populate_experiment(name, 'launch', 'EXPERIMENT', json.dumps(args_dict), description, app_id, None, None)
         else:
-            experiment_json = util._populate_experiment(sc, name, 'experiment', 'launcher', launcher._get_logdir(app_id), None, versioned_path, description)
+            experiment_json = experiment_utils._populate_experiment(name, 'launch', 'EXPERIMENT', None, description, app_id, None, None)
 
-        util._version_resources(versioned_resources, launcher._get_logdir(app_id))
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        logdir, return_dict = launcher._run(sc, map_fun, run_id, args_dict, local_logdir)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        retval, tensorboard_logdir, hp = launcher._launch(sc, map_fun, args_dict, local_logdir)
+        metric = experiment_utils._get_metric(return_dict, metric_key)
 
-        if retval:
-            experiment_json = util._finalize_experiment(experiment_json, hp, retval)
-            util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-            return tensorboard_logdir
-
-        experiment_json = util._finalize_experiment(experiment_json, hp, None)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-
+        experiment_utils._finalize_experiment(experiment_json, metric, app_id, run_id, 'FINISHED', duration, logdir, None, None)
+        return logdir, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
-    return tensorboard_logdir
+        _end_run(sc)
 
-
-def random_search(map_fun, boundary_dict, direction='max', samples=10, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
 
     *Parallel Experiment*
@@ -258,24 +133,43 @@ def random_search(map_fun, boundary_dict, direction='max', samples=10, name='no-
     >>> from hops import experiment
     >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
     >>> def train_nn(learning_rate, layers, dropout):
+    >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # code for preprocessing, training and exporting model
-    >>>    # mandatory return a value for the experiment which is registered in Experiments service
+    >>>    # Put all code inside the wrapper function
     >>>    return network.evaluate(learning_rate, layers, dropout)
-    >>> experiment.random_search(train_nn, boundary_dict, samples=14, direction='max')
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max')
+
+    Returning multiple outputs, including images and logs:
+
+    >>> from hops import experiment
+    >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
+    >>> def train_nn(learning_rate, layers, dropout):
+    >>>    # Do all imports in the function
+    >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
+    >>>    from PIL import Image
+    >>>    f = open('logfile.txt', 'w')
+    >>>    f.write('Starting training...')
+    >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
+    >>>    img = Image.new(.....)
+    >>>    img.save('diagram.png')
+    >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
+    >>> # Important! Remember: optimization_key must be set when returning multiple outputs
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max', optimization_key='accuracy')
+
 
     Args:
         :map_fun: The function to run
         :boundary_dict: dict containing hyperparameter name and corresponding boundaries, each experiment randomize a value in the boundary range.
-        :direction: If set to 'max' the highest value returned will correspond to the best solution, if set to 'min' the opposite is true
-        :samples: the number of random samples to evaluate for each hyperparameter given the boundaries
+        :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
+        :samples: the number of random samples to evaluate for each hyperparameter given the boundaries, for example samples=3 would result in 3 hyperparameter combinations in total to evaluate
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: A longer description for the experiment
+        :optimization_key: When returning a dict, the key name of the metric to maximize or minimize in the dict should be set as this value
 
     Returns:
-        HDFS path in your project where the experiment is stored
+        HDFS path in your project where the experiment is stored, dict with best hyperparameters and return dict with best metrics
 
     """
 
@@ -284,49 +178,37 @@ def random_search(map_fun, boundary_dict, direction='max', samples=10, name='no-
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        r_search.run_id = r_search.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, r_search._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        experiment_json = None
+        experiment_json = experiment_utils._populate_experiment(name, 'random_search', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'random_search', r_search._get_logdir(app_id), json.dumps(boundary_dict), versioned_path, description)
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._version_resources(versioned_resources, r_search._get_logdir(app_id))
+        logdir, best_param, best_metric, return_dict = r_search_impl._run(sc, map_fun, run_id, boundary_dict, samples, direction=direction, local_logdir=local_logdir, optimization_key=optimization_key)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
 
-        tensorboard_logdir, param, metric = r_search._launch(sc, map_fun, boundary_dict, samples, direction=direction, local_logdir=local_logdir)
-
-        experiment_json = util._finalize_experiment(experiment_json, param, metric)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
-
-        return tensorboard_logdir
-
+        return logdir, best_param, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
-    return tensorboard_logdir
+        _end_run(sc)
 
-
-def differential_evolution(objective_function, boundary_dict, direction = 'max', generations=10, population=10, mutation=0.5, crossover=0.7, cleanup_generations=False, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def differential_evolution(objective_function, boundary_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
     *Parallel Experiment*
 
@@ -337,30 +219,45 @@ def differential_evolution(objective_function, boundary_dict, direction = 'max',
     Example usage:
 
     >>> from hops import experiment
-    >>> boundary_dict = {'learning_rate':[0.01, 0.2], 'dropout': [0.1, 0.9]}
-    >>> def train_nn(learning_rate, dropout):
+    >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    import tensorflow
-    >>>    # code for preprocessing, training and exporting model
-    >>>    # mandatory return a value for the experiment which is registered in Experiments service
-    >>>    return network.evaluate(learning_rate, dropout)
-    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max')
+    >>>    return network.evaluate(learning_rate, layers, dropout)
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction=Direction.MAX)
+
+    Returning multiple outputs, including images and logs:
+
+    >>> from hops import experiment
+    >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
+    >>> def train_nn(learning_rate, layers, dropout):
+    >>>    # Do all imports in the function
+    >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
+    >>>    from PIL import Image
+    >>>    f = open('logfile.txt', 'w')
+    >>>    f.write('Starting training...')
+    >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
+    >>>    img = Image.new(.....)
+    >>>    img.save('diagram.png')
+    >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
+    >>> # Important! Remember: optimization_key must be set when returning multiple outputs
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
         :objective_function: the function to run, must return a metric
         :boundary_dict: a dict where each key corresponds to an argument of *objective_function* and the correspond value should be a list of two elements. The first element being the lower bound for the parameter and the the second element the upper bound.
-        :direction: 'max' to maximize the returned metric, 'min' to minize the returned metric
+        :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
         :generations: number of generations
         :population: size of population
         :mutation: mutation rate to explore more different hyperparameters
         :crossover: how fast to adapt the population to the best in each generation
-        :cleanup_generations: remove previous generations from HDFS, only keep the last 2
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: a longer description for the experiment
+        :optimization_key: When returning a dict, the key name of the metric to maximize or minimize in the dict should be set as this value
 
     Returns:
-        HDFS path in your project where the experiment is stored, dict with best hyperparameters
+        HDFS path in your project where the experiment is stored, dict with best hyperparameters and return dict with best metrics
 
     """
 
@@ -369,82 +266,87 @@ def differential_evolution(objective_function, boundary_dict, direction = 'max',
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-        spark = util._find_spark()
-        sc = spark.sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        diff_evo.run_id = diff_evo.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, diff_evo._get_logdir(app_id))
+        diff_evo_impl.run_id = run_id
 
-        experiment_json = None
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'differential_evolution', diff_evo._get_logdir(app_id), json.dumps(boundary_dict), versioned_path, description)
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        experiment_json = experiment_utils._populate_experiment(name, 'differential_evolution', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
 
-        tensorboard_logdir, best_param, best_metric = diff_evo._search(spark, objective_function, boundary_dict, direction=direction, generations=generations, popsize=population, mutation=mutation, crossover=crossover, cleanup_generations=cleanup_generations, local_logdir=local_logdir, name=name)
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        experiment_json = util._finalize_experiment(experiment_json, best_param, best_metric)
+        logdir, best_param, best_metric, return_dict = diff_evo_impl._run(objective_function, boundary_dict, direction=direction, generations=generations, population=population, mutation=mutation, crossover=crossover, cleanup_generations=False, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
 
-        best_param_dict = util._convert_to_dict(best_param)
+        return logdir, best_param, return_dict
 
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
+        _end_run(sc)
 
-    return tensorboard_logdir, best_param_dict
-
-def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
     *Parallel Experiment*
 
-    Run multiple experiments and test a grid of hyperparameters for a neural network to maximize e.g. a Neural Network's accuracy.
+    Run grid search evolution to explore a predefined set of hyperparameter combinations.
+    The function is treated as a blackbox that returns a metric for some given hyperparameter combination.
+    The returned metric is used to evaluate how 'good' the hyperparameter combination was.
 
-    The following example will run *train_nn* with 6 different hyperparameter combinations
+    Example usage:
 
     >>> from hops import experiment
-    >>> grid_dict = {'learning_rate':[0.1, 0.3], 'dropout': [0.4, 0.6, 0.1]}
-    >>> def train_nn(learning_rate, dropout):
+    >>> grid_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
+    >>> def train_nn(learning_rate, layers, dropout):
+    >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # code for preprocessing, training and exporting model
-    >>>    # mandatory return a value for the experiment which is registered in Experiments service
-    >>>    return network.evaluate(learning_rate, dropout)
-    >>> experiment.grid_search(train_nn, grid_dict, direction='max')
+    >>>    # Put all code inside the wrapper function
+    >>>    return network.evaluate(learning_rate, layers, dropout)
+    >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX)
 
-    The following values will be injected in the function and run and evaluated.
+    Returning multiple outputs, including images and logs:
 
-        - (learning_rate=0.1, dropout=0.4)
-        - (learning_rate=0.1, dropout=0.6)
-        - (learning_rate=0.1, dropout=0.1)
-        - (learning_rate=0.3, dropout=0.4)
-        - (learning_rate=0.3, dropout=0.6)
-        - (learning_rate=0.3, dropout=0.1)
+    >>> from hops import experiment
+    >>> grid_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
+    >>> def train_nn(learning_rate, layers, dropout):
+    >>>    # Do all imports in the function
+    >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
+    >>>    from PIL import Image
+    >>>    f = open('logfile.txt', 'w')
+    >>>    f.write('Starting training...')
+    >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
+    >>>    img = Image.new(.....)
+    >>>    img.save('diagram.png')
+    >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
+    >>> # Important! Remember: optimization_key must be set when returning multiple outputs
+    >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
         :map_fun: the function to run, must return a metric
-        :args_dict: a dict with a key for each argument with a corresponding value being a list containing the hyperparameters to test, internally all possible combinations will be generated and run as separate Experiments
-        :direction: 'max' to maximize the returned metric, 'min' to minize the returned metric
+        :grid_dict: a dict with a key for each argument with a corresponding value being a list containing the hyperparameters to test, internally all possible combinations will be generated and run as separate Experiments
+        :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: a longer description for the experiment
+        :optimization_key: When returning a dict, the key name of the metric to maximize or minimize in the dict should be set as this value
 
     Returns:
-        HDFS path in your project where the experiment is stored
+        HDFS path in your project where the experiment is stored, dict with best hyperparameters and return dict with best metrics
 
     """
 
@@ -453,46 +355,39 @@ def grid_search(map_fun, args_dict, direction='max', name='no-name', local_logdi
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        gs.run_id = gs.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, gs._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'grid_search', gs._get_logdir(app_id), json.dumps(args_dict), versioned_path, description)
+        experiment_json = experiment_utils._populate_experiment(name, 'grid_search', 'PARALLEL_EXPERIMENTS', json.dumps(grid_dict), description, app_id, direction, optimization_key)
 
-        util._version_resources(versioned_resources, gs._get_logdir(app_id))
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        grid_params = experiment_utils.grid_params(grid_dict)
 
-        grid_params = util.grid_params(args_dict)
+        logdir, best_param, best_metric, return_dict = grid_search_impl._run(sc, map_fun, run_id, grid_params, direction=direction, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        tensorboard_logdir, param, metric = gs._grid_launch(sc, map_fun, grid_params, direction=direction, local_logdir=local_logdir, name=name)
+        experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
 
-        experiment_json = util._finalize_experiment(experiment_json, param, metric)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        return logdir, best_param, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
+        _end_run(sc)
 
-    return tensorboard_logdir
-
-def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def collective_all_reduce(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
     """
     *Distributed Training*
 
@@ -504,7 +399,9 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned
 
     >>> from hops import experiment
     >>> def distributed_training():
+    >>>    # Do all imports in the function
     >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
@@ -515,11 +412,11 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned
         :map_fun: the function containing code to run CollectiveAllReduceStrategy
         :name: the name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: a longer description for the experiment
+        :evaluator: whether to run one of the workers as an evaluator
 
     Returns:
-        HDFS path in your project where the experiment is stored
+        HDFS path in your project where the experiment is stored and return value from the process running as chief
 
     """
 
@@ -528,47 +425,42 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, versioned
 
     assert num_ps == 0, "number of parameter servers should be 0"
     assert num_executors > 1, "number of workers (executors) should be greater than 1"
+    if evaluator:
+        assert num_executors > 2, "number of workers must be atleast 3 if evaluator is set to True"
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        tf_allreduce.run_id = tf_allreduce.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'collective_all_reduce', tf_allreduce._get_logdir(app_id), None, versioned_path, description)
+        experiment_json = experiment_utils._populate_experiment(name, 'collective_all_reduce', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
-        util._version_resources(versioned_resources, tf_allreduce._get_logdir(app_id))
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        logdir, return_dict = allreduce_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        retval, logdir = tf_allreduce._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
-        experiment_json = util._finalize_experiment(experiment_json, None, retval)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        return logdir, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
+        _end_run(sc)
 
-    return logdir
-
-def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def parameter_server(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
     """
     *Distributed Training*
 
@@ -580,22 +472,24 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
     >>> from hops import experiment
     >>> def distributed_training():
+    >>>    # Do all imports in the function
     >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
     >>>    ...ParameterServerStrategy(num_gpus_per_worker=devices.get_num_gpus())...
     >>> experiment.parameter_server(distributed_training, local_logdir=True)
 
-    Args:
+    Args:f
         :map_fun: contains the code where you are using ParameterServerStrategy.
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: a longer description for the experiment
+        :evaluator: whether to run one of the workers as an evaluator
 
     Returns:
-        HDFS path in your project where the experiment is stored
+        HDFS path in your project where the experiment is stored and return value from the process running as chief
 
     """
     num_ps = util.num_param_servers()
@@ -603,47 +497,42 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, versioned_reso
 
     assert num_ps > 0, "number of parameter servers should be greater than 0"
     assert num_ps < num_executors, "num_ps cannot be greater than num_executors (i.e. num_executors == num_ps + num_workers)"
+    if evaluator:
+        assert num_executors - num_ps > 2, "number of workers must be atleast 3 if evaluator is set to True"
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        ps.run_id = ps.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, ps._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'parameter_server', ps._get_logdir(app_id), None, versioned_path, description)
+        experiment_json = experiment_utils._populate_experiment(name, 'parameter_server', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
-        util._version_resources(versioned_resources, ps._get_logdir(app_id))
+        experiment_json = experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        logdir, return_dict = ps_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        retval, logdir = ps._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
-        experiment_json = util._finalize_experiment(experiment_json, None, retval)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        return logdir, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
+        _end_run(sc)
 
-    return logdir
-
-def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=None, description=None):
+def mirrored(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
     """
     *Distributed Training*
 
@@ -651,7 +540,9 @@ def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=No
 
     >>> from hops import experiment
     >>> def mirrored_training():
+    >>>    # Do all imports in the function
     >>>    import tensorflow
+    >>>    # Put all code inside the wrapper function
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
@@ -662,11 +553,11 @@ def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=No
         :map_fun: contains the code where you are using MirroredStrategy.
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :versioned_resources: A list of HDFS paths of resources to version with this experiment
         :description: a longer description for the experiment
+        :evaluator: whether to run one of the workers as an evaluator
 
     Returns:
-        HDFS path in your project where the experiment is stored
+        HDFS path in your project where the experiment is stored and return value from the process running as chief
 
     """
 
@@ -675,57 +566,56 @@ def mirrored(map_fun, name='no-name', local_logdir=False, versioned_resources=No
 
     global running
     if running:
-        raise RuntimeError("An experiment is currently running. Please call experiment.end() to stop it.")
+        raise RuntimeError("An experiment is currently running.")
 
+    num_workers = util.num_executors()
+    if evaluator:
+        assert num_workers > 2, "number of workers must be atleast 3 if evaluator is set to True"
+
+    start = time.time()
+    sc = util._find_spark().sparkContext
     try:
         global app_id
         global experiment_json
-        global elastic_id
-        running = True
-
-        sc = util._find_spark().sparkContext
+        global run_id
         app_id = str(sc.applicationId)
 
-        mirrored_impl.run_id = mirrored_impl.run_id + 1
+        _start_run()
 
-        versioned_path = util._version_resources(versioned_resources, mirrored_impl._get_logdir(app_id))
+        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
 
-        experiment_json = util._populate_experiment(sc, name, 'experiment', 'mirrored', mirrored_impl._get_logdir(app_id), None, versioned_path, description)
+        experiment_json = experiment_utils._populate_experiment(name, 'mirrored', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
-        util._version_resources(versioned_resources, mirrored_impl._get_logdir(app_id))
+        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        logdir, return_dict = mirrored_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
+        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        retval, logdir = mirrored_impl._launch(sc, map_fun, local_logdir=local_logdir, name=name)
+        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
-        experiment_json = util._finalize_experiment(experiment_json, None, retval)
-
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+        return logdir, return_dict
     except:
-        _exception_handler()
+        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
     finally:
-        #cleanup spark jobs
-        elastic_id +=1
-        running = False
-        sc.setJobGroup("", "")
+        _end_run(sc)
 
-    return logdir
-
-def _exception_handler():
+def _exception_handler(duration):
     """
 
     Returns:
 
     """
-    global running
-    global experiment_json
-    if running and experiment_json != None:
-        experiment_json = json.loads(experiment_json)
-        experiment_json['status'] = "FAILED"
-        experiment_json['finished'] = datetime.now().isoformat()
-        experiment_json = json.dumps(experiment_json)
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    try:
+        global running
+        global experiment_json
+        if running and experiment_json != None:
+            experiment_json['state'] = "FAILED"
+            experiment_json['duration'] = duration
+            experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'REPLACE')
+    except Exception as err:
+        print(err)
+        pass
 
 def _exit_handler():
     """
@@ -733,13 +623,29 @@ def _exit_handler():
     Returns:
 
     """
+    try:
+        global running
+        global experiment_json
+        if running and experiment_json != None:
+            experiment_json['state'] = "KILLED"
+            experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'REPLACE')
+    except Exception as err:
+        print(err)
+        pass
+
+def _start_run():
     global running
-    global experiment_json
-    if running and experiment_json != None:
-        experiment_json = json.loads(experiment_json)
-        experiment_json['status'] = "KILLED"
-        experiment_json['finished'] = datetime.now().isoformat()
-        experiment_json = json.dumps(experiment_json)
-        util._put_elastic(hopshdfs.project_name(), app_id, elastic_id, experiment_json)
+    global app_id
+    global run_id
+    running = True
+    experiment_utils._set_ml_id(app_id, run_id)
+
+def _end_run(sc):
+    global running
+    global app_id
+    global run_id
+    run_id = run_id + 1
+    running = False
+    sc.setJobGroup("", "")
 
 atexit.register(_exit_handler)

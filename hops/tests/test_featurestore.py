@@ -564,38 +564,91 @@ class TestFeaturestoreSuite(object):
         join_col = query_planner._get_join_col(featuregroups)
         assert join_col == "team_id"
 
-    def test_validate_metadata(self):
+    def test_do_prepare_stats_settings(self, sample_metadata):
+        """Test _do_prepare_stats_settings() method"""
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        result = fs_utils._do_prepare_stats_settings("games_features", 1, featurestore_metadata,
+                                                     None, None, None, None, ['test'], 10, 10, "spearman")
+        assert result["desc_stats_enabled"]
+        assert result["feat_corr_enabled"]
+        assert result["feat_hist_enabled"]
+        assert result["cluster_analysis_enabled"]
+        assert set(result["stat_columns"]) == set(['test'])
+        assert result["num_bins"] == 10
+        assert result["num_clusters"] == 10
+        assert result["corr_method"] == "spearman"
+
+    def test_validate_metadata(self, sample_metadata):
         """ Test the validate_metadata() function"""
+        featurestore_metadata = FeaturestoreMetadata(sample_metadata)
+        # correct metadata
         fs_utils._validate_metadata("test",
-                                    [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                    "description")
+                                    [
+                                        {'name':'team_budget', 'description':''},
+                                        {'name':'team_id', 'description':'abcd'},
+                                        {'name':'team_position', 'description':'abcd'}
+                                    ],
+                                    "description",
+                                    featurestore_metadata.settings)
+        # illegal entity name
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test-",
-                                        [('team_budget', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
-            assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
+                                        [
+                                            {'name':'team_budget', 'description':''},
+                                            {'name':'team_id', 'description':'abcd'},
+                                            {'name':'team_position', 'description':'abcd'}
+                                        ],
+                                        "description",
+                                        featurestore_metadata.settings)
+            assert "Illegal feature store entity name" in ex.value
+        # illegal entity description
+        with pytest.raises(ValueError) as ex:
+            fs_utils._validate_metadata("test",
+                                        [
+                                            {'name':'team_budget', 'description':''},
+                                            {'name':'team_id', 'description':'abcd'},
+                                            {'name':'team_position', 'description':'abcd'}
+                                        ],
+                                        ("toooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                        "oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                        "oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                        "oooooooooooooooooooolong"),
+                                        featurestore_metadata.settings)
+            assert "Illegal feature store entity description" in ex.value
+        # empty dataframe
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
                                         [],
-                                        "description")
+                                        "description",
+                                        featurestore_metadata.settings)
             assert "Cannot create a feature group from an empty spark dataframe" in ex.value
+        # illegal feature name
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                        [('team_budget-', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
-            assert "must match the regular expression: ^[a-zA-Z0-9_]+$" in ex.value
+                                        [
+                                            {'name':'TEAM_budget', 'description':''},
+                                            {'name':'team_id', 'description':'abcd'},
+                                            {'name':'team_position', 'description':'abcd'}
+                                        ],
+                                        "description",
+                                        featurestore_metadata.settings)
+            assert "Illegal feature name" in ex.value
+        # illegal feature description
         with pytest.raises(ValueError) as ex:
             fs_utils._validate_metadata("test",
-                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        "description")
-            assert "Name of feature column cannot be empty" in ex.value
-        description = ''.join(choice(ascii_uppercase) for i in range(3000))
-        with pytest.raises(ValueError) as ex:
-            fs_utils._validate_metadata("test",
-                                        [('', 'float'), ('team_id', 'int'), ('team_position', 'int')],
-                                        description)
-            assert "Feature group/Training dataset description should " \
-                   "not exceed the maximum length of 2000 characters" in ex.value
+                                        [
+                                            {'name':'team_budget', 'description': ("toooooooooooooooooooooooooooooooooo"
+                                                "oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                                "oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                                "oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
+                                                "oooooooolong")},
+                                            {'name':'team_id', 'description':'abcd'},
+                                            {'name':'team_position', 'description':'abcd'}
+                                        ],
+                                        "description",
+                                        featurestore_metadata.settings)
+            assert "Illegal feature description" in ex.value
+
 
     def test_convert_featuregroup_version_dict(self, sample_metadata):
         """ Test the convert_featuregroup_version_dict function"""
@@ -730,12 +783,14 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1, None,
-                                                          None, None, None, [])
+                                                          None, None, None, None, None, None,
+                                                          None, None, None, None, None, [])
         assert result == data
         response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._update_featuregroup_stats_rest(1, 1, "test", 1,
-                                                     None, None, None, None, [])
+                                                     None, None, None, None, None, None,
+                                                     None, None, None, None, None, None, [])
             assert "Could not update featuregroup stats" in ex.value
         # unmock for later tests
         core._get_featuregroup_id = self.unmocked_get_featuregroup_id
@@ -925,6 +980,7 @@ class TestFeaturestoreSuite(object):
         """ Test update_featuregroup_stats"""
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         rest_rpc._update_featuregroup_stats_rest = mock.MagicMock(return_value=sample_featuregroup)
+        rest_rpc._update_featuregroup_stats_settings_rest = mock.MagicMock(return_value=sample_featuregroup)
         featurestore.update_featuregroup_stats("teams_features")
 
     def test_get_default_primary_key(self):
@@ -1005,6 +1061,7 @@ class TestFeaturestoreSuite(object):
         result = rest_rpc._create_featuregroup_rest("test", featurestore_id, "",
                                                     1, [], features_schema,
                                                     None, None, None, None,
+                                                    True, True, True, True, [], 5, 20, "pearson",
                                                     featurestore_metadata.settings.cached_featuregroup_type,
                                                     featurestore_metadata.settings.cached_featuregroup_dto_type,
                                                     None, None, False)
@@ -1015,6 +1072,7 @@ class TestFeaturestoreSuite(object):
             rest_rpc._create_featuregroup_rest("test", featurestore_id, "",
                                                1, [], features_schema,
                                                None, None, None, None,
+                                               True, True, True, True, [], 5, 20, "pearson",
                                                featurestore_metadata.settings.cached_featuregroup_type,
                                                featurestore_metadata.settings.cached_featuregroup_dto_type,
                                                None, None, False)

@@ -233,7 +233,7 @@ def _compute_dataframe_stats(spark_df, name, version=1, descriptive_statistics=T
         feature_corr_data, desc_stats_data, features_histograms_data, cluster_analysis
 
     """
-    if not stat_columns is None:
+    if stat_columns:
         spark_df = spark_df.select(stat_columns)
     feature_corr_data = None
     desc_stats_data = None
@@ -250,7 +250,8 @@ def _compute_dataframe_stats(spark_df, name, version=1, descriptive_statistics=T
             fs_utils._log("computing descriptive statistics for : {}, version: {}".format(name, version))
             spark.sparkContext.setJobGroup("Descriptive Statistics Computation",
                                            "Analyzing Dataframe Statistics for : {}, version: {}".format(name, version))
-            desc_stats_json = fs_utils._compute_descriptive_statistics(spark_df)
+            spark_df_filtered = fs_utils._filter_spark_df_numeric(spark_df)
+            desc_stats_json = fs_utils._compute_descriptive_statistics(spark_df_filtered)
             desc_stats_data = fs_utils._structure_descriptive_stats_json(desc_stats_json)
             spark.sparkContext.setJobGroup("", "")
         except Exception as e:
@@ -499,10 +500,7 @@ def _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_
 
 
 def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, featurestore=None,
-                                 featuregroup_version=1, mode="append",
-                                 descriptive_statistics=True, feature_correlation=True, feature_histograms=True,
-                                 cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
-                                 num_clusters=5, online=False, offline=True):
+                                 featuregroup_version=1, mode="append", online=False, offline=True):
     """
     Saves the given dataframe to the specified featuregroup. Defaults to the project-featurestore
     This will append to  the featuregroup. To overwrite a featuregroup, create a new version of the featuregroup
@@ -515,17 +513,6 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
         :featurestore: the featurestore to save the featuregroup to (hive database)
         :featuregroup_version: the version of the featuregroup (defaults to 1)
         :mode: the write mode, only 'overwrite' and 'append' are supported
-        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
-                                for the featuregroup
-        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
-                              in the featuregroup
-        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
-        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
-                          featuregroup
-        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
-        :num_bins: number of bins to use for computing histograms
-        :num_clusters: number of clusters to use for cluster analysis
-        :corr_method: the method to compute feature correlation with (pearson or spearman)
         :online: boolean flag whether to insert the data in the online version of the featuregroup
                  (assuming the featuregroup already has online feature serving enabled)
         :offline boolean flag whether to insert the data in the offline version of the featuregroup
@@ -556,13 +543,6 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
             "Could not convert the provided dataframe to a spark dataframe which is required in order to save it to "
             "the Feature Store, error: {}".format(str(e)))
 
-    _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, featuregroup_version=featuregroup_version,
-                                  featurestore=featurestore,
-                                  descriptive_statistics=descriptive_statistics,
-                                  feature_correlation=feature_correlation,
-                                  feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                  stat_columns=stat_columns, num_bins=num_bins, num_clusters=num_clusters,
-                                  corr_method=corr_method)
     if not online and not offline:
         raise ValueError("online=False and offline=False, nothing to insert. "
                          "Please set online=True to insert data in the online feature group (MySQL), "
@@ -583,6 +563,13 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
         online_featurestore._write_jdbc_dataframe(spark_df, storage_connector, tbl_name,
                                                   write_mode=mode)
         fs_utils._log("Inserting data into online feature group {}... [COMPLETE]".format(featuregroup_name))
+
+    # update cache because 'overwrite' mode drops entire featuregroup and recreates it with new id
+    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=True)
+    _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, featuregroup_version=featuregroup_version,
+                                  featurestore=featurestore, descriptive_statistics=None, feature_correlation=None,
+                                  feature_histograms=None, cluster_analysis=None, stat_columns=None, num_bins=None,
+                                  num_clusters=None, corr_method=None)
 
     fs_utils._log("Insertion into feature group was successful")
 
@@ -927,7 +914,10 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
 
     if storage_connector is None:
         storage_connector = _do_get_storage_connector(fs_utils._do_get_project_training_datasets_sink(), featurestore)
-    fs_utils._validate_metadata(training_dataset, spark_df.dtypes, description)
+
+    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
+    features_schema = _parse_spark_features_schema(spark_df.schema)
+    fs_utils._validate_metadata(training_dataset, features_schema, description, featurestore_metadata.settings)
     feature_corr_data, training_dataset_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, training_dataset, version=training_dataset_version,
@@ -936,9 +926,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             num_bins=num_bins,
             corr_method=corr_method,
             num_clusters=num_clusters)
-    features_schema = _parse_spark_features_schema(spark_df.schema)
     featurestore_id = _get_featurestore_id(featurestore)
-    featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     hopsfs_connector_id = None
     s3_connector_id = None
     if storage_connector.type == featurestore_metadata.settings.hopsfs_connector_type:
@@ -1035,15 +1023,21 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
                                                            "feature groups."
                                                            .format(featuregroup_name, featuregroup_version))
 
+    # Sanitize input and check for changed settings
+    group_settings = fs_utils._do_prepare_stats_settings(
+            featuregroup_name, featuregroup_version, featurestore_metadata, descriptive_statistics, feature_correlation,
+            feature_histograms, cluster_analysis, stat_columns, num_bins, num_clusters, corr_method)
+
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(spark_df,
                                  featuregroup_name, version=featuregroup_version,
-                                 descriptive_statistics=descriptive_statistics,
-                                 feature_correlation=feature_correlation,
-                                 feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                 stat_columns=stat_columns,
-                                 num_bins=num_bins, corr_method=corr_method,
-                                 num_clusters=num_clusters)
+                                 descriptive_statistics=group_settings["desc_stats_enabled"],
+                                 feature_correlation=group_settings["feat_corr_enabled"],
+                                 feature_histograms=group_settings["feat_hist_enabled"],
+                                 cluster_analysis=group_settings["cluster_analysis_enabled"],
+                                 stat_columns=group_settings["stat_columns"],
+                                 num_bins=group_settings["num_bins"], corr_method=group_settings["corr_method"],
+                                 num_clusters=group_settings["num_clusters"])
     featuregroup_id = fg.id
     featurestore_id = featurestore_metadata.featurestore.id
     featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
@@ -1052,7 +1046,10 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
         jobs.append(util.get_job_name())
     featuregroup = Featuregroup(rest_rpc._update_featuregroup_stats_rest(
         featuregroup_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
-        cluster_analysis_data, featuregroup_type, featuregroup_type_dto, jobs))
+        cluster_analysis_data, group_settings["desc_stats_enabled"], group_settings["feat_corr_enabled"],
+        group_settings["feat_hist_enabled"], group_settings["cluster_analysis_enabled"], group_settings["stat_columns"],
+        group_settings["num_bins"], group_settings["num_clusters"], group_settings["corr_method"], featuregroup_type,
+        featuregroup_type_dto, jobs))
     return featuregroup
 
 
@@ -1827,8 +1824,6 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
             "the Feature Store, error: {}".format(
                 str(e)))
 
-    fs_utils._validate_metadata(featuregroup, spark_df.dtypes, description)
-
     if len(primary_key) == 0:
         primary_key = [fs_utils._get_default_primary_key(spark_df)]
     if util.get_job_name() is not None:
@@ -1837,6 +1832,7 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
     fs_utils._validate_primary_key(spark_df, primary_key)
     features_schema = _parse_spark_features_schema(spark_df.schema, primary_key, partition_by, online=online,
                                                    online_types= online_types)
+    fs_utils._validate_metadata(featuregroup, features_schema, description, featurestore_metadata.settings)
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
             spark_df, featuregroup, version=featuregroup_version,
@@ -1848,10 +1844,12 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
     featurestore_id = _get_featurestore_id(featurestore)
     featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     fs_utils._log("Registering feature metadata...")
-    rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
+    response = rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                        features_schema, feature_corr_data, featuregroup_desc_stats_data,
-                                       features_histogram_data, cluster_analysis_data, featuregroup_type,
-                                       featuregroup_type_dto, None, None, online)
+                                       features_histogram_data, cluster_analysis_data, feature_correlation,
+                                       descriptive_statistics, feature_histograms, cluster_analysis, stat_columns,
+                                       num_bins, num_clusters, corr_method, featuregroup_type, featuregroup_type_dto,
+                                       None, None, online)
     fs_utils._log("Registering feature metadata... [COMPLETE]")
     if offline:
         fs_utils._log("Writing feature data to offline feature group (Hive)...")
@@ -1965,6 +1963,60 @@ def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_me
                                                                    "connectors for importation are: " \
                                                                    .format(storage_connector.type))
 
+
+def _do_add_metadata(featuregroup_name, name, value, featurestore=None, featuregroup_version=1):
+    """
+    Attach custom metadata to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :value: the value of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          None
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    rest_rpc._add_metadata(featurestore_id, featuregroup_id, name, value)
+
+
+def _do_get_metadata(featuregroup_name, name=None, featurestore=None, featuregroup_version=1):
+    """
+    Get the custom metadata attached to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          A dictionary containing the metadata attached to the featuregroup
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    return rest_rpc._get_metadata(featurestore_id, featuregroup_id, name)
+
+
+def _do_remove_metadata(featuregroup_name, name, featurestore=None, featuregroup_version=1):
+    """
+    Remove the custom metadata attached to a feature group
+
+    Args:
+        :featuregroup_name: the name of the featuregroup
+        :name: the name of the extended metadata
+        :featurestore: the featurestore where the featuregroup resides
+        :featuregroup_version: the version of the featuregroup
+
+    Returns:
+          None
+    """
+    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+    featurestore_id = _get_featurestore_id(featurestore)
+    rest_rpc._remove_metadata(featurestore_id, featuregroup_id, name)
 
 # Fetch on-load and cache it on the client
 try:

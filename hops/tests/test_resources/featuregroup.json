@@ -861,5 +861,13 @@
   "hiveTableType": "MANAGED_TABLE",
   "inodeId": 106389,
   "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-  "onlineFeaturegroupEnabled": false
+  "onlineFeaturegroupEnabled": false,
+  "featHistEnabled": true,
+  "featCorrEnabled": true,
+  "clusterAnalysisEnabled": true,
+  "descStatsEnabled": true,
+  "statisticColumns": [],
+  "numBins": 5,
+  "numClusters": 20,
+  "corrMethod": "pearson"
 }

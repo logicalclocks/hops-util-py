@@ -637,7 +637,7 @@ class ParquetFeatureFrame(FeatureFrame):
                                               "in file {}".format(
                     self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_SUFFIX))
         else:
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_AVRO_FORMAT).load(self.path)
+            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_PARQUET_FORMAT).load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 

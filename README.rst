@@ -337,12 +337,13 @@ In the `serving` module you can find an API for creating/starting/stopping/updat
 .. code-block:: python
 
   from hops import serving
+  from hops import model
 
   # Tensorflow
   export_path = work_dir + '/model'
   builder = tf.saved_model.builder.SavedModelBuilder(export_path
   ... # tf specific export code
-  serving.export(export_path, "mnist", 1, overwrite=True)
+  model.export(export_path, "mnist")
   model_path="/Models/mnist/"
   SERVING_NAME="mnist"
   serving.create_or_update(model_path, "mnist", serving_type="TENSORFLOW", model_version=1)
@@ -353,7 +354,7 @@ In the `serving` module you can find an API for creating/starting/stopping/updat
 
    # SkLearn
   script_path = "Jupyter/Serving/sklearn/iris_flower_classifier.py"
-  serving.export(script_path, "irisClassifier", 1, overwrite=True)
+  model.export(script_path, "irisClassifier")
   if serving.exists("irisClassifier"):
       serving.delete("irisClassifier")
   serving.create_or_update(script_path, "irisClassifier", serving_type="SKLEARN", model_version=1)

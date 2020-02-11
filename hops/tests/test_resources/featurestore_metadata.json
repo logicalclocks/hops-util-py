@@ -76,7 +76,15 @@
         "tableRows": 3,
         "tableType": "BASE TABLE"
       },
-      "onlineFeaturegroupEnabled": true
+      "onlineFeaturegroupEnabled": true,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -145,7 +153,15 @@
         "tableRows": 50,
         "tableType": "BASE TABLE"
       },
-      "onlineFeaturegroupEnabled": true
+      "onlineFeaturegroupEnabled": true,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "onDemandFeaturegroupDTO",
@@ -166,7 +182,15 @@
       "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
       "jdbcConnectorId": 138,
       "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
-      "query": "SELECT average_player_age as average_player_age_on_dmd, average_player_worth as average_player_worth_on_dmd, team_id FROM players_features_1"
+      "query": "SELECT average_player_age as average_player_age_on_dmd, average_player_worth as average_player_worth_on_dmd, team_id FROM players_features_1",
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -250,7 +274,15 @@
       "hiveTableType": "EXTERNAL_TABLE",
       "inodeId": 106398,
       "inputFormat": "org.apache.hudi.hadoop.HoodieInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -299,7 +331,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107745,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -348,7 +388,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107673,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -397,7 +445,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107793,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -446,7 +502,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 109416,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -504,7 +568,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 106993,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "onDemandFeaturegroupDTO",
@@ -525,7 +597,15 @@
       "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
       "jdbcConnectorId": 138,
       "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
-      "query": "SELECT * FROM games_features_1 WHERE score > 1"
+      "query": "SELECT * FROM games_features_1 WHERE score > 1",
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -583,7 +663,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 106389,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -632,7 +720,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107111,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -677,7 +773,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107690,
       "inputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -735,7 +839,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 106803,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -795,7 +907,15 @@
         "tableRows": 3,
         "tableType": "BASE TABLE"
       },
-      "onlineFeaturegroupEnabled": true
+      "onlineFeaturegroupEnabled": true,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -844,7 +964,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107139,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "onDemandFeaturegroupDTO",
@@ -865,7 +993,15 @@
       "featuregroupType": "ON_DEMAND_FEATURE_GROUP",
       "jdbcConnectorId": 138,
       "jdbcConnectorName": "demo_featurestore_admin000_featurestore",
-      "query": "SELECT * FROM games_features_1 WHERE score > 1"
+      "query": "SELECT * FROM games_features_1 WHERE score > 1",
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -914,7 +1050,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107719,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -1000,7 +1144,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 106898,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -1049,7 +1201,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 107769,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     },
     {
       "type": "cachedFeaturegroupDTO",
@@ -1098,7 +1258,15 @@
       "hiveTableType": "MANAGED_TABLE",
       "inodeId": 109430,
       "inputFormat": "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat",
-      "onlineFeaturegroupEnabled": false
+      "onlineFeaturegroupEnabled": false,
+      "featHistEnabled": true,
+      "featCorrEnabled": true,
+      "clusterAnalysisEnabled": true,
+      "descStatsEnabled": true,
+      "statisticColumns": [],
+      "numBins": 5,
+      "numClusters": 20,
+      "corrMethod": "pearson"
     }
   ],
   "trainingDatasets": [
@@ -2260,20 +2428,17 @@
     }
   ],
   "settings": {
-    "cachedFeaturegroupDescriptionMaxLength": 256,
     "cachedFeaturegroupDtoType": "cachedFeaturegroupDTO",
-    "cachedFeaturegroupFeatureDescriptionMaxLength": 256,
-    "cachedFeaturegroupFeatureNameMaxLength": 767,
-    "cachedFeaturegroupNameMaxLength": 767,
     "cachedFeaturegroupType": "CACHED_FEATURE_GROUP",
     "externalTrainingDatasetDtoType": "externalTrainingDatasetDTO",
-    "externalTrainingDatasetNameMaxLength": 256,
     "externalTrainingDatasetType": "EXTERNAL_TRAINING_DATASET",
     "featureImportConnectors": [
       "S3"
     ],
     "featuregroupType": "FEATURE GROUP",
-    "featurestoreRegex": "^[a-zA-Z0-9_]+$",
+    "featurestoreRegex": "^[a-z0-9_]{1,63}$",
+    "featurestoreEntityNameMaxLength": 63,
+    "featurestoreEntityDescriptionMaxLength": 256,
     "featurestoreStatisticsMaxCorrelations": 50,
     "featurestoreUtil4jArgsDataset": "Resources",
     "featurestoreUtil4jExecutable": "/user/spark/hops-examples-featurestore-util4j-1.0.0-SNAPSHOT.jar",
@@ -2283,17 +2448,12 @@
     "hopsfsConnectorDtoType": "featurestoreHopsfsConnectorDTO",
     "hopsfsConnectorType": "HOPSFS",
     "hopsfsTrainingDatasetDtoType": "hopsfsTrainingDatasetDTO",
-    "hopsfsTrainingDatasetNameMaxLength": 256,
     "hopsfsTrainingDatasetType": "HOPSFS_TRAINING_DATASET",
     "jdbcConnectorDtoType": "featurestoreJdbcConnectorDTO",
     "jdbcConnectorType": "JDBC",
     "jdbcStorageConnectorArgumentsMaxLength": 2000,
     "jdbcStorageConnectorConnectionstringMaxLength": 5000,
-    "onDemandFeaturegroupDescriptionMaxLength": 1000,
     "onDemandFeaturegroupDtoType": "onDemandFeaturegroupDTO",
-    "onDemandFeaturegroupFeatureDescriptionMaxLength": 10000,
-    "onDemandFeaturegroupFeatureNameMaxLength": 1000,
-    "onDemandFeaturegroupNameMaxLength": 1000,
     "onDemandFeaturegroupSqlQueryMaxLength": 11000,
     "onDemandFeaturegroupType": "ON_DEMAND_FEATURE_GROUP",
     "onlineFeaturestoreEnabled": true,

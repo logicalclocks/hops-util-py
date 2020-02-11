@@ -106,7 +106,6 @@ def get_kafka_default_config():
         constants.KAFKA_SSL_CONFIG.SSL_CA_LOCATION_CONFIG: tls.get_ca_chain_location(),
         constants.KAFKA_SSL_CONFIG.SSL_CERTIFICATE_LOCATION_CONFIG: tls.get_client_certificate_location(),
         constants.KAFKA_SSL_CONFIG.SSL_PRIVATE_KEY_LOCATION_CONFIG: tls.get_client_key_location(),
-        constants.KAFKA_SSL_CONFIG.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG: "",
         "group.id": "something"
     }
     return default_config
@@ -128,8 +127,9 @@ def get_schema(topic):
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_KAFKA_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_TOPICS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    topic + constants.DELIMITERS.SLASH_DELIMITER + \
-                   constants.REST_CONFIG.HOPSWORKS_SCHEMA_RESOURCE
+                   constants.REST_CONFIG.HOPSWORKS_SUBJECTS_RESOURCE
     response = util.send_request(method, resource_url)
     response_object = response.json()
 
@@ -139,7 +139,7 @@ def get_schema(topic):
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
-    return response_object
+    return response_object['schema']
 
 
 def parse_avro_msg(msg, avro_schema):
@@ -170,11 +170,9 @@ def convert_json_schema_to_avro(json_schema):
          the avro schema
     """
     if sys.version_info > (3, 0): # for python 3
-        return avro.schema.Parse(literal_eval(json.dumps(json_schema["contents"])))
+        return avro.schema.Parse(json_schema)
     else: # for python 2
-        return avro.schema.parse(literal_eval(json.dumps(json_schema["contents"])))
-
-
+        return avro.schema.parse(json_schema)
 
 
 class KafkaTopicDTO(object):

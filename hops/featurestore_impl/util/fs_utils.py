@@ -644,15 +644,16 @@ def _convert_dataframe_to_spark(dataframe):
             type(dataframe)))
 
 
-def _validate_metadata(name, dtypes, description):
+def _validate_metadata(name, schema, description, featurestore_settings):
     """
     Function for validating metadata when creating new feature groups and training datasets.
     Raises and assertion exception if there is some error in the metadata.
 
     Args:
         :name: the name of the feature group/training dataset
-        :dtypes: the dtypes in the provided spark dataframe
+        :schema: the schema in the provided spark dataframe in terms of featureDTOs
         :description: the description
+        :featurestore_regex: Regex string to match featuregroup/training dataset and feature names with
 
     Returns:
         None
@@ -660,24 +661,31 @@ def _validate_metadata(name, dtypes, description):
     Raises:
         :ValueError: if the metadata does not match the required validation rules
     """
-    name_pattern = re.compile("^[a-zA-Z0-9_]+$")
-    if len(name) > 256 or name == "" or not name_pattern.match(name):
-        raise ValueError("Name of feature group/training dataset cannot be empty, cannot exceed 256 characters,"
-                         " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided name: {} "
-                         "is not valid".format(name))
-    if len(dtypes) == 0:
+    if not featurestore_settings.featurestore_regex.match(name):
+        raise ValueError("Illegal feature store entity name, the provided name {} is invalid. Entity names can only "
+            "contain lower case characters, numbers and underscores and cannot be longer than {} characters or empty."
+            .format(name, featurestore_settings.entity_name_max_len))
+
+    if description:
+        if len(description) > featurestore_settings.entity_description_max_len:
+            raise ValueError("Illegal feature store entity description, the provided description for the entity {} is "
+                "too long with {} characters. Entity descriptions cannot be longer than {} characters."
+                .format(name, len(description), featurestore_settings.entity_description_max_len))
+
+    if len(schema) == 0:
         raise ValueError("Cannot create a feature group from an empty spark dataframe")
 
-    for dtype in dtypes:
-        if len(dtype[0]) > 767 or dtype[0] == "" or not name_pattern.match(dtype[0]):
-            raise ValueError("Name of feature column cannot be empty, cannot exceed 767 characters,"
-                             " and must match the regular expression: ^[a-zA-Z0-9_]+$, the provided "
-                             "feature name: {} is not valid".format(dtype[0]))
-
-    if len(description) > 2000:
-        raise ValueError(
-            "Feature group/Training dataset description should not exceed the maximum length of 2000 characters, "
-            "the provided description has length: {}".format(len(description)))
+    for f in schema:
+        if not featurestore_settings.featurestore_regex.match(f[constants.REST_CONFIG.JSON_FEATURE_NAME]):
+            raise ValueError("Illegal feature name, the provided feature name {} is invalid. Feature names can only "
+                "contain lower case characters, numbers and underscores and cannot be longer than {} characters or "
+                "empty.".format(f[constants.REST_CONFIG.JSON_FEATURE_NAME], featurestore_settings.entity_name_max_len))
+        if len(f[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]) > featurestore_settings.entity_description_max_len:
+            raise ValueError("Invalid feature description, the provided feature description of {} is too long with {} "
+                "characters. Feature descriptions cannot be longer than {} characters."
+                .format(f[constants.REST_CONFIG.JSON_FEATURE_NAME],
+                    len(f[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]),
+                    featurestore_settings.entity_description_max_len))
 
 
 def _convert_spark_dtype_to_hive_dtype(spark_dtype):
@@ -933,6 +941,46 @@ def _structure_feature_corr_json(feature_corr_dict):
         constants.REST_CONFIG.JSON_FEATURE_CORRELATIONS: feature_correlations
     }
     return correlation_matrix_dict
+
+
+def _do_prepare_stats_settings(featuregroup, featuregroup_version, featurestore_metadata, descriptive_statistics,
+                               feature_correlation, feature_histograms, cluster_analysis, stat_columns, num_bins,
+                               num_clusters, corr_method):
+    """
+    Sanitizes the input and replaces the None settings with the current setting instead.
+
+    Args:
+        :featuregroup: the featuregroup concerned
+        :featuregroup_version: the version of the featuregroup
+        :featurestore_metadata: the featurestore metadata to compare against
+        :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
+                                 for the featuregroup
+        :feature_correlation: a boolean flag whether to compute a feature correlation matrix for the numeric columns
+                              in the featuregroup
+        :feature_histograms: a boolean flag whether to compute histograms for the numeric columns in the featuregroup
+        :cluster_analysis: a boolean flag whether to compute cluster analysis for the numeric columns in the
+                           featuregroup
+        :stat_columns: a list of columns to compute statistics for (defaults to all columns that are numeric)
+        :num_bins: number of bins to use for computing histograms
+        :num_clusters: the number of clusters to use in clustering analysis (k-means)
+        :corr_method: the method to compute feature correlation with (pearson or spearman)
+
+    Returns:
+        [type]: [description]
+    """
+    table_name = _get_table_name(featuregroup, featuregroup_version)
+    fg = featurestore_metadata.featuregroups[table_name]
+    result = {
+        "desc_stats_enabled": descriptive_statistics if descriptive_statistics else fg.desc_stats_enabled,
+        "feat_corr_enabled": feature_correlation if feature_correlation else fg.feat_corr_enabled,
+        "feat_hist_enabled": feature_histograms if feature_histograms else fg.feat_hist_enabled,
+        "cluster_analysis_enabled": cluster_analysis if cluster_analysis else fg.cluster_analysis_enabled,
+        "stat_columns": stat_columns if stat_columns else fg.stat_columns,
+        "num_bins": num_bins if num_bins else fg.num_bins,
+        "num_clusters": num_clusters if num_clusters else fg.num_clusters,
+        "corr_method": corr_method if corr_method else fg.corr_method
+    }
+    return result
 
 
 def _do_get_project_featurestore():

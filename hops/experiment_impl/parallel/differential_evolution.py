@@ -7,22 +7,23 @@ import random
 from collections import OrderedDict
 import os
 
-from hops import hdfs as hopshdfs
-from hops import tensorboard
-from hops import devices
-from hops import util
+from hops import hdfs, tensorboard, devices, util
+from hops.experiment_impl.util import experiment_utils
+from hops.experiment import Direction
 
 import pydoop.hdfs
 import threading
 import six
-import datetime
+import time
 import copy
+import json
+import sys
 
 objective_function=None
-spark_session=None
+spark=None
+opt_key=None
 diff_evo=None
 cleanup=None
-summary_file=None
 fs_handle=None
 local_logdir_bool=False
 
@@ -49,11 +50,11 @@ def _get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
     population_dict = diff_evo.get_dict()
     global run_id
     for i in range(number_params):
-        path_to_log= tensorboard_hdfs_logdir + "differential_evolution/run." + str(run_id) + "/generation." + str(generation_id - 1) + "/"
+        path_to_log= tensorboard_hdfs_logdir + "/generation." + str(generation_id - 1) + "/"
         for k in population_dict:
-            path_to_log+=k+"="+str(args_dict[k][i])+"."
+            path_to_log+=k+'='+str(args_dict[k][i])+ '&'
         path_to_log = path_to_log[:(len(path_to_log) -1)]
-        path_to_log = path_to_log + '/metric'
+        path_to_log = path_to_log + '/.metric'
 
         with pydoop.hdfs.open(path_to_log, "r") as fi:
             metric = fi.read()
@@ -98,7 +99,7 @@ def _execute_all(population_dict, name="no-name"):
         else:
             i+=1
 
-    tensorboard_hdfs_logdir = _evolutionary_launch(spark_session, objective_function, population_dict, name=name)
+    tensorboard_hdfs_logdir = _evolutionary_launch(spark, objective_function, population_dict, name=name)
 
     return _get_all_accuracies(tensorboard_hdfs_logdir, initial_pop, [len(v) for v in initial_pop.values()][0])
 
@@ -139,7 +140,7 @@ class DifferentialEvolution:
     _ordered_population_dict = []
     _param_names = []
 
-    def __init__(self, objective_function, parbounds, types, ordered_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, name="no-name"):
+    def __init__(self, objective_function, parbounds, types, ordered_dict, direction=Direction.MAX, generations=10, population=10, mutation=0.5, crossover=0.7, name="no-name"):
         """
 
         Args:
@@ -149,7 +150,7 @@ class DifferentialEvolution:
             :ordered_dict:
             :direction:
             :generations:
-            :popsize:
+            :population:
             :mutation:
             :crossover:
             :name:
@@ -159,7 +160,7 @@ class DifferentialEvolution:
         self.direction = direction
         self.types = types
         self.generations = generations
-        self.n = popsize
+        self.n = population
         self.F = mutation
         self.CR = crossover
         self._ordered_population_dict = ordered_dict
@@ -187,22 +188,11 @@ class DifferentialEvolution:
         # initialise generation based on individual representation
         population, bounds = self._population_initialisation()
         global fs_handle
-        fs_handle = hopshdfs.get_fs()
+        fs_handle = hdfs.get_fs()
         global run_id
 
-        contents = ''
-        generation_summary = ''
         new_gen_best_param = None
         new_gen_best = None
-        global summary_file
-        summary_file = root_dir + "/summary"
-
-        global fd
-        try:
-            fd = fs_handle.open_file(summary_file, mode='w')
-        except:
-            fd = fs_handle.open_file(summary_file, flags='w')
-        fd.write(("Differential evolution summary\n\n").encode())
 
         for _ in range(self.generations):
 
@@ -213,9 +203,9 @@ class DifferentialEvolution:
 
             new_gen_avg = sum(self._scores)/self.n
 
-            if self.direction == 'max':
+            if self.direction.upper() == Direction.MAX:
                 new_gen_best = max(self._scores)
-            elif self.direction == 'min':
+            elif self.direction.upper() == Direction.MIN:
                 new_gen_best = min(self._scores)
             else:
                 raise ValueError('invalid direction: ' + self.direction)
@@ -227,42 +217,11 @@ class DifferentialEvolution:
                 new_gen_best_param[index] = name + "=" + str(new_gen_best_param[index])
                 index += 1
 
-            contents = ''
-            try:
-                with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
-                    for line in f:
-                        contents += line.decode('utf-8')
-            except:
-                with pydoop.hdfs.open(summary_file) as f:
-                    for line in f:
-                        contents += line.decode('utf-8')
-
-            generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
-                             + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
-            print(generation_summary)
-
-            try:
-                fd = fs_handle.open_file(summary_file, mode='w')
-            except:
-                fd = fs_handle.open_file(summary_file, flags='w')
-
-            fd.write((contents + generation_summary + "\n").encode())
-
-            fd.flush()
-            fd.close()
+            print("Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
+                  + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n")
 
             if cleanup:
                 pydoop.hdfs.rmr(root_dir + '/generation.' + str(self._generation-1))
-
-        try:
-            fd = fs_handle.open_file(summary_file, mode='w')
-        except:
-            fd = fs_handle.open_file(summary_file, flags='w')
-
-        fd.write((contents + generation_summary + "\n\nBest parameter combination found " + str(new_gen_best_param) + " with metric " + str(new_gen_best)).encode())
-
-        fd.flush()
-        fd.close()
 
         parsed_back_population = []
         for indiv in population:
@@ -418,11 +377,9 @@ class DifferentialEvolution:
             parsed_population = self._parse_to_dict(parsed_population)
             self._scores = self.objective_function(parsed_population, name=self.name)
 
-            new_gen_avg = sum(self._scores)/self.n
-
-            if self.direction == 'max':
+            if self.direction.upper() == Direction.MAX:
                 new_gen_best = max(self._scores)
-            elif self.direction == 'min':
+            elif self.direction.upper() == Direction.MIN:
                 new_gen_best = min(self._scores)
             else:
                 raise ValueError('invalid direction: ' + self.direction)
@@ -433,26 +390,6 @@ class DifferentialEvolution:
             for name in self._param_names:
                 new_gen_best_param[index] = name + "=" + str(new_gen_best_param[index])
                 index += 1
-
-            contents = ''
-            try:
-                with pydoop.hdfs.open(summary_file, encoding='utf-8') as f:
-                    for line in f:
-                        contents += line.decode('utf-8')
-            except:
-                with pydoop.hdfs.open(summary_file) as f:
-                    for line in f:
-                        contents += line.decode('utf-8')
-
-            generation_summary = "Generation " + str(self._generation) + " || " + "average metric: " + str(new_gen_avg) \
-                                 + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n"
-
-            print(generation_summary)
-
-            fd.write((contents + generation_summary + "\n").encode())
-
-            fd.flush()
-            fd.close()
 
         parsed_trial_population = []
         for index, trial_vec in enumerate(trial_population):
@@ -465,11 +402,11 @@ class DifferentialEvolution:
         for i in range(self.n):
             trial_vec_score_i = trial_population_scores[i]
             target_vec_score_i = self._scores[i]
-            if self.direction == 'max':
+            if self.direction.upper() == Direction.MAX:
                 if trial_vec_score_i > target_vec_score_i:
                     self._scores[i] = trial_vec_score_i
                     population[i] = trial_population[i]
-            elif self.direction == 'min':
+            elif self.direction.upper() == Direction.MIN:
                 if trial_vec_score_i < target_vec_score_i:
                     self._scores[i] = trial_vec_score_i
                     population[i] = trial_population[i]
@@ -525,7 +462,7 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def _search(spark, function, search_dict, direction = 'max', generations=10, popsize=10, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name"):
+def _run(function, search_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name", optimization_key=None):
     """
 
     Args:
@@ -534,7 +471,7 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
         :search_dict:
         :direction:
         :generations:
-        :popsize:
+        :population:
         :mutation:
         :crossover:
         :cleanup_generations:
@@ -549,14 +486,17 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
     global local_logdir_bool
     local_logdir_bool = local_logdir
 
-    global spark_session
-    spark_session = spark
+    global spark
+    spark = util._find_spark()
 
     global objective_function
     objective_function = function
 
     global cleanup
     cleanup = cleanup_generations
+
+    global opt_key
+    opt_key = optimization_key
 
     argcount = six.get_function_code(function).co_argcount
     arg_names = six.get_function_code(function).co_varnames
@@ -570,6 +510,9 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
         if len(arg_lists[i]) != 2:
             raise ValueError('Boundary list must contain exactly two elements, [lower_bound, upper_bound] for float/int '
                              'or [category1, category2] in the case of strings')
+
+    assert population > 3, 'population should be greater than 3'
+    assert generations > 1, 'generations should be greater than 1'
 
     argIndex = 0
     while argcount != 0:
@@ -599,33 +542,28 @@ def _search(spark, function, search_dict, direction = 'max', generations=10, pop
                                      ordered_dict,
                                      direction=direction,
                                      generations=generations,
-                                     popsize=popsize,
+                                     population=population,
                                      crossover=crossover,
                                      mutation=mutation,
                                      name=name)
 
-    root_dir = hopshdfs._get_experiments_dir() + "/" + str(app_id) + "/differential_evolution/run." + str(run_id)
+    root_dir = experiment_utils._get_experiments_dir() + "/" + str(app_id) + "_" + str(run_id)
 
     best_param, best_metric = diff_evo._solve(root_dir)
 
+
+    param_string = ''
+    for hp in best_param:
+        param_string = param_string + hp + '&'
+    param_string = param_string[:-1]
+
+    best_exp_logdir, return_dict = _get_best(str(root_dir), direction)
+
     print('Finished Experiment \n')
 
-    return str(root_dir), best_param, best_metric
+    return best_exp_logdir, experiment_utils._get_params_dict(best_exp_logdir), best_metric, return_dict
 
-def _get_logdir(app_id):
-    """
-
-    Args:
-        :app_id:
-
-    Returns:
-
-    """
-    global run_id
-    return hopshdfs._get_experiments_dir() + "/" + app_id + "/differential_evolution/run." + str(run_id)
-
-
-def _evolutionary_launch(spark_session, map_fun, args_dict, name="no-name"):
+def _evolutionary_launch(spark, map_fun, args_dict, name="no-name"):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
@@ -634,7 +572,9 @@ def _evolutionary_launch(spark_session, map_fun, args_dict, name="no-name"):
         :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
 
-    sc = spark_session.sparkContext
+    global run_id
+
+    sc = spark.sparkContext
     app_id = str(sc.applicationId)
 
 
@@ -649,16 +589,16 @@ def _evolutionary_launch(spark_session, map_fun, args_dict, name="no-name"):
     global run_id
 
     #Make SparkUI intuitive by grouping jobs
-    sc.setJobGroup("Differential Evolution ", "{} | Hyperparameter Optimization, generation: {}".format(name, generation_id))
-    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id))
+    sc.setJobGroup(os.environ['ML_ID'], "{} | Differential Evolution, Generation: {}".format(name, generation_id))
+    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key))
 
     generation_id += 1
 
-    return hopshdfs._get_experiments_dir() + '/' + app_id + "/"
+    return experiment_utils._get_experiments_dir() + '/' + str(app_id) + "_" + str(run_id)
 
 
 #Helper to put Spark required parameter iter in function signature
-def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
+def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key):
     """
 
     Args:
@@ -685,7 +625,8 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
         for i in iter:
             executor_num = i
 
-        tb_pid = 0
+        experiment_utils._set_ml_id(app_id, run_id)
+
         tb_hdfs_path = ''
         hdfs_exec_logdir = ''
 
@@ -698,83 +639,33 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id):
         try:
             #Arguments
             if args_dict:
-                argcount = six.get_function_code(map_fun).co_argcount
-                names = six.get_function_code(map_fun).co_varnames
-
-                args = []
-                argIndex = 0
-                param_string = ''
-                while argcount > 0:
-                    #Get args for executor and run function
-                    param_name = names[argIndex]
-                    param_val = args_dict[param_name][executor_num]
-                    param_string += str(param_name) + '=' + str(param_val) + '.'
-                    args.append(param_val)
-                    argcount -= 1
-                    argIndex += 1
-                param_string = param_string[:-1]
-
-                val = _get_metric(param_string, app_id, generation_id, run_id)
-                hdfs_exec_logdir, hdfs_appid_logdir = hopshdfs._create_directories(app_id, run_id, param_string, 'differential_evolution', sub_type='generation.' + str(generation_id))
-                pydoop.hdfs.dump('', os.environ['EXEC_LOGFILE'], user=hopshdfs.project_user())
-                hopshdfs._init_logger()
+                param_string, params, args = experiment_utils.build_parameters(map_fun, executor_num, args_dict)
+                val = _get_return_file(param_string, app_id, generation_id, run_id)
+                hdfs_exec_logdir, hdfs_appid_logdir = experiment_utils._create_experiment_subdirectories(app_id, run_id, param_string, 'differential_evolution', sub_type='generation.' + str(generation_id), params=params)
+                logfile = experiment_utils._init_logger(hdfs_exec_logdir)
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir_bool)
-                gpu_str = '\nChecking for GPUs in the environment' + devices._get_gpu_info()
-                hopshdfs.log(gpu_str)
-                print(gpu_str)
+                print(devices._get_gpu_info())
                 print('-------------------------------------------------------')
-                print('Started running task ' + param_string + '\n')
-                if val:
-                    print('Reading returned metric from previous run: ' + str(val))
-                hopshdfs.log('Started running task ' + param_string)
-                task_start = datetime.datetime.now()
-                if not val:
+                print('Started running task ' + param_string)
+                if val is not None:
+                    val = json.loads(val)
+                task_start = time.time()
+                if val is None:
                     val = map_fun(*args)
-                task_end = datetime.datetime.now()
-                time_str = 'Finished task ' + param_string + ' - took ' + util._time_diff(task_start, task_end)
-                print('\n' + time_str)
-                hopshdfs.log(time_str)
-                try:
-                    castval = int(val)
-                except:
-                   raise ValueError('Your function needs to return a metric (number) which should be maximized or minimized')
-
-
-                metric_file = hdfs_exec_logdir + '/metric'
-                fs_handle = hopshdfs.get_fs()
-                try:
-                    fd = fs_handle.open_file(metric_file, mode='w')
-                except:
-                    fd = fs_handle.open_file(metric_file, flags='w')
-
-                fd.write(str(float(val)).encode())
-                fd.flush()
-                fd.close()
+                task_end = time.time()
+                time_str = 'Finished task ' + param_string + ' - took ' + experiment_utils._time_diff(task_start, task_end)
+                print(time_str)
+                experiment_utils._handle_return(val, hdfs_exec_logdir, opt_key, logfile)
                 print('Returning metric ' + str(val))
                 print('-------------------------------------------------------')
         except:
-            #Always do cleanup
-            if tb_hdfs_path:
-                _cleanup(tb_hdfs_path)
-            if devices.get_num_gpus() > 0:
-                t.do_run = False
-                t.join(20)
             raise
         finally:
-            if local_logdir_bool:
-                local_tb = tensorboard.local_logdir_path
-                util._store_local_tensorboard(local_tb, hdfs_exec_logdir)
-
-        hopshdfs.log('Finished running')
-        if tb_hdfs_path:
-            _cleanup(tb_hdfs_path)
-        if devices.get_num_gpus() > 0:
-            t.do_run = False
-            t.join(20)
+            experiment_utils._cleanup(tensorboard, t)
 
     return _wrapper_fun
 
-def _get_metric(param_string, app_id, generation_id, run_id):
+def _get_return_file(param_string, app_id, generation_id, run_id):
     """
 
     Args:
@@ -786,30 +677,54 @@ def _get_metric(param_string, app_id, generation_id, run_id):
     Returns:
 
     """
-    project_path = hopshdfs.project_path()
-    handle = hopshdfs.get()
+    handle = hdfs.get()
     for i in range(generation_id):
-        possible_result_path = hopshdfs._get_experiments_dir() + '/' + app_id + '/differential_evolution/run.' \
-                               + str(run_id) + '/generation.' + str(i) + '/' + param_string + '/metric'
+        possible_result_path = experiment_utils._get_experiments_dir() + '/' + app_id + '_' \
+                               + str(run_id) + '/generation.' + str(i) + '/' + param_string + '/.outputs.json'
         if handle.exists(possible_result_path):
-            with pydoop.hdfs.open(possible_result_path, "r") as fi:
-                metric = float(fi.read())
-                fi.close()
-                return metric
+            return_file_contents = hdfs.load(possible_result_path)
+            return return_file_contents
 
     return None
 
+def _get_best(root_logdir, direction):
 
-def _cleanup(tb_hdfs_path):
-    """
+    min_val = sys.float_info.max
+    min_logdir = None
 
-    Args:
-        :tb_hdfs_path:
+    max_val = sys.float_info.min
+    max_logdir = None
 
-    Returns:
+    generation_folders = hdfs.ls(root_logdir)
+    generation_folders.sort()
 
-    """
-    handle = hopshdfs.get()
-    if not tb_hdfs_path == None and not tb_hdfs_path == '' and handle.exists(tb_hdfs_path):
-        handle.delete(tb_hdfs_path)
-    hopshdfs._kill_logger()
+    for generation in generation_folders:
+        for individual in hdfs.ls(generation):
+            invidual_files = hdfs.ls(individual, recursive=True)
+            for file in invidual_files:
+                if file.endswith("/.metric"):
+                    val = hdfs.load(file)
+                    val = float(val)
+
+                    if val > max_val:
+                        max_val = val
+                        max_logdir = file[:-8]
+
+                    if val < min_val:
+                        min_val = val
+                        min_logdir = file[:-8]
+
+
+
+    if direction.upper() == Direction.MAX:
+        return_dict = {}
+        with hdfs.open_file(max_logdir + '/.outputs.json', flags="r") as fi:
+            return_dict = json.loads(fi.read())
+            fi.close()
+        return max_logdir, return_dict
+    else:
+        return_dict = {}
+        with hdfs.open_file(min_logdir + '/.outputs.json', flags="r") as fi:
+            return_dict = json.loads(fi.read())
+            fi.close()
+        return min_logdir, return_dict

@@ -165,13 +165,13 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'hops-util-py', 'hops-util-py Documentation',
-     author, 'hops-util-py', 'One line description of project.',
+     author, 'hops-util-py', 'Client library for interacting with Hopsworks services.',
      'Miscellaneous'),
 ]
 
 autodoc_mock_imports = ["pyspark", "pydoop", "pydoop.hdfs", "jks", "IPython", "IPython.core.display", "tensorflow", "pynvml", "pyarrow", "pathlib", "pyhive", "numpy", "pandas", "boto3", "OpenSSL", "cryptography", "idna"]
 
-exclude_patterns = ["distribute/", "featurestore_impl"]
+exclude_patterns = ["experiment_impl", "featurestore_impl"]
 
 autodoc_default_options = {
     'members': None,
