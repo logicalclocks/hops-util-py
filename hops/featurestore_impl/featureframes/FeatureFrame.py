@@ -698,10 +698,11 @@ class TSVFeatureFrame(FeatureFrame):
                                               "in file {}".format(
                     self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TSV_SUFFIX))
         else:
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.TAB_DELIMITER).load(self.path)
+            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT) \
+                .option(constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true") \
+                .option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.TAB_DELIMITER) \
+                .option(constants.SPARK_CONFIG.SPARK_INFER_SCHEMA, "true") \
+                .load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
@@ -763,10 +764,11 @@ class CSVFeatureFrame(FeatureFrame):
                 raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
                     self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_CSV_SUFFIX))
         else:
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT).option(
-                constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true").option(
-                constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER,
-                constants.DELIMITERS.COMMA_DELIMITER).load(self.path)
+            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_CSV_FORMAT) \
+                .option(constants.SPARK_CONFIG.SPARK_WRITE_HEADER, "true") \
+                .option(constants.SPARK_CONFIG.SPARK_WRITE_DELIMITER, constants.DELIMITERS.COMMA_DELIMITER) \
+                .option(constants.SPARK_CONFIG.SPARK_INFER_SCHEMA, "true") \
+                .load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
 
 
