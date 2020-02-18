@@ -8,9 +8,8 @@ This section shows a way to configure a development environment that allows you 
 
 The recommended way to run the unit tests is to use the Dockerized Linux workspace via the Makefile provided at :code:`docker/Makefile`.
 The commands below will build the Docker image, start a running container with your local hops-util-py source code mounted
-into it from the host at :code:`/hops`. A python 3.6 environment is available in the container at :code:`/hops_venv3.6/`,
-and a python 2.7 environment at :code:`/hops_venv2.7`. Moreover, the commands below will also open a BASH shell into it
-(you must have GNU Make and Docker installed beforehand (:code:`sudo apt-get install docker.io`)):
+into it from the host at :code:`/hops`. A python 3.6 environment is available in the container at :code:`/hops_venv3.6/`.
+Moreover, the commands below will also open a BASH shell into it (you must have GNU Make and Docker installed beforehand (:code:`sudo apt-get install docker.io`)):
 
 .. code-block:: bash
 
@@ -25,18 +24,16 @@ and a python 2.7 environment at :code:`/hops_venv2.7`. Moreover, the commands be
     # Run the unit tests
     cd /hops/docker # once inside docker
     ./run_tests.sh 3.6 # for python 3.6
-    ./run_tests.sh 2.7 # for python 2.7
     ./run_tests.sh 3.6 -s # run tests with verbose flag
 
     # Alternatively you can skip the bash scripts and write the commands yourself (this gives you more control):
     cd /hops #inside the container
     source /hops_venv3.6/bin/activate # for python 3.6
-    source /hops_venv2.7/bin/activate # for python 2.7
     pip install -e . # install latest source
     pytest -v hops # run tests, note if you want to re-run just edit the code in your host and run the same command, you do not have to re-run pip install..
 
 The docker approach is recommended if you already have an existing SPARK/Hadoop installation in your environment to avoid conflicts
-( for example if you want to run the tests from inside a VM where Hops is deployed). Moreover, using docker makes it simpler to test both python 3.6 and python 2.7.
+( for example if you want to run the tests from inside a VM where Hops is deployed). Moreover, using docker makes it simpler to test python 3.6.
 
 Also note that when you edit files inside your local machine the changes will automatically get reflected in the docker
 container since the directory is mounted there so you can easily re-run tests during development as you do code-changes.
