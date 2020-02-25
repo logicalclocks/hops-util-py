@@ -935,6 +935,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         connector_id = storage_connector.id, path=path)
 
     td = TrainingDataset(td_json)
+
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
@@ -944,8 +945,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             except Exception as e:
                 fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
 
-        featureframe = FeatureFrame.get_featureframe(path=path +
-                                                          constants.DELIMITERS.SLASH_DELIMITER + td.name,
+        featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
                                                      training_dataset=td,
