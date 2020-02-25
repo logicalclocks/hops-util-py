@@ -842,15 +842,11 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
                                                             training_dataset_name,
                                                             training_dataset_version)
     if training_dataset.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = fs_utils._get_hopsfs_training_dataset_path(training_dataset.name,
-                                                          training_dataset.hopsfs_training_dataset.hdfs_store_path,
-                                                          training_dataset.data_format)
+        path = training_dataset.location
     else:
-        s3_connector = _do_get_storage_connector(training_dataset.external_training_dataset.s3_connector_name,
-                                                 featurestore)
+        s3_connector = _do_get_storage_connector(training_dataset.connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
-        path = fs_utils._get_external_training_dataset_path(training_dataset.name, training_dataset.version,
-            s3_connector.bucket)
+        path = fs_utils._get_external_training_dataset_path(training_dataset.location)
 
     featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
                                                  data_format=training_dataset.data_format,
@@ -944,7 +940,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         featurestore_metadata.settings, hopsfs_connector_id=hopsfs_connector_id, s3_connector_id=s3_connector_id)
     td = TrainingDataset(td_json)
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = util.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        path = util.abspath(td.location)
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
@@ -959,9 +955,9 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                                      training_dataset=td,
                                                      petastorm_args=petastorm_args)
     else:
-        s3_connector = _do_get_storage_connector(td.external_training_dataset.s3_connector_name, featurestore)
+        s3_connector = _do_get_storage_connector(td.connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
-        path = fs_utils._get_external_training_dataset_path(td.name, td.version, s3_connector.bucket, path)
+        path = fs_utils._get_external_training_dataset_path(td.location)
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
@@ -1162,7 +1158,7 @@ def _do_insert_into_training_dataset(
                                            corr_method=corr_method, num_clusters=num_clusters)
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = util.abspath(td.hopsfs_training_dataset.hdfs_store_path)
+        path = util.abspath(td.location)
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
@@ -1175,10 +1171,10 @@ def _do_insert_into_training_dataset(
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
                                                      training_dataset=td)
     else:
-        s3_connector = _do_get_storage_connector(td.external_training_dataset.s3_connector_name, featurestore)
+        s3_connector = _do_get_storage_connector(td.connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
-        path = fs_utils._get_external_training_dataset_path(td.name, td.version,
-                                                            s3_connector.bucket)
+        path = fs_utils._get_external_training_dataset_path(td.location)
+
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=write_mode,
@@ -1264,7 +1260,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
                                                             training_dataset_version)
-    hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path + \
+    hdfs_path = training_dataset.location + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
     data_format = training_dataset.data_format
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
@@ -1272,7 +1268,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
         hdfs_path = hdfs_path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-        hdfs_path = training_dataset.hopsfs_training_dataset.hdfs_store_path
+        hdfs_path = training_dataset.location
     # abspath means "hdfs://namenode:port/ is preprended
     abspath = util.abspath(hdfs_path)
     return abspath
@@ -1303,7 +1299,7 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(
                 training_dataset.data_format))
-    hdfs_path = util.abspath(training_dataset.hopsfs_training_dataset.hdfs_store_path)
+    hdfs_path = util.abspath(training_dataset.location)
     tf_record_json_schema = json.loads(hdfs.load(
         hdfs_path + constants.DELIMITERS.SLASH_DELIMITER +
         constants.FEATURE_STORE.TRAINING_DATASET_TF_RECORD_SCHEMA_FILE_NAME))

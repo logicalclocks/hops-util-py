@@ -63,8 +63,6 @@ with mock.patch('builtins.__import__', side_effect=import_mock):
     from hops.featurestore_impl.dao.featuregroups.cached_featuregroup import CachedFeaturegroup
     from hops.featurestore_impl.dao.featuregroups.on_demand_featuregroup import OnDemandFeaturegroup
     from hops.featurestore_impl.dao.datasets.training_dataset import TrainingDataset
-    from hops.featurestore_impl.dao.datasets.external_training_dataset import ExternalTrainingDataset
-    from hops.featurestore_impl.dao.datasets.hopsfs_training_dataset import HopsfsTrainingDataset
     from hops.featurestore_impl.dao.storageconnectors.hopsfs_connector import HopsfsStorageConnector
     from hops.featurestore_impl.dao.storageconnectors.s3_connector import S3StorageConnector
     from hops.featurestore_impl.dao.storageconnectors.jdbc_connector import JDBCStorageConnector
