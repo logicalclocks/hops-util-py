@@ -489,7 +489,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
                                   data_format, jobs, features_schema_data,
                                   feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
                                   cluster_analysis_data, training_dataset_type, settings,
-                                  hopsfs_connector_id = None, s3_connector_id = None, path = None):
+                                  connector_id = None, path = None):
     """
     Makes a REST request to hopsworks for creating a new training dataset
 
@@ -528,13 +528,9 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT: data_format,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_LOCATION: path
+                     constants.REST_CONFIG.JSON_FEATURESTORE_LOCATION: path,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID] = connector_id 
                      }
-
-    if training_dataset_type == settings.external_training_dataset_type:
-        json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID] = s3_connector_id
-    if training_dataset_type == settings.hopsfs_training_dataset_type:
-        json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID] = hopsfs_connector_id
 
     json_embeddable = json.dumps(json_contents, allow_nan=False)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}

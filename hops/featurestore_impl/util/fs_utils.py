@@ -1100,15 +1100,13 @@ def _get_training_dataset_type_info(featurestore_metadata, external=False):
          :external: whether it is an external featuregroup or not
 
     Returns:
-        the type information of the training dataset, tuple of (type, dtotype)
+        the type information of the training dataset
     """
     if external:
         training_dataset_type = featurestore_metadata.settings.external_training_dataset_type
-        training_dataset_type_dto = featurestore_metadata.settings.external_training_dataset_dto_type
     else:
         training_dataset_type = featurestore_metadata.settings.hopsfs_training_dataset_type
-        training_dataset_type_dto = featurestore_metadata.settings.hopsfs_training_dataset_dto_type
-    return training_dataset_type, training_dataset_type_dto
+    return training_dataset_type
 
 
 def _get_external_training_dataset_path(path):

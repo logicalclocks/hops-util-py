@@ -923,21 +923,17 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             corr_method=corr_method,
             num_clusters=num_clusters)
     featurestore_id = _get_featurestore_id(featurestore)
-    hopsfs_connector_id = None
-    s3_connector_id = None
-    if storage_connector.type == featurestore_metadata.settings.hopsfs_connector_type:
-        external = False
-        hopsfs_connector_id = storage_connector.id
-    else:
-        external = True
-        s3_connector_id = storage_connector.id
-    training_dataset_type, training_dataset_type_dto = \
-        fs_utils._get_training_dataset_type_info(featurestore_metadata, external)
+
+    external = not (storage_connector.type == featurestore_metadata.settings.hopsfs_connector_type)
+
+    training_dataset_type = fs_utils._get_training_dataset_type_info(featurestore_metadata, external)
+
     td_json = rest_rpc._create_training_dataset_rest(
         training_dataset, featurestore_id, description, training_dataset_version,
         data_format, jobs, features_schema, feature_corr_data, training_dataset_desc_stats_data,
-        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_type_dto,
-        featurestore_metadata.settings, hopsfs_connector_id=hopsfs_connector_id, s3_connector_id=s3_connector_id)
+        features_histogram_data, cluster_analysis_data, training_dataset_type, featurestore_metadata.settings,
+        connector_id = storage_connector.id, path=path)
+
     td = TrainingDataset(td_json)
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
