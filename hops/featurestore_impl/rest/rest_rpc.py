@@ -529,7 +529,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT: data_format,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_LOCATION: path,
-                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID] = connector_id 
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID: connector_id 
                      }
 
     json_embeddable = json.dumps(json_contents, allow_nan=False)
