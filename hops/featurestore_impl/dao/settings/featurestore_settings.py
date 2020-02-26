@@ -22,8 +22,6 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_CACHED_FEATUREGROUP_DTO_TYPE]
         self.cached_featuregroup_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_CACHED_FEATUREGROUP_TYPE]
-        self.external_training_dataset_dto_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_EXTERNAL_TRAINING_DATASET_DTO_TYPE]
         self.external_training_dataset_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_EXTERNAL_TRAINING_DATASET_TYPE]
         self.featuregroup_type = \
@@ -35,8 +33,6 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HOPSFS_CONNECTOR_DTO_TYPE]
         self.hopsfs_connector_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HOPSFS_CONNECTOR_TYPE]
-        self.hopsfs_training_dataset_dto_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HOPSFS_TRAINING_DATASET_DTO_TYPE]
         self.hopsfs_training_dataset_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_HOPSFS_TRAINING_DATASET_TYPE]
         self.jdbc_connector_dto_type = \
