@@ -944,7 +944,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                 fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
             except Exception as e:
                 fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
-        featureframe = FeatureFrame.get_featureframe(path=path,
+        featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
                                                      training_dataset=td,

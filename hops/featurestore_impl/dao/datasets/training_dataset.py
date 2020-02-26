@@ -24,7 +24,7 @@ class TrainingDataset(FeaturestoreEntity):
         self.version = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION]
         self.data_format = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT]
         self.training_dataset_type = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_TYPE]
-        self.location = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_TYPE]
+        self.location = training_dataset_json[constants.REST_CONFIG.JSON_FEATURESTORE_LOCATION]
 
         if constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID in training_dataset_json:  
             self.connector_id = training_dataset_json[constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID]
