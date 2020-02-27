@@ -2664,9 +2664,8 @@
   "version": 1,
   "dataFormat": "tfrecords",
   "trainingDatasetType": "HOPSFS_TRAINING_DATASET",
-  "hdfsStorePath": "/Projects/demo_featurestore_admin000/demo_featurestore_admin000_Training_Datasets/team_position_prediction_1",
-  "hopsfsConnectorId": 1,
-  "hopsfsConnectorName": "demo_featurestore_admin000_Training_Datasets",
+  "storageConnectorId": 1,
+  "storageConnectorName": "demo_featurestore_admin000_Training_Datasets",
   "inodeId": 101417,
   "size": 0
 }

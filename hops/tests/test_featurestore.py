@@ -1312,14 +1312,12 @@ class TestFeaturestoreSuite(object):
         hdfs.project_name = mock.MagicMock(return_value="test_project")
         tls._prepare_rest_appservice_json_request = mock.MagicMock(return_value={})
         result = rest_rpc._update_training_dataset_stats_rest(
-            1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type,
-            featurestore_metadata.settings.hopsfs_training_dataset_dto_type, [])
+            1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type, [])
         assert result == data
         response.status_code = 500
         with pytest.raises(RestAPIError) as ex:
             rest_rpc._update_training_dataset_stats_rest(
-                1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type,
-                featurestore_metadata.settings.hopsfs_training_dataset_dto_type, [])
+                1, 1, None, None, None, None, featurestore_metadata.settings.hopsfs_training_dataset_type, [])
             assert "Could not update training dataset stats" in ex.value
         # unmock for later tests
         core._get_training_dataset_id = self.unmocked_get_training_dataset_id
@@ -1922,7 +1920,6 @@ class TestFeaturestoreSuite(object):
         result = rest_rpc._create_training_dataset_rest("test", 1, "", 1,
                                                         "", [], [], None, None, None, None,
                                                         featurestore_metadata.settings.hopsfs_training_dataset_type,
-                                                        featurestore_metadata.settings.hopsfs_training_dataset_dto_type,
                                                         featurestore_metadata.settings, None, None)
         assert result == data
         response.status_code = 500
@@ -1930,7 +1927,6 @@ class TestFeaturestoreSuite(object):
             rest_rpc._create_training_dataset_rest("test", 1, "", 1,
                                                    "", [], [], None, None, None, None,
                                                    featurestore_metadata.settings.hopsfs_training_dataset_type,
-                                                   featurestore_metadata.settings.hopsfs_training_dataset_dto_type,
                                                    featurestore_metadata.settings, None, None)
             assert "Could not create training dataset" in ex.value
 

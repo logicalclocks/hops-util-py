@@ -842,7 +842,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
                                                             training_dataset_name,
                                                             training_dataset_version)
     if training_dataset.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = training_dataset.location
+        path = util.abspath(training_dataset.location + constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name)
     else:
         s3_connector = _do_get_storage_connector(training_dataset.connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
@@ -1085,7 +1085,7 @@ def _do_update_training_dataset_stats(training_dataset_name, featurestore_metada
             num_clusters=num_clusters)
     training_dataset_id = training_dataset.id
     featurestore_id = featurestore_metadata.featurestore.id
-    training_dataset_type, training_dataset_type_dto = \
+    training_dataset_type = \
         fs_utils._get_training_dataset_type_info(featurestore_metadata,
                                                  external=(training_dataset.training_dataset_type ==
                                                            featurestore_metadata.settings.external_training_dataset_type))
@@ -1094,7 +1094,7 @@ def _do_update_training_dataset_stats(training_dataset_name, featurestore_metada
         jobs.append(util.get_job_name())
     td = TrainingDataset(rest_rpc._update_training_dataset_stats_rest(
         training_dataset_id, featurestore_id, feature_corr_data, training_dataset_desc_stats_data,
-        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_type_dto, jobs))
+        features_histogram_data, cluster_analysis_data, training_dataset_type, jobs))
     return td
 
 

@@ -6,7 +6,7 @@ all: rm-image build
 # rerun it and check `docker stats` during execution; you may
 # need to increase Docker's memory limits.
 
-build:
+build: Dockerfile
 	cd .. && docker build . \
 	-f ./docker/Dockerfile \
 	--tag hops
@@ -15,7 +15,7 @@ build:
 # Run a container to serve as a development workspace with
 # the local repo mounted into it. IMPORTANT: this gives
 # the container access to the host's filesystem!
-run:
+run: build
 	docker run \
 	-dt \
 	-v `pwd`/..:/hops \
