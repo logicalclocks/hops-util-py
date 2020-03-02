@@ -1890,6 +1890,9 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Either secretsmanager, parameterstore or local
         :api_key_file: path to a file containing an API key. For secrets_store=local only.
+        :cert_folder: the folder on dbfs where to store the HopsFS certificates
+        :hostname_verification: whether or not to verify Hopsworks' certificate - default True
+        :trust_store_path: path on dbfs containing the Hopsworks certificates 
 
     Returns:
         None
@@ -1902,7 +1905,7 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification)
 
     if not trust_store_path is None:
-        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
 
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
@@ -1926,10 +1929,13 @@ def setup_databricks(host, project_name, cert_folder="hops",
     Args:
         :host: the hostname of the Hopsworks cluster
         :project_name: the name of the project hosting the feature store to be used
-        :certs_folder: the folder in dbfs in which to store the Hopsworks certificates and the libraries to be installed when the cluster restart
+        :certs_folder: the folder on dbfs in which to store the Hopsworks certificates and the libraries to be installed when the cluster restart
         :port: the REST port of the Hopsworks cluster
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Either secretsmanager or parameterstore.
+        :api_key_file: path to a file containing an API key. For secrets_store=local only.
+        :hostname_verification: whether or not to verify Hopsworks' certificate - default True
+        :trust_store_path: path on dbfs containing the Hopsworks certificates 
 
     Returns:
         None
@@ -1943,7 +1949,7 @@ def setup_databricks(host, project_name, cert_folder="hops",
     os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification)
 
     if not trust_store_path is None:
-        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
 
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
