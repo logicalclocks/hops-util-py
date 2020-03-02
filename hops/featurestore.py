@@ -1874,7 +1874,8 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
         return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
 
 def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION,
-            secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops"):
+            secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops",
+            hostname_verification=True, trust_store_path=None):
     """
     Connects to a feature store from a remote environment such as Amazon SageMaker
 
@@ -1898,6 +1899,9 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
     os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
+    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = hostname_verification
+    os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
+
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
@@ -1906,10 +1910,12 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
 
     get_credential(project_id, dbfs_folder)
 
-def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_name = constants.AWS.DEFAULT_REGION,
-            secrets_store = 'parameterstore', api_key_file=None):
+def setup_databricks(host, project_name, cert_folder="hops", 
+                     port = 443, region_name = constants.AWS.DEFAULT_REGION,
+                     secrets_store = 'parameterstore', api_key_file=None,
+                     hostname_verification=True, trust_store_path=None):
     """
-    Set up the hopfs and hive connector on a detabricks cluster
+    Set up the HopsFS and Hive connector on a Databricks cluster
 
     Example usage:
 
@@ -1932,6 +1938,8 @@ def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
     os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
+    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = hostname_verification
+    os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
 
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
