@@ -908,9 +908,6 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             "to save it to the Feature Store, error: {}".format(
                 str(e)))
 
-    if storage_connector is None:
-        storage_connector = _do_get_storage_connector(fs_utils._do_get_project_training_datasets_sink(), featurestore)
-
     featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     features_schema = _parse_spark_features_schema(spark_df.schema)
     fs_utils._validate_metadata(training_dataset, features_schema, description, featurestore_metadata.settings)
