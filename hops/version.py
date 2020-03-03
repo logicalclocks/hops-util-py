@@ -1,4 +1,4 @@
-__version__ = '1.2.0.1'
-# master branch version is the one of the previous release. 
+__version__ = '1.2.0.2'
+# master branch version is the one of the previous release.
 # version is bumped when released is done (new branch is created)
 
