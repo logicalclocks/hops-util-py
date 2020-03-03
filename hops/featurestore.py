@@ -1874,7 +1874,8 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
         return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
 
 def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION,
-            secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops"):
+            secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops",
+            hostname_verification=True, trust_store_path=None):
     """
     Connects to a feature store from a remote environment such as Amazon SageMaker
 
@@ -1889,6 +1890,9 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Either secretsmanager, parameterstore or local
         :api_key_file: path to a file containing an API key. For secrets_store=local only.
+        :cert_folder: the folder on dbfs where to store the HopsFS certificates
+        :hostname_verification: whether or not to verify Hopsworks' certificate - default True
+        :trust_store_path: path on dbfs containing the Hopsworks certificates 
 
     Returns:
         None
@@ -1898,6 +1902,11 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
     os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
+    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
+
+    if not trust_store_path is None:
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
+
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
@@ -1906,10 +1915,12 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
 
     get_credential(project_id, dbfs_folder)
 
-def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_name = constants.AWS.DEFAULT_REGION,
-            secrets_store = 'parameterstore', api_key_file=None):
+def setup_databricks(host, project_name, cert_folder="hops", 
+                     port = 443, region_name = constants.AWS.DEFAULT_REGION,
+                     secrets_store = 'parameterstore', api_key_file=None,
+                     hostname_verification=True, trust_store_path=None):
     """
-    Set up the hopfs and hive connector on a detabricks cluster
+    Set up the HopsFS and Hive connector on a Databricks cluster
 
     Example usage:
 
@@ -1918,10 +1929,13 @@ def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_
     Args:
         :host: the hostname of the Hopsworks cluster
         :project_name: the name of the project hosting the feature store to be used
-        :certs_folder: the folder in dbfs in which to store the Hopsworks certificates and the libraries to be installed when the cluster restart
+        :certs_folder: the folder on dbfs in which to store the Hopsworks certificates and the libraries to be installed when the cluster restart
         :port: the REST port of the Hopsworks cluster
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Either secretsmanager or parameterstore.
+        :api_key_file: path to a file containing an API key. For secrets_store=local only.
+        :hostname_verification: whether or not to verify Hopsworks' certificate - default True
+        :trust_store_path: path on dbfs containing the Hopsworks certificates 
 
     Returns:
         None
@@ -1932,6 +1946,10 @@ def setup_databricks(host, project_name, cert_folder="hops", port = 443, region_
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
     os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key_file)
+    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
+
+    if not trust_store_path is None:
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
 
     project_info = rest_rpc._get_project_info(project_name)
     project_id = str(project_info['projectId'])
