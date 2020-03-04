@@ -11,6 +11,7 @@ import os
 import errno
 
 from hops import constants
+from hops.service_discovery import ServiceDiscovery
 import sys
 import subprocess
 
@@ -839,42 +840,33 @@ def is_tls_enabled():
                 tls_enabled = item.getElementsByTagName("value")[0].firstChild.data == 'true'
     return tls_enabled
 
-
 def _get_webhdfs_address():
     """
-    Reads the ipc.server.ssl.enabled property from core-site.xml.
+    Makes an SRV DNS query to get the target and port of NameNode's web interface
 
     Returns:
-        returns True if ipc.server.ssl.enabled is true. False otherwise.
+        returns webhdfs endpoint
     """
     global webhdfs_address
     if webhdfs_address is None:
-        hadoop_conf_path = os.environ['HADOOP_CONF_DIR']
-        webhdfs_config = "dfs.namenode.http-address"
-        if is_tls_enabled():
-            webhdfs_config = "dfs.namenode.https-address"
-        for item in minidom.parse(os.path.join(hadoop_conf_path,'hdfs-site.xml')).getElementsByTagName('property'):
-            name = item.getElementsByTagName("name")[0]
-            if name.firstChild.data == webhdfs_config:
-                webhdfs_address = item.getElementsByTagName("value")[0].firstChild.data
+        _, port = ServiceDiscovery.get_any_service('http.namenode')
+        webhdfs_address = ServiceDiscovery.construct_service_fqdn('http.namenode') + ":" + str(port)
     return webhdfs_address
-
-
+        
 def get_webhdfs_host():
     """
-    Reads the ipc.server.ssl.enabled property from core-site.xml and returns webhdfs hostname.
+    Makes an SRV DNS query and gets the actual hostname of the NameNode
 
     Returns:
-        returns the webhdfs hostname.
+        returns NameNode's hostname
     """
-    return socket.gethostbyaddr(_get_webhdfs_address().split(":")[0])[0]
-
+    return ServiceDiscovery.construct_service_fqdn('http.namenode')
 
 def get_webhdfs_port():
     """
-    Reads the ipc.server.ssl.enabled property from core-site.xml and the webhdfs port.
+    Makes an SRV DNS query and gets NameNode's port for WebHDFS
 
     Returns:
-        returns the webhdfs port.
+        returns NameNode's port for WebHDFS
     """
     return _get_webhdfs_address().split(":")[1]

@@ -25,7 +25,8 @@ setup(
         'pyopenssl',
         'idna',
         'cryptography',
-        'pyarrow==0.14.1'
+        'pyarrow==0.14.1',
+        'dnspython==1.16.0'
     ],
     extras_require={
         'pydoop': ['pydoop'],
