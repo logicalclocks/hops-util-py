@@ -1093,74 +1093,34 @@ def _get_cached_featuregroup_type_info(featurestore_metadata):
 
 def _get_training_dataset_type_info(featurestore_metadata, external=False):
     """
-    Gets the type information of a training datasetthat the backend expects
+    Gets the type information of a training dataset that the backend expects
 
     Args:
          :featurestore_metadata: metadata of the featurestore
          :external: whether it is an external featuregroup or not
 
     Returns:
-        the type information of the training dataset, tuple of (type, dtotype)
+        the type information of the training dataset
     """
     if external:
         training_dataset_type = featurestore_metadata.settings.external_training_dataset_type
-        training_dataset_type_dto = featurestore_metadata.settings.external_training_dataset_dto_type
     else:
         training_dataset_type = featurestore_metadata.settings.hopsfs_training_dataset_type
-        training_dataset_type_dto = featurestore_metadata.settings.hopsfs_training_dataset_dto_type
-    return training_dataset_type, training_dataset_type_dto
+    return training_dataset_type
 
 
-def _get_hopsfs_training_dataset_path(training_dataset_name, hdfs_store_path, data_format):
+def _get_external_training_dataset_path(path):
     """
-    Utility function for getting the hopsfs path of a training dataset in the feature store
+    The location Hopsworks returns cointain the filesystem which is set to s3://. Spark expects the filesystem to be s3a:// 
 
     Args:
-        :training_dataset_name: name of the training dataset
-        :hdfs_store_path: the hdfs path to the dataset where all the training datasets are stored
-        :data_format: data format of the training datataset
-
-    Return:
-        the hdfs path to the training dataset
-    """
-    hdfs_path = hdfs_store_path + \
-                constants.DELIMITERS.SLASH_DELIMITER + training_dataset_name
-    if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
-        hdfs_path = hdfs_store_path
-    # abspath means "hdfs://namenode:port/ is preprended
-    path = util.abspath(hdfs_path)
-    return path
-
-
-def _get_external_training_dataset_path(training_dataset_name, training_dataset_version, bucket, path):
-    """
-    Utility function for getting the S3 path of a training dataset in the feature store
-
-    Args:
-        :training_dataset_name: name of the training dataset
-        :training_dataset_version: version of the training dataset
-        :bucket: the s3 bucket
-        :path: user-supplied path
+        path: the path returned by Hopsworks
 
     Returns:
-        the s3 path to the training dataset
+        the s3 path to read the training dataset from Spark 
     """
-    if path is None or path is "":
-        path = ""
-        if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
-            path = constants.S3_CONFIG.S3_FILE_PREFIX
-        path = path + bucket + constants.DELIMITERS.SLASH_DELIMITER + constants.S3_CONFIG.S3_TRAINING_DATASETS_FOLDER \
-               + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name, training_dataset_version)
-    else:
-        if constants.S3_CONFIG.S3_FILE_PREFIX not in bucket:
-            path = constants.S3_CONFIG.S3_FILE_PREFIX + bucket + constants.DELIMITERS.SLASH_DELIMITER + path
-        else:
-            path = bucket + constants.DELIMITERS.SLASH_DELIMITER + path
-        path = path + constants.DELIMITERS.SLASH_DELIMITER + _get_table_name(training_dataset_name,
-                                                                             training_dataset_version)
-    return path
 
-
+    return path.replace("s3", "s3a", 1)
 
 
 def _setup_s3_credentials_for_spark(access_key, secret_key, spark):

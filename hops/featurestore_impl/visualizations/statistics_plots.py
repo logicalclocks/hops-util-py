@@ -134,7 +134,7 @@ def _create_correlation_matrix(feature_correlations):
     data["index"] = index
     correlation_matrix = pd.DataFrame(data)
     correlation_matrix = pd.pivot_table(correlation_matrix, index="index")
-    del correlation_matrix.index.name
+    correlation_matrix.index.name = None
     return correlation_matrix
 
 

@@ -488,8 +488,8 @@ def _disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, f
 def _create_training_dataset_rest(training_dataset, featurestore_id, description, training_dataset_version,
                                   data_format, jobs, features_schema_data,
                                   feature_corr_data, training_dataset_desc_stats_data, features_histogram_data,
-                                  cluster_analysis_data, training_dataset_type, training_dataset_dto_type,
-                                  settings, hopsfs_connector_id = None, s3_connector_id = None):
+                                  cluster_analysis_data, training_dataset_type, settings,
+                                  connector_id = None, path = None):
     """
     Makes a REST request to hopsworks for creating a new training dataset
 
@@ -506,10 +506,10 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
         :training_dataset_desc_stats_data: json-string with the descriptive statistics of the training dataset
         :features_histogram_data: list of json-strings with histogram data for the features in the training dataset
         :training_dataset_type: type of the training dataset (external or hopsfs)
-        :training_dataset_dto_type: type of the JSON DTO for the backend
         :hopsfs_connector_id: id of the connector for a hopsfs training dataset
         :s3_connector_id: id of the connector for a s3 training dataset
         :settings: featurestore settings
+        :path: the path within the storage connector where to save the training dataset
 
     Returns:
         the HTTP response
@@ -527,13 +527,11 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_FORMAT: data_format,
-                     constants.REST_CONFIG.JSON_TYPE: training_dataset_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type
+                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
+                     constants.REST_CONFIG.JSON_FEATURESTORE_LOCATION: path,
+                     constants.REST_CONFIG.JSON_TRAINING_DATASET_CONNECTOR_ID: connector_id 
                      }
-    if training_dataset_type == settings.external_training_dataset_type:
-        json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_S3_CONNECTOR_ID] = s3_connector_id
-    if training_dataset_type == settings.hopsfs_training_dataset_type:
-        json_contents[constants.REST_CONFIG.JSON_TRAINING_DATASET_HOPSFS_CONNECTOR_ID] = hopsfs_connector_id
+
     json_embeddable = json.dumps(json_contents, allow_nan=False)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_POST
@@ -558,7 +556,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
 
 def _update_training_dataset_stats_rest(
         training_dataset_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data,
-        features_histogram_data, cluster_analysis_data, training_dataset_type, training_dataset_dto_type, jobs):
+        features_histogram_data, cluster_analysis_data, training_dataset_type, jobs):
     """
     A helper function that makes a REST call to hopsworks for updating the stats and schema metadata about a
     training dataset
@@ -571,7 +569,6 @@ def _update_training_dataset_stats_rest(
         :features_histogram_data: list of json-strings with histogram data for the features in the training dataset
         :cluster_analysis_data: the clusters from cluster analysis on the dataset
         :training_dataset_type: type of the training dataset (external or hopsfs)
-        :training_dataset_dto_type: type of the JSON DTO for the backend
         :jobs: list of jobs for updating the training dataset stats
 
     Returns:
@@ -584,7 +581,6 @@ def _update_training_dataset_stats_rest(
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_TYPE: training_dataset_dto_type,
                      constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_TRAINING_DATASET_TYPE: training_dataset_type,
                      constants.REST_CONFIG.JSON_TRAINING_DATASET_JOBS: _pre_process_jobs_list(jobs)}
     json_embeddable = json.dumps(json_contents, allow_nan=False)
