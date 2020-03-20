@@ -8,16 +8,11 @@ import os
 import signal
 import urllib
 from ctypes import cdll
-import itertools
 import socket
 import json
-from datetime import datetime
-import time
 
 import boto3
 
-from hops import hdfs
-from hops import version
 from hops import constants
 
 from OpenSSL import SSL
@@ -222,8 +217,15 @@ def get_jwt():
     Returns:
         Content of jwt.token file in local container.
     """
-    with open(constants.REST_CONFIG.JWT_TOKEN, "r") as jwt:
+    jwt_path = ""
+    if constants.ENV_VARIABLES.SECRETS_DIR_ENV_VAR in os.environ:
+        jwt_path = os.environ[constants.ENV_VARIABLES.SECRETS_DIR_ENV_VAR]
+
+    jwt_path = os.path.join(jwt_path, constants.REST_CONFIG.JWT_TOKEN)
+
+    with open(jwt_path, "r") as jwt:
         return jwt.read()
+
 
 def abspath(hdfs_path):
     if constants.ENV_VARIABLES.API_KEY_ENV_VAR in os.environ:
