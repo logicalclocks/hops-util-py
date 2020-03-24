@@ -1217,6 +1217,7 @@ def _add_provenance_metadata_to_dataframe(spark_df, feature_to_featuregroup_mapp
     Returns:
         the updated spark dataframe with the added metadata
     """
+    select = []
     for f, fg in feature_to_featuregroup_mapping.items():
         meta = _get_column_metadata(json.loads(spark_df.schema.json()), f)
         parts = fg.rsplit('_',1)
@@ -1224,8 +1225,9 @@ def _add_provenance_metadata_to_dataframe(spark_df, feature_to_featuregroup_mapp
         fg_version = parts[1]
         meta[constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_FEATUREGROUP] = fg_name
         meta[constants.FEATURE_STORE.TRAINING_DATASET_PROVENANCE_VERSION] = fg_version
-        spark_df = spark_df.withColumn(f, col(f).alias("", metadata=meta))
-    return spark_df
+        select.append(col(f).alias(f, metadata=meta))
+
+    return spark_df.select(select)
 
 
 def _get_column_metadata(spark_schema, column_name):
