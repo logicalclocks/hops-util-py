@@ -121,7 +121,7 @@ def create_runner(runner_name, jobmanager_heap_size=1024, num_of_taskmanagers=1,
     """
 
     # In the future we will support beamSparkJobConfiguration
-    type = "beamFlinkJobConfiguration"
+    type = "flinkJobConfiguration"
     job_config = {"type": type,
                   "amQueue": "default",
                   "jobmanager.heap.size": jobmanager_heap_size,
