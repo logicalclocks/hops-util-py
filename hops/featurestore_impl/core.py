@@ -1954,59 +1954,84 @@ def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_me
                                                                    .format(storage_connector.type))
 
 
-def _do_add_metadata(featuregroup_name, name, value, featurestore=None, featuregroup_version=1):
+def _do_add_tag(name, tag, value, featurestore, version, resource):
     """
-    Attach custom metadata to a feature group
+    Attach a tag to a featuregroup or training dataset
 
     Args:
-        :featuregroup_name: the name of the featuregroup
-        :name: the name of the extended metadata
-        :value: the value of the extended metadata
-        :featurestore: the featurestore where the featuregroup resides
-        :featuregroup_version: the version of the featuregroup
+        :name: the name of the featuregroup or training dataset
+        :tag: the name of the tag
+        :value: the value of the tag
+        :featurestore: the featurestore where the featuregroup or training dataset resides
+        :version: the version of the featuregroup or training dataset
+        :resource: featuregroup or training dataset resource
 
     Returns:
           None
     """
-    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
+
     featurestore_id = _get_featurestore_id(featurestore)
-    rest_rpc._add_metadata(featurestore_id, featuregroup_id, name, value)
+    if resource == constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE:
+        id = _get_featuregroup_id(featurestore, name, version)
+    elif resource == constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE:
+        id = _get_training_dataset_id(featurestore, name, version)
+
+    rest_rpc._add_tag(featurestore_id, id, tag, value, resource)
 
 
-def _do_get_metadata(featuregroup_name, name=None, featurestore=None, featuregroup_version=1):
+def _do_get_tags(name, featurestore, version, resource):
     """
-    Get the custom metadata attached to a feature group
+    Get the tags attached to a featuregroup or training dataset
 
     Args:
-        :featuregroup_name: the name of the featuregroup
-        :name: the name of the extended metadata
+        :name: the name of the featuregroup or training dataset
         :featurestore: the featurestore where the featuregroup resides
-        :featuregroup_version: the version of the featuregroup
+        :version: the version of the featuregroup or training dataset
+        :resource: featuregroup or training dataset resource
 
     Returns:
-          A dictionary containing the metadata attached to the featuregroup
+          A dictionary containing the tags attached to the featuregroup or training dataset
     """
-    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
     featurestore_id = _get_featurestore_id(featurestore)
-    return rest_rpc._get_metadata(featurestore_id, featuregroup_id, name)
+    if resource == constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE:
+        id = _get_featuregroup_id(featurestore, name, version)
+    elif resource == constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE:
+        id = _get_training_dataset_id(featurestore, name, version)
+
+    return rest_rpc._get_tags(featurestore_id, id, resource)
 
 
-def _do_remove_metadata(featuregroup_name, name, featurestore=None, featuregroup_version=1):
+def _do_remove_tag(name, tag, featurestore, version, resource):
     """
-    Remove the custom metadata attached to a feature group
+    Remove a tag attached to a featuregroup or training dataset
 
     Args:
-        :featuregroup_name: the name of the featuregroup
-        :name: the name of the extended metadata
-        :featurestore: the featurestore where the featuregroup resides
-        :featuregroup_version: the version of the featuregroup
+        :name: the name of the featuregroup or training dataset
+        :tag: name of tag to remove
+        :featurestore: the featurestore where the featuregroup or training dataset resides
+        :version: the version of the featuregroup or training dataset
+        :resource: featuregroup or training dataset resource
 
     Returns:
           None
     """
-    featuregroup_id = _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version)
     featurestore_id = _get_featurestore_id(featurestore)
-    rest_rpc._remove_metadata(featurestore_id, featuregroup_id, name)
+    if resource == constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE:
+        id = _get_featuregroup_id(featurestore, name, version)
+    elif resource == constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE:
+        id = _get_training_dataset_id(featurestore, name, version)
+
+    rest_rpc._remove_tag(featurestore_id, id, tag, resource)
+
+def _do_get_fs_tags():
+    """
+    Get tags that can be attached to a featuregroup or training dataset
+
+    Returns:
+          List of tags
+    """
+
+    return rest_rpc._get_fs_tags()
 
 # Fetch on-load and cache it on the client
 try:
