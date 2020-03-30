@@ -169,7 +169,7 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-autodoc_mock_imports = ["pyspark", "pydoop", "pydoop.hdfs", "jks", "IPython", "IPython.core.display", "tensorflow", "pynvml", "pyarrow", "pathlib", "pyhive", "numpy", "pandas", "boto3", "OpenSSL", "cryptography", "idna"]
+autodoc_mock_imports = ["pyspark", "pydoop", "pydoop.hdfs", "jks", "IPython", "IPython.core.display", "tensorflow", "pynvml", "pyarrow", "pathlib", "pyhive", "numpy", "pandas", "boto3", "OpenSSL", "cryptography", "idna", "dns"]
 
 exclude_patterns = ["experiment_impl", "featurestore_impl"]
 
