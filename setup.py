@@ -26,12 +26,12 @@ setup(
         'idna',
         'cryptography',
         'pyarrow==0.14.1',
-        'dnspython==1.16.0'
+        'dnspython==1.16.0',
+        'nvidia-ml-py==7.352.0'
     ],
     extras_require={
         'pydoop': ['pydoop'],
         'tf': ['tensorflow'],
-        'tf_gpu': ['tensorflow-gpu'],
         'docs': [
             'sphinx',
             'sphinx-autobuild',
@@ -44,8 +44,7 @@ setup(
             'pytest',
         ],
         'spark': ['pyspark==2.4.3'],
-        'plotting': ['matplotlib', 'seaborn'],
-        'pynvm': ['nvidia-ml-py']
+        'plotting': ['matplotlib', 'seaborn']
     },
     author='Robin Andersson',
     author_email='robin.eric.andersson@gmail.com',
