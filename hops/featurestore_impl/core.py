@@ -360,12 +360,13 @@ def _do_get_storage_connector(storage_connector_name, featurestore):
         metadata = _get_featurestore_metadata(featurestore, update_cache=True)
     try:
         return metadata.storage_connectors[storage_connector_name]
-    except:
+    except KeyError:
         try:
             # Retry with updated metadata
             metadata = _get_featurestore_metadata(featurestore, update_cache=True)
+            return metadata.storage_connectors[storage_connector_name]
         except KeyError:
-            storage_connector_names = list(map(lambda sc: sc.name, metadata.storage_connectors))
+            storage_connector_names = [sc.name for sc in metadata.storage_connectors.values()]
             raise StorageConnectorNotFound("Could not find the requested storage connector with name: {} " \
                                            ", among the list of available storage connectors: {}".format(
                 storage_connector_name,
