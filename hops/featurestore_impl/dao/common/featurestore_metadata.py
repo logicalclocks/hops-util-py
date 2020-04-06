@@ -50,14 +50,14 @@ class FeaturestoreMetadata(object):
         features_to_featuregroups = {}
         storage_connectors = {}
         for fg in metadata_json[constants.REST_CONFIG.JSON_FEATUREGROUPS]:
+            fg_obj = Featuregroup(fg)
             featuregroups[fs_utils._get_table_name(fg[constants.REST_CONFIG.JSON_FEATUREGROUP_NAME],
-                                                     fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION])] = \
-                Featuregroup(fg)
+                                                     fg[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION])] = fg_obj
             for f in fg[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES]:
                 if f[constants.REST_CONFIG.JSON_FEATURE_NAME] in features_to_featuregroups:
-                    features_to_featuregroups[f[constants.REST_CONFIG.JSON_FEATURE_NAME]].append(Featuregroup(fg))
+                    features_to_featuregroups[f[constants.REST_CONFIG.JSON_FEATURE_NAME]].append(fg_obj)
                 else:
-                    features_to_featuregroups[f[constants.REST_CONFIG.JSON_FEATURE_NAME]] = [Featuregroup(fg)]
+                    features_to_featuregroups[f[constants.REST_CONFIG.JSON_FEATURE_NAME]] = [fg_obj]
         for td in metadata_json[constants.REST_CONFIG.JSON_TRAINING_DATASETS]:
             training_datasets[fs_utils._get_table_name(td[constants.REST_CONFIG.JSON_TRAINING_DATASET_NAME],
                                                          td[constants.REST_CONFIG.JSON_TRAINING_DATASET_VERSION])] = \
