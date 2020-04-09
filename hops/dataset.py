@@ -20,12 +20,17 @@ class HTTPUpload:
     params = {}
 
     def __init__(self, file, path, flow_standard_chunk_size=DEFAULT_FLOW_STANDARD_CHUNK_SIZE):
-        self.resource = os.path.join(constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE,
-                                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE,
-                                     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR],
-                                     constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE,
-                                     "upload",
-                                     path)
+        self.resource = constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + \
+                        constants.DELIMITERS.SLASH_DELIMITER + \
+                        constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + \
+                        constants.DELIMITERS.SLASH_DELIMITER + \
+                        os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] + \
+                        constants.DELIMITERS.SLASH_DELIMITER + \
+                        constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + \
+                        constants.DELIMITERS.SLASH_DELIMITER + \
+                        "upload" + \
+                        constants.DELIMITERS.SLASH_DELIMITER + \
+                        path
 
         self.file = file
         if not flow_standard_chunk_size:
@@ -97,9 +102,6 @@ class HTTPUpload:
         print("Progress: " + str(progress) + "%")
         self.params['flowChunkNumber'] += 1
 
-        if self.params['flowChunkNumber'] > self.params['flowTotalChunks']:
-            self.f.close()
-
     def _read_chunk(self, chunk_size=1024):
         data = self.f.read(chunk_size)
         return data
@@ -110,9 +112,9 @@ class HTTPUpload:
         return tail or ntpath.basename(head)
 
     def upload(self):
-        self.f = open(self.file, "rb")
-        while self.params['flowChunkNumber'] <= self.params['flowTotalChunks']:
-            self._next()
+        with open(self.file, "rb") as self.f:
+            while self.params['flowChunkNumber'] <= self.params['flowTotalChunks']:
+                self._next()
 
 
 def upload(file, remote_path, chunk_size=None):

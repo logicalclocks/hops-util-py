@@ -179,8 +179,8 @@ def send_request(method, resource, data=None, headers=None, stream=False, files=
         resource: Hopsworks resource
         data: HTTP(S) payload
         headers: HTTP(S) headers
-        stream:
-        files:
+        stream: set the stream for the session object
+        files: dictionary of {filename: fileobject} files to multipart upload.
     Returns:
         HTTP(S) response
     """

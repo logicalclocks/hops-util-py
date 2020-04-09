@@ -13,10 +13,11 @@ from hops import util, constants
 from hops.exceptions import APIKeyFileNotFound
 
 
-def connect(project, host=None, port=443, scheme="https", hostname_verification=True,
+def connect(project, host=None, port=443, scheme="https", hostname_verification=False,
             api_key=None,
             region_name=constants.AWS.DEFAULT_REGION,
-            secrets_store=constants.LOCAL.LOCAL_STORE):
+            secrets_store=constants.LOCAL.LOCAL_STORE,
+            trust_store_path=None):
     """
     Connect to a project of a Hopworks instance. Sets up API key and REST API endpoint.
 
@@ -34,6 +35,7 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
         :api_key: path to a file containing an API key or the actual API key value. For secrets_store=local only.
         :region_name: The name of the AWS region in which the required secrets are stored
         :secrets_store: The secrets storage to be used. Secretsmanager or parameterstore for AWS, local otherwise.
+        :trust_store_path: path to the file  containing the Hopsworks certificates
 
     Returns:
         None
@@ -52,6 +54,9 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
             os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key)
         except APIKeyFileNotFound:
             warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
+
+    if trust_store_path is not None:
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
 
     os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project
@@ -75,8 +80,8 @@ def get_project_info(project_name):
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    return util.http(os.path.join(constants.DELIMITERS.SLASH_DELIMITER,
-                                  constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE,
-                                  constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE,
-                                  constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE,
-                                  project_name))
+    return util.http(constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     project_name)
