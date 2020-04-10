@@ -19,9 +19,12 @@ from OpenSSL import SSL
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 import idna
-from hops.exceptions import UnkownSecretStorageError
+from hops.exceptions import UnkownSecretStorageError, APIKeyFileNotFound
 import base64
 from socket import socket
+from json.decoder import JSONDecodeError
+from hops.exceptions import RestAPIError
+
 
 verify = None
 #! Needed for hops library backwards compatability
@@ -51,6 +54,27 @@ except:
     pass
 
 session = requests.session()
+
+
+def http(resource_url, headers=None, method=constants.HTTP_CONFIG.HTTP_GET, data=None):
+    response = send_request(method, resource_url, headers=headers, data=data)
+    try:
+        response_object = response.json()
+    except JSONDecodeError:
+        response_object = None
+
+    if (response.status_code // 100) != 2:
+        if response_object:
+            error_code, error_msg, user_msg = _parse_rest_error(response_object)
+        else:
+            error_code, error_msg, user_msg = "", "", ""
+
+        raise RestAPIError("Could not execute HTTP request (url: {}), server response: \n "
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    return response_object
+
 
 def _get_elastic_endpoint():
     """
@@ -146,7 +170,7 @@ def get_requests_verify(hostname, port):
     return False
 
 
-def send_request(method, resource, data=None, headers=None, stream=False):
+def send_request(method, resource, data=None, headers=None, stream=False, files=None):
     """
     Sends a request to Hopsworks. In case of Unauthorized response, submit the request once more as jwt might not
     have been read properly from local container.
@@ -155,7 +179,8 @@ def send_request(method, resource, data=None, headers=None, stream=False):
         resource: Hopsworks resource
         data: HTTP(S) payload
         headers: HTTP(S) headers
-        verify: Whether to verify the https request
+        stream: set the stream for the session object
+        files: dictionary of {filename: fileobject} files to multipart upload.
     Returns:
         HTTP(S) response
     """
@@ -167,7 +192,7 @@ def send_request(method, resource, data=None, headers=None, stream=False):
         verify = get_requests_verify(host, port)
     set_auth_header(headers)
     url = _get_hopsworks_rest_endpoint() + resource
-    req = requests.Request(method, url, data=data, headers=headers)
+    req = requests.Request(method, url, data=data, headers=headers, files=files)
     prepped = session.prepare_request(req)
 
     response = session.send(prepped, verify=verify, stream=stream)
@@ -440,8 +465,11 @@ def get_secret(secrets_store, secret_key=None, api_key_file=None):
     elif secrets_store == constants.LOCAL.LOCAL_STORE:
         if not api_key_file:
             raise Exception('api_key_file needs to be set for local mode')
-        with open(api_key_file) as f:
-            return f.readline().strip()
+        try:
+            with open(api_key_file) as f:
+                return f.readline().strip()
+        except:
+            raise APIKeyFileNotFound('API Key fiel could not be read or was not found')
     else:
         raise UnkownSecretStorageError(
             "Secrets storage " + secrets_store + " is not supported.")

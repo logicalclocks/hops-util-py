@@ -195,7 +195,7 @@ and
     >>> training_dataset_version=1)
 """
 
-from hops import util, constants
+from hops import util, constants, project
 from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl import core
@@ -1907,7 +1907,7 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     if not trust_store_path is None:
         os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
 
-    project_info = rest_rpc._get_project_info(project_name)
+    project_info = project.get_project_info(project_name)
     project_id = str(project_info['projectId'])
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
 
@@ -1951,7 +1951,7 @@ def setup_databricks(host, project_name, cert_folder="hops",
     if not trust_store_path is None:
         os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
 
-    project_info = rest_rpc._get_project_info(project_name)
+    project_info = project.get_project_info(project_name)
     project_id = str(project_info['projectId'])
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
 
