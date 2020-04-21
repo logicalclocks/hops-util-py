@@ -734,53 +734,55 @@ def _get_online_featurestore_jdbc_connector_rest(featurestore_id):
     return response_object
 
 
-def _add_metadata(featurestore_id, featuregroup_id, name, value):
+def _add_tag(featurestore_id, id, tag, value, resource):
     """
-    Makes a REST call to Hopsworks to attach extended metadata to a featuregroup
+    Makes a REST call to Hopsworks to attach tags to a featuregroup or training dataset
 
     Args:
         :featurestore_id: the id of the featurestore
-        :featuregroup_id: the id of the featuregroup
-        :name: the name of the extended attribute
-        :value: the value of the extended attribute
+        :id: the id of the featuregroup or training dataset
+        :tag: name of the tag to attach
+        :value: value of the tag
+        :resource: featuregroup or training dataset resource
 
     Returns:
         None
 
     """
     method = constants.HTTP_CONFIG.HTTP_PUT
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    data = json.dumps({name: str(value)})
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE +
-                    constants.DELIMITERS.SLASH_DELIMITER + str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_XATTRS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    name)
-    response = util.send_request(method, resource_url, data=data, headers=headers)
+                    resource +
+                    constants.DELIMITERS.SLASH_DELIMITER + str(id) + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    tag)
+    if value is not None:
+        resource_url = resource_url + "?value=" + value
+
+    response = util.send_request(method, resource_url)
     response_object = response.json()
     if response.status_code >= 400:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not attach extened attributes to a featuregroup (url: {}), server response: \n " \
+        raise RestAPIError("Could not attach tags (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
 
-def _get_metadata(featurestore_id, featuregroup_id, name=None):
+def _get_tags(featurestore_id, id, resource):
     """
-    Makes a REST call to Hopsworks to get extended metadata attached to a featuregroup
+    Makes a REST call to Hopsworks to get tags attached to a featuregroup or training dataset
 
     Args:
         :featurestore_id: the id of the featurestore
-        :featuregroup_id: the id of the featuregroup
-        :name: the name of the extended attribute
+        :id: the id of the featuregroup or training dataset
+        :resource: featuregroup or training dataset resource
 
     Returns:
-        A dictionary containing the extended metadata
+        A dictionary containing the tags
 
     """
     method = constants.HTTP_CONFIG.HTTP_GET
@@ -791,57 +793,83 @@ def _get_metadata(featurestore_id, featuregroup_id, name=None):
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE +
-                    constants.DELIMITERS.SLASH_DELIMITER + str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_XATTRS_RESOURCE)
-    if name is not None:
-        resource_url += constants.DELIMITERS.SLASH_DELIMITER + name
+                    resource +
+                    constants.DELIMITERS.SLASH_DELIMITER + str(id) + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE)
     response = util.send_request(method, resource_url, headers=headers)
     response_object = response.json()
     if response.status_code >= 400:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not get extened attributes for a featuregroup (url: {}), server response: \n " \
+        raise RestAPIError("Could not get tags (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
-    results = {}
-    for item in response_object["items"]:
-        results[item["name"]] = item["value"]
-    return results
+    tags = {}
+    if "items" in response_object:
+        for tag in response_object["items"]:
+            tags[tag["name"]] = tag["value"]
+
+    return tags
 
 
-def _remove_metadata(featurestore_id, featuregroup_id, name):
+def _remove_tag(featurestore_id, id, tag, resource):
     """
-    Makes a REST call to Hopsworks to delete extended metadata attached to a featuregroup
+    Makes a REST call to Hopsworks to delete tags attached to a featuregroup or training dataset
 
     Args:
         :featurestore_id: the id of the featurestore
-        :featuregroup_id: the id of the featuregroup
-        :name: the name of the extended attribute
+        :id: the id of the featuregroup or training dataset
+        :tag: name of the tag
+        :resource: featuregroup or training dataset resource
 
     Returns:
         None
 
     """
     method = constants.HTTP_CONFIG.HTTP_DELETE
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE +
-                    constants.DELIMITERS.SLASH_DELIMITER + str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_XATTRS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    name)
-    response = util.send_request(method, resource_url, headers=headers)
-    if response.status_code == 404:
-        raise RestAPIError("Could not remove extened attributes from a featuregroup (url: {}), server response: \n " \
-                           "HTTP code: {}, HTTP reason: {}".format(resource_url, response.status_code, response.reason))
+                    resource +
+                    constants.DELIMITERS.SLASH_DELIMITER + str(id) + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    tag)
+    response = util.send_request(method, resource_url)
     if response.status_code >= 400:
         response_object = response.json()
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not remove extened attributes from a featuregroup (url: {}), server response: \n " \
+        raise RestAPIError("Could not remove tags (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+
+def _get_fs_tags():
+    """
+    Makes a REST call to Hopsworks to get tags that can be attached to featuregroups or training datasets
+
+    Returns:
+        List of tags
+
+    """
+    method = constants.HTTP_CONFIG.HTTP_GET
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE +
+                    constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE)
+    response = util.send_request(method, resource_url, headers=headers)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    results = []
+    if 'items' in response_object:
+        for tag in response_object['items']:
+            results.append(tag['name'])
+    return results

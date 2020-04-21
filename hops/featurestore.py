@@ -2369,89 +2369,160 @@ def disable_featuregroup_online(featuregroup_name, featuregroup_version=1, featu
     fs_utils._log("Online Feature Serving disabled successfully for featuregroup: {}".format(featuregroup_name))
 
 
-def add_metadata(featuregroup_name, metadata, featuregroup_version=1, featurestore=None):
+def set_featuregroup_tag(name, tag, value=None, version=1, featurestore=None):
     """
-    Attach custom metadata to a feature group
+    Attach tag to a feature group
 
     Example usage:
 
     >>> # The API will default to the project's feature store
-    >>> featurestore.add_metadata(featuregroup_name, {"attr1" : "val1", "attr2" : "val2"})
+    >>> featurestore.set_featuregroup_tag(featuregroup_name, "SPORT")
     >>> # You can also explicitly override the default arguments:
-    >>> featurestore.add_metadata(featuregroup_name, {"attr1" : "val1", "attr2" : "val2"}, featuregroup_version=1, featurestore=featurestore)
+    >>> featurestore.set_featuregroup_tag(featuregroup_name, "SPORT", value="Football", version=1, featurestore=featurestore)
 
     Args:
-        :featuregroup_name: name of the featuregroup
-        :metadata: a dictionary of attributes to attach to the featuregroup
-        :featuregroup_version: version of the featuregroup
+        :name: name of the featuregroup
+        :tag: name of the tag
+        :value: value of the tag
+        :version: version of the featuregroup
         :featurestore: the featurestore that the featuregroup belongs to
 
     Returns:
         None
     """
-    if type(metadata) is not dict:
-        raise ValueError("metadata should be a dictionary")
 
-    for k, v in metadata.items():
-        core._do_add_metadata(featuregroup_name, k, v, featurestore, featuregroup_version)
+    core._do_add_tag(name, tag, value, featurestore, version, constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE)
 
 
-def get_metadata(featuregroup_name, keys=[], featuregroup_version=1, featurestore=None):
+def get_featuregroup_tags(name, version=1, featurestore=None):
     """
-    Gets the custom metadata attached to a feature group
+    Get all tags attached to a feature group
 
     Example usage:
 
     >>> # The API will default to the project's feature store
-    >>> metadata = featurestore.get_metadata(featuregroup_name, ["attr1", "attr2"])
-    >>> # The API will return all associated metadata if no keys are supplied
-    >>> metadata = featurestore.get_metadata(featuregroup_name)
+    >>> tags = featurestore.get_featuregroup_tags(featuregroup_name)
     >>> # You can also explicitly override the default arguments:
-    >>> metadata = featurestore.get_metadata(featuregroup_name, ["attr1", "attr2"], featuregroup_version=1, featurestore=featurestore)
+    >>> tags = featurestore.get_featuregroup_tags(featuregroup_name, version=1, featurestore=featurestore)
 
     Args:
-        :featuregroup_name: name of the featuregroup
-        :keys: array of attribute names to read for the featuregroup associated metadata
-        :featuregroup_version: version of the featuregroup
+        :name: name of the featuregroup
+        :version: version of the featuregroup
         :featurestore: the featurestore that the featuregroup belongs to
 
     Returns:
-        The metadata dictionary attached to the featuregroup
+        The tags dictionary attached to the featuregroup
     """
-    if not keys:
-        return core._do_get_metadata(featuregroup_name=featuregroup_name, name=None, featurestore=featurestore, featuregroup_version=featuregroup_version)
 
-    if type(keys) is not list:
-        raise ValueError("keys should be a list")
-
-    vals = {}
-    for k in keys:
-        vals.update(core._do_get_metadata(featuregroup_name, k, featurestore, featuregroup_version))
-    return vals
+    return core._do_get_tags(name, featurestore, version, constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE)
 
 
-def remove_metadata(featuregroup_name, keys, featuregroup_version=1, featurestore=None):
+def remove_featuregroup_tag(name, tag, version=1, featurestore=None):
     """
-    Removes the custom metadata attached to a feature group
+    Removes all tags attached to a feature group
 
     Example usage:
 
     >>> # The API will default to the project's feature store
-    >>> metadata = featurestore.remove_metadata(featuregroup_name, ["attr1", "attr2"])
+    >>> featurestore.remove_featuregroup_tags(featuregroup_name)
     >>> # You can also explicitly override the default arguments:
-    >>> metadata = featurestore.remove_metadata(featuregroup_name, ["attr1", "attr2"], featuregroup_version=1, featurestore=featurestore)
+    >>> featurestore.remove_featuregroup_tags(featuregroup_name, version=1, featurestore=featurestore)
 
     Args:
-        :featuregroup_name: name of the featuregroup
-        :keys: array of attribute names to be deleted from the featuregroup associated metadata
-        :featuregroup_version: version of the featuregroup
+        :name: name of the featuregroup
+        :tag: name of the tag to remove from the featuregroup
+        :version: version of the featuregroup
         :featurestore: the featurestore that the featuregroup belongs to
 
     Returns:
         None
     """
-    if type(keys) is not list:
-        raise ValueError("keys should be a list")
 
-    for k in keys:
-        core._do_remove_metadata(featuregroup_name, k, featurestore, featuregroup_version)
+    core._do_remove_tag(name, tag, featurestore, version, constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE)
+
+
+def set_training_dataset_tag(name, tag, value=None, version=1, featurestore=None):
+    """
+    Attach tag to a training dataset
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> featurestore.set_training_dataset_tag(training_dataset_name, "SPORT")
+    >>> # You can also explicitly override the default arguments:
+    >>> featurestore.set_training_dataset_tag(training_dataset_name, "SPORT", value="Football", version=1, featurestore=featurestore)
+
+    Args:
+        :name: name of the training dataset
+        :tag: name of the tag
+        :value: value of the tag
+        :version: version of the training dataset
+        :featurestore: the featurestore that the training dataset belongs to
+
+    Returns:
+        None
+    """
+
+    core._do_add_tag(name, tag, value, featurestore, version, constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE)
+
+
+def get_training_dataset_tags(name, version=1, featurestore=None):
+    """
+    Get tags attached to a training dataset
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> tags = featurestore.get_training_dataset_tags(training_dataset_name)
+    >>> # You can also explicitly override the default arguments:
+    >>> tags = featurestore.get_training_dataset_tags(training_dataset_name, version=1, featurestore=featurestore)
+
+    Args:
+        :name: name of the training dataset
+        :training_dataset_version: version of the training dataset
+        :featurestore: the featurestore that the training dataset belongs to
+
+    Returns:
+        The tags dictionary attached to the training dataset
+    """
+
+    return core._do_get_tags(name, featurestore, version, constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE)
+
+
+def remove_training_dataset_tag(name, tag, version=1, featurestore=None):
+    """
+    Removes all tags attached to a training dataset
+
+    Example usage:
+
+    >>> # The API will default to the project's feature store
+    >>> featurestore.remove_training_dataset_tags(training_dataset_name)
+    >>> # You can also explicitly override the default arguments:
+    >>> featurestore.remove_training_dataset_tags(training_dataset_name, version=1, featurestore=featurestore)
+
+    Args:
+        :name: name of the training dataset
+        :tag: name of the tag to remove from the training dataset
+        :version: version of the training dataset
+        :featurestore: the featurestore that the training dataset belongs to
+
+    Returns:
+        None
+    """
+
+    core._do_remove_tag(name, tag, featurestore, version, constants.REST_CONFIG.HOPSWORKS_TRAININGDATASETS_RESOURCE)
+
+
+def get_tags():
+    """
+    Get tags that can be attached to a featuregroup or training dataset
+
+    Example usage:
+
+    >>> tags = featurestore.get_tags()
+
+    Returns:
+        List of tags
+    """
+
+    return core._do_get_fs_tags()
