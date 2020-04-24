@@ -121,7 +121,7 @@ def stop_job(name):
     return response_object
 
 
-def get_executions(name, query=None):
+def get_executions(name, query=""):
     """
     Get a list of the currently running executions for this job.
     Returns:
