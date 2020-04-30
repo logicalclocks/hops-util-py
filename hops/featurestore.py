@@ -1915,7 +1915,7 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
 
     get_credential(project_id, dbfs_folder)
 
-def setup_databricks(host, project_name, cert_folder="hops", 
+def setup_databricks(host, project_name, cert_folder="hops",
                      port = 443, region_name = constants.AWS.DEFAULT_REGION,
                      secrets_store = 'parameterstore', api_key_file=None,
                      hostname_verification=True, trust_store_path=None):
@@ -1963,7 +1963,9 @@ def setup_databricks(host, project_name, cert_folder="hops",
     
     write_init_script(dbfs_folder)
 
-    print_instructions(cert_folder, dbfs_folder, host)
+    private_host = rest_rpc._get_hostname()
+
+    print_instructions(cert_folder, dbfs_folder, private_host)
     
 def get_credential(project_id, dbfs_folder):
     """
