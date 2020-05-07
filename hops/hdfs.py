@@ -10,7 +10,7 @@ import fnmatch
 import os
 import errno
 
-from hops import constants
+from hops import constants, project
 from hops.service_discovery import ServiceDiscovery
 import sys
 import subprocess
@@ -45,14 +45,21 @@ def get_plain_path(abs_path):
     """
     return path.split(path.abspath(abs_path))[2]
 
-def project_id():
+def project_id(project_name=none):
     """
     Get the Hopsworks project id from environment variables
+
+     Args:
+         :project_name: the name of the project, current project if none is supplied
 
     Returns: the Hopsworks project id
 
     """
-    return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
+    if not project_name:
+        return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
+
+    project_info = get_project_info(project_name)
+    return str(project_info['projectId'])
 
 
 def project_user():
