@@ -19,10 +19,7 @@ import six
 
 from hops.exceptions import RestAPIError
 
-from hops import constants
-from hops import devices
-from hops import util
-from hops import hdfs
+from hops import constants, devices, util, hdfs
 
 import pydoop.hdfs
 
