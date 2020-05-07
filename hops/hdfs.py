@@ -45,7 +45,7 @@ def get_plain_path(abs_path):
     """
     return path.split(path.abspath(abs_path))[2]
 
-def project_id(project_name=none):
+def project_id(project_name=None):
     """
     Get the Hopsworks project id from environment variables
 
