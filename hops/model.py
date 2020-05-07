@@ -157,16 +157,14 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         model_path = model_path.decode()
 
     local_model_path = model_path        
-    hfds_model_path = project_path + constants.DELIMITERS.SLASH_DELIMITER + model_path
+    hdfs_model_path = project_path + constants.DELIMITERS.SLASH_DELIMITER + model_path
 
     project_path = hdfs.project_path(project)
         
     if not description:
         description = 'A collection of models for ' + model_name
 
-    assert hdfs.exists(project_path + constants.DELIMITERS.SLASH_DELIMITER + constants.MODEL_SERVING.MODELS_DATASET),
-            "Your model output project {} does not contain a dataset named " + constants.MODEL_SERVING.MODELS_DATASET +
-            "that you have access to. Either create it or get write access to it.".format(project_path)
+    assert hdfs.exists(project_path + constants.DELIMITERS.SLASH_DELIMITER + constants.MODEL_SERVING.MODELS_DATASET), "Problem writing to dataset 'Models' in {}".format(project_path)
 
     if not hdfs.exists(hdfs_model_path) and not os.path.exists(local_model_path):
         raise ValueError("the provided model_path does not exist in HDFS {} or on the local filesystem {}".format(
