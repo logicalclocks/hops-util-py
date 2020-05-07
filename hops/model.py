@@ -141,6 +141,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         :description: description about the model
         :synchronous: whether to synchronously wait for the model to be indexed in the models rest endpoint
         :synchronous_timeout: max timeout in seconds for waiting for the model to be indexed
+        :project_name: the name of the project where the model should be saved to (default: current project). Note, the project must share its 'models' dataset and make it writeable for this client.
 
     Returns:
         The path to where the model was exported

@@ -75,7 +75,7 @@ def get_project_info(project_name):
         :project_name: the name of the project
 
     Returns:
-        JSON response
+        JSON response { 'id' : "..", 'name' : "...", 'owner' : "..." }
 
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
