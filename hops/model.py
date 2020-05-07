@@ -105,7 +105,7 @@ def get_model(name, version):
 
 
 def export(model_path, model_name, model_version=None, overwrite=False, metrics=None, description=None, \
-           synchronous=True, synchronous_timeout=120, project_path = hdfs.project_path()):
+           synchronous=True, synchronous_timeout=120, project=None):
     """
     Copies a trained model to the Models directory in the project and creates the directory structure of:
 
@@ -158,6 +158,8 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
 
     local_model_path = model_path        
     hfds_model_path = project_path + constants.DELIMITERS.SLASH_DELIMITER + model_path
+
+    project_path = hdfs.project_path(project)
         
     if not description:
         description = 'A collection of models for ' + model_name
