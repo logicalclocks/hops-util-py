@@ -454,15 +454,14 @@ def _attach_experiment_xattr(app_id, run_id, json_data, xattr):
     else:
         return response_object
 
-def _attach_model_link_xattr(ml_id, model, project_name=none):
+def _attach_model_link_xattr(ml_id, model, project_name=None):
     """
     Utility method for putting JSON data into elastic search
 
     Args:
-        :project: the project of the user/app
-        :appid: the YARN appid
-        :elastic_id: the id in elastic
-        :json_data: the data to put
+        :ml_id: the id of the model
+        :model: the name of the model
+        :project_name: the project of the user/app
 
     Returns:
         None
