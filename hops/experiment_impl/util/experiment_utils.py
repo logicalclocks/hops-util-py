@@ -454,20 +454,20 @@ def _attach_experiment_xattr(app_id, run_id, json_data, xattr):
     else:
         return response_object
 
-def _attach_model_link_xattr(ml_id, model, project_name=None):
+def _attach_model_link_xattr(ml_id, model, project=None):
     """
     Utility method for putting JSON data into elastic search
 
     Args:
         :ml_id: the id of the model
         :model: the name of the model
-        :project_name: the project of the user/app
+        :project: the project of the user/app
 
     Returns:
         None
 
     """
-    project_id = hdfs.project_id(project_name)
+    project_id = hdfs.project_id(project)
     
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -478,7 +478,7 @@ def _attach_model_link_xattr(ml_id, model, project_name=None):
 
     resp = util.send_request('PUT', resource_url)
 
-def _attach_model_xattr(ml_id, json_data):
+def _attach_model_xattr(ml_id, json_data, project=None):
     """
     Utility method for putting JSON data into elastic search
 
@@ -492,11 +492,12 @@ def _attach_model_xattr(ml_id, json_data):
         None
 
     """
+    project_id = hdfs.project_id(project)
     headers = {'Content-type': 'application/json'}
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   project_id + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    ml_id
 

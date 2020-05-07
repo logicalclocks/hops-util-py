@@ -26,7 +26,7 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
     >>> project.connect("dev_featurestore", "hops.site", api_key="api_key_file")
 
     Args:
-        :project_name: the name of the project to be used
+        :project: the name of the project to be used
         :host: the hostname of the Hopsworks cluster. If none specified, the library will attempt to the one set by
         the environment variable constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR
         :port: the REST port of the Hopsworks cluster
@@ -67,12 +67,12 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
 
 
-def get_project_info(project_name):
+def get_project_info(project):
     """
     Makes a REST call to hopsworks to get all metadata of a project for the provided project.
 
     Args:
-        :project_name: the name of the project
+        :project: the name of the project
 
     Returns:
         JSON response
@@ -81,8 +81,9 @@ def get_project_info(project_name):
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
+    
     return util.http(constants.DELIMITERS.SLASH_DELIMITER +
                      constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                      constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                      constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                     project_name)
+                     project)
