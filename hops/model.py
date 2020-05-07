@@ -141,7 +141,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         :description: description about the model
         :synchronous: whether to synchronously wait for the model to be indexed in the models rest endpoint
         :synchronous_timeout: max timeout in seconds for waiting for the model to be indexed
-        :project_name: the name of the project where the model should be saved to (default: current project). Note, the project must share its 'models' dataset and make it writeable for this client.
+        :project: the name of the project where the model should be saved to (default: current project). Note, the project must share its 'models' dataset and make it writeable for this client.
 
     Returns:
         The path to where the model was exported
@@ -157,10 +157,10 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     if not isinstance(model_path, string_types):
         model_path = model_path.decode()
 
+    project_path = hdfs.project_path(project)
+    
     local_model_path = model_path        
     hdfs_model_path = project_path + constants.DELIMITERS.SLASH_DELIMITER + model_path
-
-    project_path = hdfs.project_path(project)
         
     if not description:
         description = 'A collection of models for ' + model_name
@@ -233,12 +233,12 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     'experimentId': None, 'description': description, 'jobName': jobName, 'kernelId': kernelId}
     if 'ML_ID' in os.environ:
         # Attach link from experiment to model
-        experiment_utils._attach_model_link_xattr(os.environ['ML_ID'], model_name + '_' + str(model_version))
+        experiment_utils._attach_model_link_xattr(os.environ['ML_ID'], model_name + '_' + str(model_version), project=project)
         # Attach model metadata to models version folder
         model_summary['experimentId'] = os.environ['ML_ID']
-        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
+        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary), project=project)
     else:
-        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
+        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary), project=project)
 
     # Model metadata is attached asynchronously by Epipe, therefore this necessary to ensure following steps in a pipeline will not fail
     if synchronous:
