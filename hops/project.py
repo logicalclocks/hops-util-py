@@ -75,7 +75,8 @@ def get_project_info(project_name):
         :project_name: the name of the project
 
     Returns:
-        JSON response { 'id' : "..", 'name' : "...", 'owner' : "..." }
+        JSON response
+        See https://github.com/logicalclocks/hopsworks-ee/blob/master/hopsworks-common/src/main/java/io/hops/hopsworks/common/project/ProjectDTO.java
 
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks

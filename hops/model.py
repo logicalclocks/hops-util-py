@@ -314,7 +314,7 @@ def _export_hdfs_model(hdfs_model_path, model_dir_hdfs, overwrite):
     return model_dir_hdfs
 
 def _validate_metadata(metrics):
-    assert type(metrics) is dict, 'provided metrics is nt in a dict'
+    assert type(metrics) is dict, 'provided metrics is not in a dict'
     for metric in metrics:
         try:
             assert isinstance(metric, string_types), "metrics key {} is not a string".format(str(metric))
