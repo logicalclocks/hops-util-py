@@ -771,3 +771,11 @@ def build_parameters(map_fun, executor_num, args_dict):
         argIndex += 1
     param_string = param_string[:-1]
     return param_string, params, args
+
+def _create_experiment_dir(app_id, run_id):
+    experiment_path = _get_logdir(app_id, run_id)
+
+    if hdfs.exists(experiment_path):
+        hdfs.delete(experiment_path, recursive=True)
+
+    hdfs.mkdir(experiment_path)
