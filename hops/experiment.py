@@ -96,7 +96,7 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = None
         if args_dict:
@@ -190,7 +190,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'random_search', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
 
@@ -280,7 +280,7 @@ def differential_evolution(objective_function, boundary_dict, direction = Direct
 
         diff_evo_impl.run_id = run_id
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'differential_evolution', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
 
@@ -367,7 +367,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'grid_search', 'PARALLEL_EXPERIMENTS', json.dumps(grid_dict), description, app_id, direction, optimization_key)
 
@@ -442,7 +442,7 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, descripti
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'collective_all_reduce', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
@@ -514,7 +514,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'parameter_server', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
@@ -582,7 +582,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
 
         _start_run()
 
-        hdfs.mkdir(experiment_utils._get_logdir(app_id, run_id))
+        experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'mirrored', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
 
