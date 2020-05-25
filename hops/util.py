@@ -16,10 +16,8 @@ import boto3
 from hops import constants
 from hops import tls
 
-from OpenSSL import SSL
 from cryptography import x509
 from cryptography.x509.oid import NameOID
-import idna
 from hops.exceptions import UnkownSecretStorageError, APIKeyFileNotFound
 import base64
 from socket import socket
