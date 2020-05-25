@@ -14,6 +14,7 @@ import json
 import boto3
 
 from hops import constants
+from hops import tls
 
 from OpenSSL import SSL
 from cryptography import x509
@@ -129,38 +130,19 @@ def set_auth_header(headers):
 
 def get_requests_verify(hostname, port):
     """
-    Get verification method for sending HTTP requests to Hopsworks.
-    Credit to https://gist.github.com/gdamjan/55a8b9eec6cf7b771f92021d93b87b2c
     Returns:
         if env var HOPS_UTIL_VERIFY is not false
-            then if hopsworks certificate is self-signed, return the path to the truststore (PEM)
-            else if hopsworks is not self-signed, return true
+            if the env variable is set, then use the certificate, otherwise return true
         return false
     """
     if constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR in os.environ and os.environ[
         constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] == 'true':
 
-        hostname_idna = idna.encode(hostname)
-        sock = socket()
-
-        sock.connect((hostname, int(port)))
-        ctx = SSL.Context(SSL.SSLv23_METHOD)
-        ctx.check_hostname = False
-        ctx.verify_mode = SSL.VERIFY_NONE
-
-        sock_ssl = SSL.Connection(ctx, sock)
-        sock_ssl.set_connect_state()
-        sock_ssl.set_tlsext_host_name(hostname_idna)
-        sock_ssl.do_handshake()
-        cert = sock_ssl.get_peer_certificate()
-        crypto_cert = cert.to_cryptography()
-        sock_ssl.close()
-        sock.close()
-
         try:
-            commonname = crypto_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-            issuer = crypto_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-            if commonname == issuer and constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR in os.environ:
+            if constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_ENV_VAR in os.environ:
+                # need to convert the jks to pem
+                return tls.get_ca_chain_location()
+            elif constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR in os.environ: 
                 return os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR]
             else:
                 return True
