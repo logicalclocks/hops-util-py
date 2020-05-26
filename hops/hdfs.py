@@ -45,20 +45,20 @@ def get_plain_path(abs_path):
     """
     return path.split(path.abspath(abs_path))[2]
 
-def project_id(project=None):
+def project_id(name=None):
     """
     Get the Hopsworks project id from environment variables
 
      Args:
-         :project: the name of the project, current project if none is supplied
+         :name: the name of the project, current project if none is supplied
 
     Returns: the Hopsworks project id
 
     """
-    if not project:
+    if not name:
         return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
 
-    project_info = project.get_project_info(project)
+    project_info = project.get_project_info(name)
     return str(project_info['projectId'])
 
 
