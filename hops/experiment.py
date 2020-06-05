@@ -387,7 +387,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
     finally:
         _end_run(sc)
 
-def collective_all_reduce(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
+def collective_all_reduce(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
     """
     *Distributed Training*
 
@@ -414,6 +414,7 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, descripti
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :description: a longer description for the experiment
         :evaluator: whether to run one of the workers as an evaluator
+        :metric_key: If returning a dict with multiple return values, this key should match the name of the key in the dict for the metric you want to associate with the experiment
 
     Returns:
         HDFS path in your project where the experiment is stored and return value from the process running as chief
@@ -451,7 +452,9 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, descripti
         logdir, return_dict = allreduce_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
+        metric = experiment_utils._get_metric(return_dict, metric_key)
+
+        experiment_utils._finalize_experiment(experiment_json, metric, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
         return logdir, return_dict
     except:
@@ -460,7 +463,7 @@ def collective_all_reduce(map_fun, name='no-name', local_logdir=False, descripti
     finally:
         _end_run(sc)
 
-def parameter_server(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
+def parameter_server(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
     """
     *Distributed Training*
 
@@ -487,6 +490,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :description: a longer description for the experiment
         :evaluator: whether to run one of the workers as an evaluator
+        :metric_key: If returning a dict with multiple return values, this key should match the name of the key in the dict for the metric you want to associate with the experiment
 
     Returns:
         HDFS path in your project where the experiment is stored and return value from the process running as chief
@@ -523,7 +527,9 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
         logdir, return_dict = ps_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
+        metric = experiment_utils._get_metric(return_dict, metric_key)
+
+        experiment_utils._finalize_experiment(experiment_json, metric, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
         return logdir, return_dict
     except:
@@ -532,7 +538,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
     finally:
         _end_run(sc)
 
-def mirrored(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False):
+def mirrored(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
     """
     *Distributed Training*
 
@@ -555,6 +561,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :description: a longer description for the experiment
         :evaluator: whether to run one of the workers as an evaluator
+        :metric_key: If returning a dict with multiple return values, this key should match the name of the key in the dict for the metric you want to associate with the experiment
 
     Returns:
         HDFS path in your project where the experiment is stored and return value from the process running as chief
@@ -591,7 +598,9 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
         logdir, return_dict = mirrored_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
-        experiment_utils._finalize_experiment(experiment_json, None, app_id, run_id, 'FINISHED', duration, logdir, None, None)
+        metric = experiment_utils._get_metric(return_dict, metric_key)
+
+        experiment_utils._finalize_experiment(experiment_json, metric, app_id, run_id, 'FINISHED', duration, logdir, None, None)
 
         return logdir, return_dict
     except:

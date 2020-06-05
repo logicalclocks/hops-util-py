@@ -34,7 +34,7 @@ def _init_logger(exec_logdir, role=None, index=None):
     """
 
     prefix = ''
-    if role != None and index != None:
+    if role is not None and index is not None:
         prefix = str(role) + '_' + str(index) + '_'
 
     logfile = exec_logdir + '/' + prefix + 'output.log'
@@ -179,12 +179,6 @@ def _handle_return_simple(retval, hdfs_exec_logdir, logfile):
 
     """
     return_file = hdfs_exec_logdir + '/.outputs.json'
-    
-    if not retval:
-        if logfile is not None:
-            retval = {'log': logfile}
-            hdfs.dump(dumps(retval), return_file)
-        return
 
     _upload_file_output(retval, hdfs_exec_logdir)
 
@@ -195,7 +189,7 @@ def _handle_return_simple(retval, hdfs_exec_logdir, logfile):
         except:
             pass
 
-    retval['log'] = hdfs_exec_logdir.replace(hdfs.project_path(), '') + '/output.log'
+    retval['log'] = logfile
 
     hdfs.dump(dumps(retval), return_file)
 
@@ -237,6 +231,12 @@ def _cleanup(tensorboard, gpu_thread):
         print('Exception occurred while closing logger: {}'.format(err))
         pass
 
+    # Stop the gpu monitoring thread
+    try:
+        gpu_thread.do_run = False
+    except Exception as err:
+        print('Exception occurred while stopping GPU monitoring thread: {}'.format(err))
+        pass
 def _store_local_tensorboard(local_tb_path, hdfs_exec_logdir):
     """
 
@@ -734,7 +734,7 @@ def _get_metric(return_dict, metric_key):
     if return_dict and metric_key:
         assert metric_key in return_dict.keys(), 'Supplied metric_key {} is not in returned dict {}'.format(metric_key, return_dict)
         return str(return_dict[metric_key])
-    elif return_dict and len(return_dict.keys()) == 1 and 'metric' in return_dict.keys():
+    elif return_dict is not None and len(return_dict.keys()) == 2 and 'metric' in return_dict.keys():
         return str(return_dict['metric'])
     else:
         return None
