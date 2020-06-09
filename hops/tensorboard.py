@@ -10,7 +10,6 @@ import os
 from hops import hdfs as hopshdfs
 from hops.experiment_impl.util import experiment_utils
 from hops import util
-import pydoop.hdfs
 import shutil
 
 root_logdir_path = None
@@ -93,7 +92,7 @@ def _register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
         endpoint = endpoint_dir + "/TensorBoard.task" + str(exec_num)
 
         #dump tb host:port to hdfs
-    pydoop.hdfs.dump(tb_url, endpoint, user=hopshdfs.project_user())
+    hopshdfs.dump(tb_url, endpoint)
 
     return endpoint, tb_pid
 

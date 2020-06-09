@@ -11,7 +11,6 @@ from hops import hdfs, tensorboard, devices, util
 from hops.experiment_impl.util import experiment_utils
 from hops.experiment import Direction
 
-import pydoop.hdfs
 import threading
 import six
 import time
@@ -56,7 +55,7 @@ def _get_all_accuracies(tensorboard_hdfs_logdir, args_dict, number_params):
         path_to_log = path_to_log[:(len(path_to_log) -1)]
         path_to_log = path_to_log + '/.metric'
 
-        with pydoop.hdfs.open(path_to_log, "r") as fi:
+        with hdfs.open_file(path_to_log, flags="r") as fi:
             metric = fi.read()
             fi.close()
 
@@ -221,7 +220,7 @@ class DifferentialEvolution:
                   + ", best metric: " + str(new_gen_best) + ", best parameter combination: " + str(new_gen_best_param) + "\n")
 
             if cleanup:
-                pydoop.hdfs.rmr(root_dir + '/generation.' + str(self._generation-1))
+                hdfs.rmr(root_dir + '/generation.' + str(self._generation-1))
 
         parsed_back_population = []
         for indiv in population:
