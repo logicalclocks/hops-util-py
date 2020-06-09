@@ -51,7 +51,7 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
 
     path_to_return = logdir + '/.outputs.json'
     if hdfs.exists(path_to_return):
-        with hdfs.open(path_to_return, flags="r") as fi:
+        with hdfs.open_file(path_to_return, flags="r") as fi:
             contents = fi.read()
             fi.close()
             return logdir, json.loads(contents)
