@@ -24,8 +24,6 @@ from hops import devices
 from hops import util
 from hops import hdfs
 
-import pydoop.hdfs
-
 logger_fd = None
 
 def _init_logger(exec_logdir, role=None, index=None):
@@ -149,7 +147,7 @@ def _upload_file_output(retval, hdfs_exec_logdir):
                 if os.path.exists(value): # absolute path
                     if hdfs.exists(hdfs_exec_logdir + '/' + value.split('/')[-1]):
                         hdfs.delete(hdfs_exec_logdir + '/' + value.split('/')[-1], recursive=False)
-                    pydoop.hdfs.put(value, hdfs_exec_logdir)
+                    hdfs.copy_to_hdfs(value, hdfs_exec_logdir)
                     os.remove(value)
                     hdfs_exec_logdir = hdfs.abs_path(hdfs_exec_logdir)
                     retval[metric_key] = hdfs_exec_logdir[len(hdfs.abs_path(hdfs.project_path())):] + '/' +  value.split('/')[-1]
@@ -157,7 +155,7 @@ def _upload_file_output(retval, hdfs_exec_logdir):
                     output_file = os.getcwd() + '/' + value
                     if hdfs.exists(hdfs_exec_logdir + '/' + value):
                         hdfs.delete(hdfs_exec_logdir + '/' + value, recursive=False)
-                    pydoop.hdfs.put(value, hdfs_exec_logdir)
+                    hdfs.copy_to_hdfs(value, hdfs_exec_logdir)
                     os.remove(output_file)
                     hdfs_exec_logdir = hdfs.abs_path(hdfs_exec_logdir)
                     retval[metric_key] = hdfs_exec_logdir[len(hdfs.abs_path(hdfs.project_path())):] + '/' +  output_file.split('/')[-1]
@@ -237,6 +235,7 @@ def _cleanup(tensorboard, gpu_thread):
     except Exception as err:
         print('Exception occurred while stopping GPU monitoring thread: {}'.format(err))
         pass
+
 def _store_local_tensorboard(local_tb_path, hdfs_exec_logdir):
     """
 
@@ -250,7 +249,7 @@ def _store_local_tensorboard(local_tb_path, hdfs_exec_logdir):
     if os.path.exists(local_tb_path):
         tb_contents = os.listdir(local_tb_path)
         for entry in tb_contents:
-            pydoop.hdfs.put(local_tb_path + '/' + entry, hdfs_exec_logdir)
+            hdfs.copy_to_hdfs(local_tb_path + '/' + entry, hdfs_exec_logdir)
         try:
             shutil.rmtree(local_tb_path)
         except:

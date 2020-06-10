@@ -9,7 +9,6 @@ from hops import devices, tensorboard, hdfs
 from hops.experiment_impl.util import experiment_utils
 from hops import util
 
-import pydoop.hdfs
 import threading
 import time
 import socket
@@ -51,8 +50,8 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
     print('Finished Experiment \n')
 
     path_to_return = logdir + '/.outputs.json'
-    if pydoop.hdfs.path.exists(path_to_return):
-        with pydoop.hdfs.open(path_to_return, "r") as fi:
+    if hdfs.exists(path_to_return):
+        with hdfs.open_file(path_to_return, flags="r") as fi:
             contents = fi.read()
             fi.close()
             return logdir, json.loads(contents)

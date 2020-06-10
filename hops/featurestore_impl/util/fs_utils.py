@@ -13,11 +13,6 @@ import math
 import re
 import os
 
-try:
-    import pydoop.hdfs as pydoop
-except:
-    pass
-
 # for backwards compatibility
 try:
     import h5py

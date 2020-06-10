@@ -5,7 +5,6 @@ Simple experiment implementation
 from hops.experiment_impl.util import experiment_utils
 from hops import devices, tensorboard, hdfs
 
-import pydoop.hdfs
 import threading
 import time
 import json
