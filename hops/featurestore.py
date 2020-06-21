@@ -547,10 +547,9 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
         raise ValueError("OnDemand Feature groups can only be linked to JDBC Storage Connectors, the provided "
                          "connector is of type: {}".format(jdbc_connector.type))
     featurestore_id = core._get_featurestore_id(featurestore)
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_on_demand_featuregroup_type_info(featurestore_metadata)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
                                        None, None, None, None, None, None, None, None, None, None, None, None, None,
-                                       featuregroup_type, featuregroup_type_dto, sql_query, jdbc_connector.id, False)
+                                       "onDemandFeaturegroupDTO", sql_query, jdbc_connector.id, False)
     # update metadata cache
     try:
         core._get_featurestore_metadata(featurestore, update_cache=True)

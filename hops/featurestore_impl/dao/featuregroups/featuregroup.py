@@ -26,7 +26,9 @@ class Featuregroup(FeaturestoreEntity):
         self.name = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_NAME]
         self.version = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION]
         self.id = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_ID]
+
         self.featuregroup_type = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_TYPE]
+
         self.desc_stats_enabled = featuregroup_json[
             constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED]
         self.feat_corr_enabled = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED]
@@ -37,9 +39,10 @@ class Featuregroup(FeaturestoreEntity):
         self.num_bins = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS]
         self.num_clusters = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS]
         self.corr_method = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD]
-        if(self.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE):
+
+        if(self.featuregroup_type == "onDemandFeaturegroupDTO"):
             self.on_demand_featuregroup = OnDemandFeaturegroup(featuregroup_json)
-        if(self.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_CACHED_TYPE):
+        if(self.featuregroup_type == "cachedFeaturegroupDTO"):
             self.cached_featuregroup = CachedFeaturegroup(featuregroup_json)
 
 
@@ -51,5 +54,4 @@ class Featuregroup(FeaturestoreEntity):
         """
         Returns: true if the feature group has online serving enabled, otherwise false
         """
-        return (self.featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_CACHED_TYPE and
-                self.cached_featuregroup.online_enabled)
+        return (self.featuregroup_type == "cachedFeaturegroupDTO" and self.cached_featuregroup.online_enabled)
