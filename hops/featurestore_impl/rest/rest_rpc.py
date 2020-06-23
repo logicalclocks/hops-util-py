@@ -228,7 +228,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method
                      }
-    if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
+    if featuregroup_type == "onDemandFeaturegroupDTO":
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID] = jdbc_connector_id
     json_embeddable = json.dumps(json_contents, allow_nan=False)
