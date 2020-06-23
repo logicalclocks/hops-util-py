@@ -639,13 +639,12 @@ def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
     """
     featuregroup_id = _get_featuregroup_id(featurestore, featuregroup, featuregroup_version)
     featurestore_id = _get_featurestore_id(featurestore)
-    response_object = rest_rpc._delete_table_contents(featuregroup_id, featurestore_id)
+    rest_rpc._delete_table_contents(featuregroup_id, featurestore_id)
     # update metadata cache since clearing featuregroup will update its id.
     try:
         _get_featurestore_metadata(featurestore, update_cache=True)
     except:
         pass
-    return response_object
 
 
 def _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args={}):

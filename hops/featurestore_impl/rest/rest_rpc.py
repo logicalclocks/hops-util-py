@@ -32,15 +32,13 @@ def _delete_table_contents(featuregroup_id, featurestore_id):
                     str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUP_CLEAR_RESOURCE)
     response = util.send_request(method, resource_url)
-    response_object = response.json()
 
     if response.status_code != 200:
+        response_object = response.json()
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise RestAPIError("Could not clear featuregroup contents (url: {}), server response: \n "
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-
-    return response_object
 
 
 def _get_featurestores():
