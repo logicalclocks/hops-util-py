@@ -18,14 +18,8 @@ class FeaturestoreSettings():
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ENTITY_NAME_MAX_LENGTH]
         self.entity_description_max_len = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ENTITY_DESCRIPTION_MAX_LENGTH]
-        self.cached_featuregroup_dto_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_CACHED_FEATUREGROUP_DTO_TYPE]
-        self.cached_featuregroup_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_CACHED_FEATUREGROUP_TYPE]
         self.external_training_dataset_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_EXTERNAL_TRAINING_DATASET_TYPE]
-        self.featuregroup_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE]
         self.featurestore_regex = re.compile(
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATURESTORE_REGEX])
         self.max_correlations = settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_MAX_CORRELATIONS]
@@ -43,12 +37,8 @@ class FeaturestoreSettings():
         self.jdbc_connector_connection_str_max_len = \
             settings_json[
                 constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_JDBC_CONNECTOR_CONNECTION_STRING_MAX_LEN]
-        self.on_demand_featuregroup_dto_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ON_DEMAND_FEATUREGROUP_DTO_TYPE]
         self.on_demand_Featuregroup_sql_query_max_len = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ON_DEMAND_FEATUREGROUP_SQL_QUERY_MAX_LEN]
-        self.on_demand_featuregroup_type = \
-            settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_ON_DEMAND_FEATUREGROUP_TYPE]
         self.s3_connector_dto_type = \
             settings_json[constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_S3_CONNECTOR_DTO_TYPE]
         self.s3_connector_type = \

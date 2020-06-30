@@ -1056,36 +1056,6 @@ def _get_spark_sql_catalog_impl(spark):
     return dict(spark.sparkContext._conf.getAll())[constants.SPARK_CONFIG.SPARK_SQL_CATALOG_IMPLEMENTATION]
 
 
-def _get_on_demand_featuregroup_type_info(featurestore_metadata):
-    """
-    Gets the type information for an on-demand feature group that the backend expects
-
-    Args:
-         :featurestore_metadata: metadata of the featurestore
-
-    Returns:
-        the type information of the feature group, tuple of (type, dtotype)
-    """
-    featuregroup_type = featurestore_metadata.settings.on_demand_featuregroup_type
-    featuregroup_type_dto = featurestore_metadata.settings.on_demand_featuregroup_dto_type
-    return featuregroup_type, featuregroup_type_dto
-
-
-def _get_cached_featuregroup_type_info(featurestore_metadata):
-    """
-    Gets the type information for a cached feature group that the backend expects
-
-    Args:
-         :featurestore_metadata: metadata of the featurestore
-
-    Returns:
-        the type information of the feature group, tuple of (type, dtotype)
-    """
-    featuregroup_type = featurestore_metadata.settings.cached_featuregroup_type
-    featuregroup_type_dto = featurestore_metadata.settings.cached_featuregroup_dto_type
-    return featuregroup_type, featuregroup_type_dto
-
-
 def _get_training_dataset_type_info(featurestore_metadata, external=False):
     """
     Gets the type information of a training dataset that the backend expects

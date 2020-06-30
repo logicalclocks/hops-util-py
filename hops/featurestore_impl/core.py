@@ -411,8 +411,7 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
     logical_query_plan = LogicalQueryPlan(feature_query)
     logical_query_plan.create_logical_plan()
     on_demand_featuregroups = list(filter(
-        lambda fg: fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type,
-        logical_query_plan.featuregroups))
+        lambda fg: fg.featuregroup_type == "onDemandFeaturegroupDTO", logical_query_plan.featuregroups))
     _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args)
     logical_query_plan.construct_sql()
     feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
@@ -532,7 +531,7 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
         featurestore = fs_utils._do_get_project_featurestore()
 
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         raise CannotInsertIntoOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
                                                    "is an on-demand feature group and cannot be inserted into. "
                                                    "Insert operation is only supported for cached feature groups."
@@ -613,8 +612,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
     logical_query_plan = LogicalQueryPlan(features_query)
     logical_query_plan.create_logical_plan()
     on_demand_featuregroups = list(filter(
-        lambda fg: fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type,
-        logical_query_plan.featuregroups))
+        lambda fg: fg.featuregroup_type == "onDemandFeaturegroupDTO",logical_query_plan.featuregroups))
     _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args)
     logical_query_plan.construct_sql()
     feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
@@ -641,13 +639,12 @@ def _delete_table_contents(featurestore, featuregroup, featuregroup_version):
     """
     featuregroup_id = _get_featuregroup_id(featurestore, featuregroup, featuregroup_version)
     featurestore_id = _get_featurestore_id(featurestore)
-    response_object = rest_rpc._delete_table_contents(featuregroup_id, featurestore_id)
+    rest_rpc._delete_table_contents(featuregroup_id, featurestore_id)
     # update metadata cache since clearing featuregroup will update its id.
     try:
         _get_featurestore_metadata(featurestore, update_cache=True)
     except:
         pass
-    return response_object
 
 
 def _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args={}):
@@ -777,16 +774,13 @@ def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=
     spark.sparkContext.setJobGroup("Fetching Feature group",
                                    "Getting feature group: {} from the featurestore {}".format(featuregroup_name,
                                                                                                featurestore))
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         return _do_get_on_demand_featuregroup(fg, featurestore, jdbc_args)
-    if fg.featuregroup_type == featurestore_metadata.settings.cached_featuregroup_type:
+    if fg.featuregroup_type == "cachedFeaturegroupDTO":
         return _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata,
                                            featurestore, featuregroup_version, dataframe_type, online=online)
 
-    raise ValueError("The feature group type: "
-                     + fg.featuregroup_type + " was not recognized. Recognized types include: {} and {}" \
-                     .format(featurestore_metadata.settings.on_demand_featuregroup_type,
-                             featurestore_metadata.settings.cached_featuregroup_type))
+    raise ValueError("The feature group type: " + fg.featuregroup_type + " was not recognized")
 
 
 def _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore=None,
@@ -1004,7 +998,7 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
                                                dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK)
 
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         raise CannotUpdateStatisticsOfOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
                                                            "is an on-demand feature group and therefore there are no "
                                                            "statistics stored about it in Hopsworks that can be updated."
@@ -1029,7 +1023,6 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
                                  num_clusters=group_settings["num_clusters"])
     featuregroup_id = fg.id
     featurestore_id = featurestore_metadata.featurestore.id
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     jobs = []
     if util.get_job_name() is not None:
         jobs.append(util.get_job_name())
@@ -1037,8 +1030,7 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
         featuregroup_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
         cluster_analysis_data, group_settings["desc_stats_enabled"], group_settings["feat_corr_enabled"],
         group_settings["feat_hist_enabled"], group_settings["cluster_analysis_enabled"], group_settings["stat_columns"],
-        group_settings["num_bins"], group_settings["num_clusters"], group_settings["corr_method"], featuregroup_type,
-        featuregroup_type_dto, jobs))
+        group_settings["num_bins"], group_settings["num_clusters"], group_settings["corr_method"], "cachedFeaturegroupDTO", jobs))
     return featuregroup
 
 
@@ -1315,7 +1307,7 @@ def _do_get_featuregroup_partitions(featuregroup_name, featurestore_metadata, fe
         a dataframe with the partitions of the featuregroup
      """
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         raise CannotGetPartitionsOfOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
                                                         "is an on-demand feature group. "
                                                         "Get partitions operation is only supported for "
@@ -1699,11 +1691,10 @@ def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, desc
         None
 
     """
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     featurestore_id = _get_featurestore_id(featurestore)
     rest_rpc._sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                                      feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
-                                                     cluster_analysis_data, featuregroup_type, featuregroup_type_dto)
+                                                     cluster_analysis_data, "cachedFeaturegroupDTO")
 
 
 def _do_get_s3_featuregroup(storage_connector_name, dataset_path, featurestore_metadata,
@@ -1832,13 +1823,12 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
             corr_method=corr_method,
             num_clusters=num_clusters)
     featurestore_id = _get_featurestore_id(featurestore)
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     fs_utils._log("Registering feature metadata...")
     response = rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                        features_schema, feature_corr_data, featuregroup_desc_stats_data,
                                        features_histogram_data, cluster_analysis_data, feature_correlation,
                                        descriptive_statistics, feature_histograms, cluster_analysis, stat_columns,
-                                       num_bins, num_clusters, corr_method, featuregroup_type, featuregroup_type_dto,
+                                       num_bins, num_clusters, corr_method, "cachedFeaturegroupDTO",
                                        None, None, online)
     fs_utils._log("Registering feature metadata... [COMPLETE]")
     if offline:
@@ -1874,7 +1864,7 @@ def _do_enable_featuregroup_online(featuregroup_name, featuregroup_version, feat
     if featurestore is None:
         featurestore = fs_utils._do_get_project_featurestore()
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
                                                            "is an on-demand feature group. Online feature serving "
                                                             "operation is only supported for cached feature groups."
@@ -1890,9 +1880,8 @@ def _do_enable_featuregroup_online(featuregroup_name, featuregroup_version, feat
                                                    online_types=online_types)
     featuregroup_id = fg.id
     featurestore_id = featurestore_metadata.featurestore.id
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     rest_rpc._enable_featuregroup_online_rest(featuregroup_name, featuregroup_version, featuregroup_id,
-                                              featurestore_id, featuregroup_type_dto, featuregroup_type,
+                                              featurestore_id, "cachedFeaturegroupDTO",
                                               features_schema)
 
 
@@ -1909,16 +1898,15 @@ def _do_disable_featuregroup_online(featuregroup_name, featuregroup_version, fea
         None
     """
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
-    if fg.featuregroup_type == featurestore_metadata.settings.on_demand_featuregroup_type:
+    if fg.featuregroup_type == "onDemandFeaturegroupDTO":
         raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
                                                                       "is an on-demand feature group. Online feature serving "
                                                                       "operation is only supported for cached feature groups."
                                                                       .format(featuregroup_name, featuregroup_version))
     featuregroup_id = fg.id
     featurestore_id = featurestore_metadata.featurestore.id
-    featuregroup_type, featuregroup_type_dto = fs_utils._get_cached_featuregroup_type_info(featurestore_metadata)
     rest_rpc._disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, featuregroup_id,
-                                              featurestore_id, featuregroup_type_dto, featuregroup_type)
+                                              featurestore_id, "cachedFeaturegroupDTO")
 
 
 

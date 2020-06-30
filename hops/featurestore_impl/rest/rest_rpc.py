@@ -32,15 +32,13 @@ def _delete_table_contents(featuregroup_id, featurestore_id):
                     str(featuregroup_id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATUREGROUP_CLEAR_RESOURCE)
     response = util.send_request(method, resource_url)
-    response_object = response.json()
 
     if response.status_code != 200:
+        response_object = response.json()
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise RestAPIError("Could not clear featuregroup contents (url: {}), server response: \n "
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-
-    return response_object
 
 
 def _get_featurestores():
@@ -174,7 +172,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                               features_histogram_data, cluster_analysis_data, feature_corr_enabled,
                               featuregroup_desc_stats_enabled, features_histogram_enabled,
                               cluster_analysis_enabled, stat_columns, num_bins, num_clusters, corr_method,
-                              featuregroup_type, featuregroup_dto_type, sql_query, jdbc_connector_id, online_fg):
+                              featuregroup_type, sql_query, jdbc_connector_id, online_fg):
     """
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
@@ -198,7 +196,6 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
         :num_clusters: the number of clusters to use for cluster analysis
         :corr_method: the method to compute feature correlation with (pearson or spearman)
         :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :featuregroup_dto_type: type of the JSON DTO for the backend
         :sql_query: SQL Query for On-demand feature groups
         :jdbc_connector_id: id of the jdbc_connector for on-demand feature groups
         :online_fg: whether online feature serving should be enabled for the feature group
@@ -218,8 +215,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_TYPE: featuregroup_type,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_ONLINE: online_fg,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_CLUSTER_ANALYSIS_ENABLED: cluster_analysis_enabled,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED: featuregroup_desc_stats_enabled,
@@ -230,7 +226,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method
                      }
-    if featuregroup_type == constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_TYPE:
+    if featuregroup_type == "onDemandFeaturegroupDTO":
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_JDBC_CONNECTOR_ID] = jdbc_connector_id
     json_embeddable = json.dumps(json_contents, allow_nan=False)
@@ -258,8 +254,7 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
 def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_corr,
                                     featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data,
                                     descriptive_statistics, feature_correlation, feature_histograms, cluster_analysis,
-                                    stat_columns, num_bins, num_clusters, corr_method, featuregroup_type,
-                                    featuregroup_dto_type, jobs):
+                                    stat_columns, num_bins, num_clusters, corr_method, featuregroup_type, jobs):
     """
     Makes a REST call to hopsworks appservice for updating the statistics of a particular featuregroup
 
@@ -279,7 +274,6 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
         :num_clusters: the number of clusters to use for the cluster analysis of the featuregroup
         :corr_method: the correlation method to use for the correlation analysis of the featuregroup
         :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :featuregroup_dto_type: type of the JSON DTO for the backend
         :jobs: a list of jobs for updating the feature group stats
 
     Returns:
@@ -301,8 +295,7 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS: num_bins,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method,
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+                     constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
                      }
     json_embeddable = json.dumps(json_contents, allow_nan=False)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
@@ -339,7 +332,7 @@ def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_co
 
 
 def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, featuregroup_id, featurestore_id,
-                                     featuregroup_dto_type, featuregroup_type, features_schema):
+                                     featuregroup_type, features_schema):
     """
     Makes a REST call to hopsworks appservice for enabling online serving of a feature group (Create MySQL Table)
 
@@ -347,7 +340,6 @@ def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, feature
         :featuregroup_id: id of the featuregroup
         :featurestore_id: id of the featurestore where the featuregroup resides
         :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :featuregroup_dto_type: type of the JSON DTO for the backend
         :features_schema: the schema of the featuregroup (to create the MySQL table)
         :featuregroup: name of the featuregroup
         :featuregroup_version: version of the featuregroup
@@ -358,8 +350,7 @@ def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, feature
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: features_schema,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version
@@ -395,7 +386,7 @@ def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, feature
 
 
 def _disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, featuregroup_id, featurestore_id,
-                                      featuregroup_dto_type, featuregroup_type):
+                                      featuregroup_type):
     """
     Makes a REST call to hopsworks appservice for disable online serving of a feature group (Drop MySQL table)
 
@@ -405,7 +396,6 @@ def _disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, f
         :featuregroup_id: id of the featuregroup
         :featurestore_id: id of the featurestore where the featuregroup resides
         :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :featuregroup_dto_type: type of the JSON DTO for the backend
 
     Returns:
         The REST response
@@ -413,8 +403,7 @@ def _disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, f
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
-    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
+    json_contents = {constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_NAME: featuregroup_name,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version
                      }
@@ -645,8 +634,7 @@ def _get_training_dataset_rest(training_dataset_id, featurestore_id):
 
 def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                                             feature_corr_data, featuregroup_desc_stats_data,
-                                            features_histogram_data, cluster_analysis_data, featuregroup_type,
-                                            featuregroup_dto_type):
+                                            features_histogram_data, cluster_analysis_data, featuregroup_type):
     """
     Sends a REST call to hopsworks to synchronize a Hive table with the feature store
 
@@ -661,7 +649,6 @@ def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, descr
         :features_histogram_data: list of json-strings with histogram data for the features in the featuregroup
         :cluster_analysis_data: cluster analysis for the featuregroup
         :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :featuregroup_dto_type: type of the JSON DTO for the backend
 
     Returns:
         The HTTP response
@@ -677,8 +664,7 @@ def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, descr
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type
+                     constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
                      }
 
     json_embeddable = json.dumps(json_contents)
