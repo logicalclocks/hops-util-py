@@ -27,8 +27,7 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
 
     Args:
         :project_name: the name of the project to be used
-        :host: the hostname of the Hopsworks cluster. If none specified, the library will attempt to the one set by
-        the environment variable constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR
+        :host: the hostname of the Hopsworks cluster. If none specified, the library will attempt to the one set by the environment variable constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR
         :port: the REST port of the Hopsworks cluster
         :scheme: the scheme to use for connection to the REST API.
         :hostname_verification: whether or not to verify Hopsworks' certificate - default True
