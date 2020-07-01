@@ -4,6 +4,14 @@ hops package
 Submodules
 ----------
 
+hops.dataset module
+-------------------
+
+.. automodule:: hops.dataset
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.devices module
 -------------------
 
@@ -64,6 +72,14 @@ hops.kafka module
 -----------------
 
 .. automodule:: hops.kafka
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+hops.project module
+-------------------
+
+.. automodule:: hops.project
     :members:
     :undoc-members:
     :show-inheritance:
