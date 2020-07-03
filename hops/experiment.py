@@ -8,7 +8,7 @@ Whenever a function to run an experiment is invoked it is also registered in the
 *Three different types of experiments*
     - Run a single standalone Experiment using the *launch* function.
     - Run Parallel Experiments performing hyperparameter optimization using *grid_search* or *differential_evolution*.
-    - Run single or multi-machine Distributed Training using *parameter_server*, *collective_all_reduce* or *mirrored*.
+    - Run single or multi-machine Distributed Training using *parameter_server* or *mirrored*.
 
 """
 
@@ -20,7 +20,7 @@ from hops.experiment_impl import launcher as launcher
 from hops.experiment_impl.parallel import differential_evolution as diff_evo_impl, grid_search as grid_search_impl, \
     random_search as r_search_impl
 from hops.experiment_impl.util import experiment_utils
-from hops.experiment_impl.distribute import allreduce as allreduce_impl, parameter_server as ps_impl, mirrored as mirrored_impl
+from hops.experiment_impl.distribute import parameter_server as ps_impl, mirrored as mirrored_impl
 from hops import util, tensorboard, hdfs
 
 import time
@@ -381,82 +381,6 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
         experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
 
         return logdir, best_param, return_dict
-    except:
-        _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
-        raise
-    finally:
-        _end_run(sc)
-
-def collective_all_reduce(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
-    """
-    *Distributed Training*
-
-    Sets up the cluster to run CollectiveAllReduceStrategy.
-
-    TF_CONFIG is exported in the background and does not need to be set by the user themselves.
-
-    Example usage:
-
-    >>> from hops import experiment
-    >>> def distributed_training():
-    >>>    # Do all imports in the function
-    >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
-    >>>    from hops import tensorboard
-    >>>    from hops import devices
-    >>>    logdir = tensorboard.logdir()
-    >>>    ...CollectiveAllReduceStrategy(num_gpus_per_worker=devices.get_num_gpus())...
-    >>> experiment.collective_all_reduce(distributed_training, local_logdir=True)
-
-    Args:
-        :map_fun: the function containing code to run CollectiveAllReduceStrategy
-        :name: the name of the experiment
-        :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
-        :description: a longer description for the experiment
-        :evaluator: whether to run one of the workers as an evaluator
-        :metric_key: If returning a dict with multiple return values, this key should match the name of the key in the dict for the metric you want to associate with the experiment
-
-    Returns:
-        HDFS path in your project where the experiment is stored and return value from the process running as chief
-
-    """
-
-    num_ps = util.num_param_servers()
-    num_executors = util.num_executors()
-
-    assert num_ps == 0, "number of parameter servers should be 0"
-    assert num_executors > 1, "number of workers (executors) should be greater than 1"
-    if evaluator:
-        assert num_executors > 2, "number of workers must be atleast 3 if evaluator is set to True"
-
-    global running
-    if running:
-        raise RuntimeError("An experiment is currently running.")
-
-    start = time.time()
-    sc = util._find_spark().sparkContext
-    try:
-        global app_id
-        global experiment_json
-        global run_id
-        app_id = str(sc.applicationId)
-
-        _start_run()
-
-        experiment_utils._create_experiment_dir(app_id, run_id)
-
-        experiment_json = experiment_utils._populate_experiment(name, 'collective_all_reduce', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
-
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
-
-        logdir, return_dict = allreduce_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
-        duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
-
-        metric = experiment_utils._get_metric(return_dict, metric_key)
-
-        experiment_utils._finalize_experiment(experiment_json, metric, app_id, run_id, 'FINISHED', duration, logdir, None, None)
-
-        return logdir, return_dict
     except:
         _exception_handler(experiment_utils._seconds_to_milliseconds(time.time() - start))
         raise
