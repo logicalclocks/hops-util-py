@@ -68,6 +68,14 @@ hops.hdfs module
     :undoc-members:
     :show-inheritance:
 
+hops.jobs module
+----------------
+
+.. automodule:: hops.jobs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.kafka module
 -----------------
 
