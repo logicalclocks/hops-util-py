@@ -51,7 +51,7 @@ def create(new_project):
     """
     Creates a project in Hopsworks.
 
-    >>> from hops import util
+    >>> from hops import util, project
     >>> new_project = {"projectName": "MyProject4", "description": "", "retentionPeriod": "", "status": 0,
     >>>                "services": ["JOBS", "KAFKA", "JUPYTER", "HIVE", "SERVING", "FEATURESTORE", "AIRFLOW"]}
     >>>

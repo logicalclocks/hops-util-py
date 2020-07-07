@@ -13,7 +13,7 @@ def create_user(new_user):
 
     Example usage:
 
-    >>> from hops import util
+    >>> from hops import util, user
     >>> new_user = {"firstName":"Joe","lastName":"Doe","email":"joe@hopsworks.ai","telephoneNum":"",
     >>>             "chosenPassword":"Admin123","repeatedPassword":"Admin123",
     >>>             "securityQuestion":"What is your oldest sibling's middle name?","securityAnswer":"Admin123",
