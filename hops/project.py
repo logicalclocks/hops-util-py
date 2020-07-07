@@ -7,10 +7,8 @@ with particular services of a project.
 """
 
 import os
-import warnings
-
+import json
 from hops import util, constants
-from hops.exceptions import APIKeyFileNotFound
 
 
 def connect(project, host=None, port=443, scheme="https", hostname_verification=False,
@@ -23,7 +21,7 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
 
     Example usage:
 
-    >>> project.connect("dev_featurestore", "hops.site", api_key="api_key_file")
+    >>> project.connect("dev_featurestore", "localhost", api_key="api_key_file")
 
     Args:
         :project_name: the name of the project to be used
@@ -40,30 +38,43 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
         None
     """
 
-    if host is not None:
-        os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = scheme + "://" + host + ":" + str(port)
-
-    os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
-    if secrets_store == constants.LOCAL.LOCAL_STORE and not api_key:
-        warnings.warn("API key was not provided and secrets_store is local. "
-                      "When the connect method is used outside of a Hopsworks instance, it is recommended to "
-                      "use an API key. Falling back to JWT...")
-    else:
-        try:
-            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = util.get_secret(secrets_store, 'api-key', api_key)
-        except APIKeyFileNotFound:
-            warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
-
-    if trust_store_path is not None:
-        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
-
-    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
+    util.connect(host, port, scheme, hostname_verification, api_key, region_name, secrets_store, trust_store_path)
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project
 
     # Get projectId as we need for the REST endpoint
     project_info = get_project_info(project)
     project_id = str(project_info['projectId'])
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
+
+
+def create(new_project):
+    """
+    Creates a project in Hopsworks.
+
+    >>> from hops import util
+    >>> new_project = {"projectName": "MyProject4", "description": "", "retentionPeriod": "", "status": 0,
+    >>>                "services": ["JOBS", "KAFKA", "JUPYTER", "HIVE", "SERVING", "FEATURESTORE", "AIRFLOW"]}
+    >>>
+    >>> util.connect("localhost", api_key="api_key_file")
+    >>> project.create(new_project)
+
+    Args:
+        :new_project: A dictionary with the new project attributes.
+
+    Returns:
+        JSON response
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    return util.http(constants.DELIMITERS.SLASH_DELIMITER + \
+                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                     "?projectName=" + new_project['projectName'],
+                     headers=headers,
+                     method=constants.HTTP_CONFIG.HTTP_POST,
+                     data=json.dumps(new_project))
 
 
 def get_project_info(project_name):

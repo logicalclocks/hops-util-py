@@ -108,6 +108,14 @@ hops.tls module
     :undoc-members:
     :show-inheritance:
 
+hops.user module
+-------------------
+
+.. automodule:: hops.user
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.util module
 ----------------
 

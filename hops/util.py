@@ -9,6 +9,8 @@ import signal
 import urllib
 from ctypes import cdll
 import socket
+import warnings
+
 import json
 
 import boto3
@@ -23,6 +25,7 @@ import base64
 from socket import socket
 from json.decoder import JSONDecodeError
 from hops.exceptions import RestAPIError
+from hops.exceptions import APIKeyFileNotFound
 
 
 verify = None
@@ -110,6 +113,50 @@ def _get_host_port_pair():
     host_port_pair = endpoint.split(':')
     return host_port_pair
 
+
+def connect(host=None, port=443, scheme="https", hostname_verification=False,
+            api_key=None,
+            region_name=constants.AWS.DEFAULT_REGION,
+            secrets_store=constants.LOCAL.LOCAL_STORE,
+            trust_store_path=None):
+    """
+    Connect to a Hopworks instance. Sets the REST API endpoint and any necessary authentication parameters.
+
+    Example usage:
+
+    >>> util.connect("hops.site", api_key="api_key_file")
+
+    Args:
+        :host: the hostname of the Hopsworks cluster. If none specified, the library will attempt to the one set by the environment variable constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR
+        :port: the REST port of the Hopsworks cluster
+        :scheme: the scheme to use for connection to the REST API.
+        :hostname_verification: whether or not to verify Hopsworks' certificate - default True
+        :api_key: path to a file containing an API key or the actual API key value. For secrets_store=local only.
+        :region_name: The name of the AWS region in which the required secrets are stored
+        :secrets_store: The secrets storage to be used. Secretsmanager or parameterstore for AWS, local otherwise.
+        :trust_store_path: path to the file  containing the Hopsworks certificates
+
+    Returns:
+        None
+    """
+    if host is not None:
+        os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = scheme + "://" + host + ":" + str(port)
+
+    os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
+    if secrets_store == constants.LOCAL.LOCAL_STORE and not api_key:
+        warnings.warn("API key was not provided and secrets_store is local. "
+                      "When the connect method is used outside of a Hopsworks instance, it is recommended to "
+                      "use an API key. Falling back to JWT...")
+    else:
+        try:
+            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = get_secret(secrets_store, 'api-key', api_key)
+        except APIKeyFileNotFound:
+            warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
+
+    if trust_store_path is not None:
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
+
+    os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
 
 
 def set_auth_header(headers):
