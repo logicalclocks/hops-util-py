@@ -115,7 +115,7 @@ def _get_host_port_pair():
 
 
 def connect(host=None, port=443, scheme="https", hostname_verification=False,
-            api_key=None,
+            api_key_file=None,
             region_name=constants.AWS.DEFAULT_REGION,
             secrets_store=constants.LOCAL.LOCAL_STORE,
             trust_store_path=None):
@@ -124,7 +124,8 @@ def connect(host=None, port=443, scheme="https", hostname_verification=False,
 
     Example usage:
 
-    >>> util.connect("hops.site", api_key="api_key_file")
+    >>> from hops import util
+    >>> util.connect("localhost", api_key_file="api_key_file")
 
     Args:
         :host: the hostname of the Hopsworks cluster. If none specified, the library will attempt to the one set by the environment variable constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR
@@ -143,13 +144,13 @@ def connect(host=None, port=443, scheme="https", hostname_verification=False,
         os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = scheme + "://" + host + ":" + str(port)
 
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
-    if secrets_store == constants.LOCAL.LOCAL_STORE and not api_key:
+    if secrets_store == constants.LOCAL.LOCAL_STORE and not api_key_file:
         warnings.warn("API key was not provided and secrets_store is local. "
                       "When the connect method is used outside of a Hopsworks instance, it is recommended to "
                       "use an API key. Falling back to JWT...")
     else:
         try:
-            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = get_secret(secrets_store, 'api-key', api_key)
+            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = get_secret(secrets_store, 'api-key', api_key_file)
         except APIKeyFileNotFound:
             warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
 
