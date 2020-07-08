@@ -47,7 +47,7 @@ def connect(project, host=None, port=443, scheme="https", hostname_verification=
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR] = project_id
 
 
-def create(new_project):
+def create(new_project, owner=None):
     """
     Creates a project in Hopsworks.
 
@@ -60,6 +60,7 @@ def create(new_project):
 
     Args:
         :new_project: A dictionary with the new project attributes.
+        :owner: Create a project for another user (owner). Only admin user can use this option.
 
     Returns:
         JSON response
@@ -67,11 +68,19 @@ def create(new_project):
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
     """
+    if owner is None:
+        project_endpoint = constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                           "?projectName=" + new_project['projectName']
+    else:
+        project_endpoint = constants.REST_CONFIG.HOPSWORKS_ADMIN_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                           constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + "s" + \
+                           constants.DELIMITERS.SLASH_DELIMITER + "createas"
+        new_project["owner"] = owner
+
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    return util.http(constants.DELIMITERS.SLASH_DELIMITER + \
-                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                     "?projectName=" + new_project['projectName'],
+    return util.http(constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     project_endpoint,
                      headers=headers,
                      method=constants.HTTP_CONFIG.HTTP_POST,
                      data=json.dumps(new_project))
