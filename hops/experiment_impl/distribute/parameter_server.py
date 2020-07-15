@@ -144,12 +144,14 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps, ev
 
             logfile = experiment_utils._init_logger(experiment_utils._get_logdir(app_id, run_id), role=role, index=cluster_spec["task"]["index"])
 
-            if role == "chief":
-                logdir = experiment_utils._get_logdir(app_id, run_id)
-                tb_hdfs_path, tb_pid = tensorboard._register(logdir, logdir, executor_num, local_logdir=local_logdir)
-            elif role == "evaluator":
-                logdir = experiment_utils._get_logdir(app_id, run_id)
-                tensorboard.events_logdir = logdir
+            dist_logdir = experiment_utils._get_logdir(app_id, run_id) + '/logdir'
+
+            is_chief = (cluster["task"]["type"] == "chief")
+            if is_chief:
+                hdfs.mkdir(dist_logdir)
+                tensorboard._register(dist_logdir, experiment_utils._get_logdir(app_id, run_id), executor_num, local_logdir=local_logdir)
+            else:
+                tensorboard.events_logdir = dist_logdir
                 
             print(devices._get_gpu_info())
             print('-------------------------------------------------------')

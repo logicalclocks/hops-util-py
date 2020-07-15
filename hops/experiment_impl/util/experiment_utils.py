@@ -727,6 +727,7 @@ def _find_index(host_port, cluster_spec):
     return -1
 
 def _set_ml_id(app_id, run_id):
+    os.environ['HOME'] = os.getcwd()
     os.environ['ML_ID'] = str(app_id) + '_' + str(run_id)
 
 def _get_metric(return_dict, metric_key):

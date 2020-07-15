@@ -14,7 +14,7 @@ import time
 import socket
 import json
 
-from . import allreduce_reservation
+from . import mirrored_reservation
 
 
 def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=False):
@@ -39,7 +39,7 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
     #Make SparkUI intuitive by grouping jobs
     sc.setJobGroup(os.environ['ML_ID'], "{} | MirroredStrategy - Distributed Training".format(name))
 
-    server = allreduce_reservation.Server(num_executions)
+    server = mirrored_reservation.Server(num_executions)
     server_addr = server.start()
 
     #Force execution on executor, since GPU is located on executor
@@ -100,7 +100,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, evaluator,
             tmp_socket.bind(('', 0))
             port = tmp_socket.getsockname()[1]
 
-            client = allreduce_reservation.Client(server_addr)
+            client = mirrored_reservation.Client(server_addr)
             host_port = host + ":" + str(port)
 
             client.register({"worker": host_port, "index": executor_num})
@@ -131,16 +131,15 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, evaluator,
 
             is_chief = (cluster["task"]["type"] == "chief")
 
-            is_evaluator = (cluster["task"]["type"] == "evaluator")
-
             logfile = experiment_utils._init_logger(experiment_utils._get_logdir(app_id, run_id), role=cluster["task"]["type"], index=cluster["task"]["index"])
 
+            dist_logdir = experiment_utils._get_logdir(app_id, run_id) + '/logdir'
             if is_chief:
-                logdir = experiment_utils._get_logdir(app_id, run_id)
-                tb_hdfs_path, tb_pid = tensorboard._register(logdir, logdir, executor_num, local_logdir=local_logdir)
-            elif is_evaluator:
-                logdir = experiment_utils._get_logdir(app_id, run_id)
-                tensorboard.events_logdir = logdir
+                hdfs.mkdir(dist_logdir)
+                tensorboard._register(dist_logdir, experiment_utils._get_logdir(app_id, run_id), executor_num, local_logdir=local_logdir)
+            else:
+                tensorboard.events_logdir = dist_logdir
+
             print(devices._get_gpu_info())
             print('-------------------------------------------------------')
             print('Started running task')
