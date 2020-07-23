@@ -100,6 +100,7 @@ def stop_job(name):
         The job status.
     """
     method = constants.HTTP_CONFIG.HTTP_PUT
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -107,18 +108,21 @@ def stop_job(name):
                    constants.REST_CONFIG.HOPSWORKS_JOBS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    name + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_EXECUTIONS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   "{EXECUTION_ID}" + constants.DELIMITERS.SLASH_DELIMITER + \
                    "status"
 
-    status = {"status":"stopped"}
-    response = util.send_request(method, resource_url, data=status)
-    response_object = response.json()
-    if response.status_code >= 400:
-        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not perform action on job's execution (url: {}), server response: \n "
-                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-
-    return response_object
+    status = {"status": "stopped"}
+    # If no execution_id was provided, stop all active executions
+    # Get all active execution IDs
+    executions = get_executions(name,
+                                "?filter_by=state:INITIALIZING,RUNNING,ACCEPTED,NEW,NEW_SAVING,SUBMITTED,"
+                                "STARTING_APP_MASTER")
+    responses = []
+    if executions['count'] > 0:
+        for execution in executions['items']:
+            responses.append(util.http(resource_url.replace("{EXECUTION_ID}", str(execution['id'])), headers, method,
+                                       json.dumps(status)))
+    return responses
 
 
 def get_executions(name, query=""):
