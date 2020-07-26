@@ -119,7 +119,7 @@ def _get_featurestore_metadata(featurestore=None, update_cache=False):
     return metadata_cache
 
 
-def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online=False, online_types = None):
+def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online=False, online_types=None):
     """
     Helper function that converts a field in a spark dataframe to a feature dict that is compatible with the
      featurestore API
@@ -179,7 +179,7 @@ def _convert_field_to_feature_json(field_dict, primary_key, partition_by, online
     }
 
 
-def _parse_spark_features_schema(spark_schema, primary_key=[], partition_by=[], online=False, online_types = None):
+def _parse_spark_features_schema(spark_schema, primary_key=[], partition_by=[], online=False, online_types=None):
     """
     Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
 
@@ -374,7 +374,7 @@ def _do_get_storage_connector(storage_connector_name, featurestore):
 
 
 def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregroup=None, featuregroup_version=1,
-                    dataframe_type="spark", jdbc_args = {}, online=False):
+                    dataframe_type="spark", jdbc_args={}, online=False):
     """
     Gets a particular feature (column) from a featurestore, if no featuregroup is specified it queries
     hopsworks metastore to see if the feature exists in any of the featuregroups in the featurestore.
@@ -398,7 +398,7 @@ def _do_get_feature(feature, featurestore_metadata, featurestore=None, featuregr
 
     """
     if online and ((not featurestore_metadata.settings.online_enabled) or
-                       (not featurestore_metadata.featurestore.online_enabled)):
+                   (not featurestore_metadata.featurestore.online_enabled)):
         raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                            "talk to an administrator to enable it")
     spark = util._find_spark()
@@ -442,7 +442,7 @@ def _run_and_log_sql(spark, sql_str, online=False, featurestore=None):
         fs_utils._log("Running sql: {} against online feature store".format(sql_str))
         featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
         if online and ((not featurestore_metadata.settings.online_enabled) or
-                           (not featurestore_metadata.featurestore.online_enabled)):
+                       (not featurestore_metadata.featurestore.online_enabled)):
             raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                                "talk to an administrator to enable it")
         storage_connector = _do_get_online_featurestore_connector(featurestore, featurestore_metadata)
@@ -524,7 +524,7 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     if online and ((not featurestore_metadata.settings.online_enabled) or
-                       (not featurestore_metadata.featurestore.online_enabled)):
+                   (not featurestore_metadata.featurestore.online_enabled)):
         raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                            "talk to an administrator to enable it")
     if featurestore is None:
@@ -575,7 +575,7 @@ def _do_insert_into_featuregroup(df, featuregroup_name, featurestore_metadata, f
 
 
 def _do_get_features(features, featurestore_metadata, featurestore=None, featuregroups_version_dict={}, join_key=None,
-                     dataframe_type="spark", jdbc_args = {}, online=False):
+                     dataframe_type="spark", jdbc_args={}, online=False):
     """
     Gets a list of features (columns) from the featurestore. If no featuregroup is specified it will query hopsworks
     metastore to find where the features are stored.
@@ -597,7 +597,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
 
     """
     if online and ((not featurestore_metadata.settings.online_enabled) or
-                       (not featurestore_metadata.featurestore.online_enabled)):
+                   (not featurestore_metadata.featurestore.online_enabled)):
         raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                            "talk to an administrator to enable it")
     if featurestore is None:
@@ -612,7 +612,7 @@ def _do_get_features(features, featurestore_metadata, featurestore=None, feature
     logical_query_plan = LogicalQueryPlan(features_query)
     logical_query_plan.create_logical_plan()
     on_demand_featuregroups = list(filter(
-        lambda fg: fg.featuregroup_type == "onDemandFeaturegroupDTO",logical_query_plan.featuregroups))
+        lambda fg: fg.featuregroup_type == "onDemandFeaturegroupDTO", logical_query_plan.featuregroups))
     _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, featurestore, jdbc_args)
     logical_query_plan.construct_sql()
     feature_to_featuregroup_mapping = query_planner._get_feature_featuregroup_mapping(logical_query_plan, featurestore,
@@ -671,7 +671,7 @@ def _register_on_demand_featuregroups_as_temp_tables(on_demand_featuregroups, fe
                       .format(fg.name, fg.version, fs_utils._get_table_name(fg.name, fg.version)))
 
 
-def _do_get_on_demand_featuregroup(featuregroup, featurestore, jdbc_args = {}):
+def _do_get_on_demand_featuregroup(featuregroup, featurestore, jdbc_args={}):
     """
     Gets an on-demand featuregroup from a featurestore as a spark dataframe. Uses the JDBC connector to connect
     to the storage backend with Spark and then applies the SQL string for the on-demand feature group and return
@@ -744,7 +744,7 @@ def _do_get_on_demand_featuregroup(featuregroup, featurestore, jdbc_args = {}):
 
 
 def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=None,
-                         featuregroup_version=1, dataframe_type="spark", jdbc_args = {}, online=False):
+                         featuregroup_version=1, dataframe_type="spark", jdbc_args={}, online=False):
     """
     Gets a featuregroup from a featurestore as a spark dataframe
 
@@ -764,7 +764,7 @@ def _do_get_featuregroup(featuregroup_name, featurestore_metadata, featurestore=
 
     """
     if online and ((not featurestore_metadata.settings.online_enabled) or
-                       (not featurestore_metadata.featurestore.online_enabled)):
+                   (not featurestore_metadata.featurestore.online_enabled)):
         raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                            "talk to an administrator to enable it")
     if featurestore is None:
@@ -845,7 +845,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
 
     featureframe = FeatureFrame.get_featureframe(path=path, dataframe_type=dataframe_type,
                                                  data_format=training_dataset.data_format,
-                                                 training_dataset = training_dataset
+                                                 training_dataset=training_dataset
                                                  )
     return featureframe.read_featureframe(util._find_spark())
 
@@ -924,13 +924,14 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         training_dataset, featurestore_id, description, training_dataset_version,
         data_format, jobs, features_schema, feature_corr_data, training_dataset_desc_stats_data,
         features_histogram_data, cluster_analysis_data, training_dataset_type, featurestore_metadata.settings,
-        connector_id = storage_connector.id, path=path)
+        connector_id=storage_connector.id, path=path)
 
     td = TrainingDataset(td_json)
 
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
-        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
+                data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
                 fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
@@ -1008,8 +1009,8 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
 
     # Sanitize input and check for changed settings
     group_settings = fs_utils._do_prepare_stats_settings(
-            featuregroup_name, featuregroup_version, featurestore_metadata, descriptive_statistics, feature_correlation,
-            feature_histograms, cluster_analysis, stat_columns, num_bins, num_clusters, corr_method)
+        featuregroup_name, featuregroup_version, featurestore_metadata, descriptive_statistics, feature_correlation,
+        feature_histograms, cluster_analysis, stat_columns, num_bins, num_clusters, corr_method)
 
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(spark_df,
@@ -1030,7 +1031,8 @@ def _do_update_featuregroup_stats(featuregroup_name, featurestore_metadata, spar
         featuregroup_id, featurestore_id, feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
         cluster_analysis_data, group_settings["desc_stats_enabled"], group_settings["feat_corr_enabled"],
         group_settings["feat_hist_enabled"], group_settings["cluster_analysis_enabled"], group_settings["stat_columns"],
-        group_settings["num_bins"], group_settings["num_clusters"], group_settings["corr_method"], "cachedFeaturegroupDTO", jobs))
+        group_settings["num_bins"], group_settings["num_clusters"], group_settings["corr_method"],
+        "cachedFeaturegroupDTO", jobs))
     return featuregroup
 
 
@@ -1144,7 +1146,9 @@ def _do_insert_into_training_dataset(
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
-        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
+                data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
+            # TODO (davit): TFRECORD_FORMAT supports append mode thus here provide option for write_mode
             write_mode = constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
@@ -1230,7 +1234,6 @@ def _do_get_storage_connectors(featurestore_metadata):
     return list(map(lambda sc: (sc.name, sc.type), featurestore_metadata.storage_connectors.values()))
 
 
-
 def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, training_dataset_version=1):
     """
     Gets the HDFS path to a training dataset with a specific name and version in a featurestore
@@ -1280,7 +1283,9 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
                                                             training_dataset_name,
                                                             training_dataset_version)
     if training_dataset.data_format != \
-            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
+            training_dataset.data_format != \
+            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
         raise TFRecordSchemaNotFound(
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(
@@ -1666,11 +1671,10 @@ def _verify_hive_enabled(spark):
                 fs_utils._get_spark_sql_catalog_impl(spark), constants.SPARK_CONFIG.SPARK_SQL_CATALOG_HIVE)))
 
 
-
 def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, description="", featurestore=None,
-                                       featuregroup_version=1, jobs=[], feature_corr_data = None,
-                                       featuregroup_desc_stats_data = None, features_histogram_data = None,
-                                       cluster_analysis_data = None):
+                                       featuregroup_version=1, jobs=[], feature_corr_data=None,
+                                       featuregroup_desc_stats_data=None, features_histogram_data=None,
+                                       cluster_analysis_data=None):
     """
     Synchronizes an existing Hive table with a Feature Store.
 
@@ -1692,8 +1696,10 @@ def _sync_hive_table_with_featurestore(featuregroup, featurestore_metadata, desc
 
     """
     featurestore_id = _get_featurestore_id(featurestore)
-    rest_rpc._sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
-                                                     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data,
+    rest_rpc._sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version,
+                                                     jobs,
+                                                     feature_corr_data, featuregroup_desc_stats_data,
+                                                     features_histogram_data,
                                                      cluster_analysis_data, "cachedFeaturegroupDTO")
 
 
@@ -1716,7 +1722,7 @@ def _do_get_s3_featuregroup(storage_connector_name, dataset_path, featurestore_m
     if storage_connector.type == featurestore_metadata.settings.s3_connector_type:
         if storage_connector.access_key is not None:
             fs_utils._setup_s3_credentials_for_spark(storage_connector.access_key,
-                                                    storage_connector.secret_key, util._find_spark())
+                                                     storage_connector.secret_key, util._find_spark())
         path = fs_utils._get_bucket_path(storage_connector.bucket, dataset_path)
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      dataframe_type=constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,
@@ -1724,9 +1730,9 @@ def _do_get_s3_featuregroup(storage_connector_name, dataset_path, featurestore_m
         return featureframe.read_featureframe(util._find_spark())
     elif storage_connector.type not in metadata_cache.settings.feature_import_connectors:
         raise StorageConnectorTypeNotSupportedForFeatureImport("The storage conector type: {} is not supported for "
-                                                                   "feature importation. Supported feature storage "
-                                                                   "connectors for importation are: " \
-                                                                   .format(storage_connector.type))
+                                                               "feature importation. Supported feature storage "
+                                                               "connectors for importation are: " \
+                                                               .format(storage_connector.type))
 
 
 def _do_get_online_featurestore_connector(featurestore, featurestore_metadata):
@@ -1794,7 +1800,7 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
         :CouldNotConvertDataframe: in case the provided dataframe could not be converted to a spark dataframe
     """
     if online and ((not featurestore_metadata.settings.online_enabled) or
-                       (not featurestore_metadata.featurestore.online_enabled)):
+                   (not featurestore_metadata.featurestore.online_enabled)):
         raise OnlineFeaturestoreNotEnabled("Online Feature Store is not enabled for this project or cluster, "
                                            "talk to an administrator to enable it")
     try:
@@ -1812,7 +1818,7 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
 
     fs_utils._validate_primary_key(spark_df, primary_key)
     features_schema = _parse_spark_features_schema(spark_df.schema, primary_key, partition_by, online=online,
-                                                   online_types= online_types)
+                                                   online_types=online_types)
     fs_utils._validate_metadata(featuregroup, features_schema, description, featurestore_metadata.settings)
     feature_corr_data, featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data = \
         _compute_dataframe_stats(
@@ -1824,17 +1830,19 @@ def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key
             num_clusters=num_clusters)
     featurestore_id = _get_featurestore_id(featurestore)
     fs_utils._log("Registering feature metadata...")
-    response = rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
-                                       features_schema, feature_corr_data, featuregroup_desc_stats_data,
-                                       features_histogram_data, cluster_analysis_data, feature_correlation,
-                                       descriptive_statistics, feature_histograms, cluster_analysis, stat_columns,
-                                       num_bins, num_clusters, corr_method, "cachedFeaturegroupDTO",
-                                       None, None, online)
+    response = rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version,
+                                                  jobs,
+                                                  features_schema, feature_corr_data, featuregroup_desc_stats_data,
+                                                  features_histogram_data, cluster_analysis_data, feature_correlation,
+                                                  descriptive_statistics, feature_histograms, cluster_analysis,
+                                                  stat_columns,
+                                                  num_bins, num_clusters, corr_method, "cachedFeaturegroupDTO",
+                                                  None, None, online)
     fs_utils._log("Registering feature metadata... [COMPLETE]")
     if offline:
         fs_utils._log("Writing feature data to offline feature group (Hive)...")
         _write_featuregroup_hive(spark_df, featuregroup, featurestore, featuregroup_version,
-                                      constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
+                                 constants.FEATURE_STORE.FEATURE_GROUP_INSERT_APPEND_MODE)
         fs_utils._log("Writing feature data to offline feature group (Hive)... [COMPLETE]")
     if online:
         fs_utils._log("Writing feature data to online feature group (MySQL)...")
@@ -1865,13 +1873,14 @@ def _do_enable_featuregroup_online(featuregroup_name, featuregroup_version, feat
         featurestore = fs_utils._do_get_project_featurestore()
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
     if fg.featuregroup_type == "onDemandFeaturegroupDTO":
-        raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
-                                                           "is an on-demand feature group. Online feature serving "
-                                                            "operation is only supported for cached feature groups."
-                                                           .format(featuregroup_name, featuregroup_version))
+        raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup(
+            "The feature group with name: {} , and version: {} "
+            "is an on-demand feature group. Online feature serving "
+            "operation is only supported for cached feature groups."
+            .format(featuregroup_name, featuregroup_version))
 
     spark_df = _do_get_cached_featuregroup(featuregroup_name, featurestore_metadata, featurestore, featuregroup_version,
-                                       constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK,online=False)
+                                           constants.FEATURE_STORE.DATAFRAME_TYPE_SPARK, online=False)
     primary_key = []
     for feature in fg.features:
         if feature.primary:
@@ -1899,15 +1908,15 @@ def _do_disable_featuregroup_online(featuregroup_name, featuregroup_version, fea
     """
     fg = query_planner._find_featuregroup(featurestore_metadata.featuregroups, featuregroup_name, featuregroup_version)
     if fg.featuregroup_type == "onDemandFeaturegroupDTO":
-        raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup("The feature group with name: {} , and version: {} "
-                                                                      "is an on-demand feature group. Online feature serving "
-                                                                      "operation is only supported for cached feature groups."
-                                                                      .format(featuregroup_name, featuregroup_version))
+        raise CannotEnableOnlineFeatureServingForOnDemandFeatureGroup(
+            "The feature group with name: {} , and version: {} "
+            "is an on-demand feature group. Online feature serving "
+            "operation is only supported for cached feature groups."
+            .format(featuregroup_name, featuregroup_version))
     featuregroup_id = fg.id
     featurestore_id = featurestore_metadata.featurestore.id
     rest_rpc._disable_featuregroup_online_rest(featuregroup_name, featuregroup_version, featuregroup_id,
-                                              featurestore_id, "cachedFeaturegroupDTO")
-
+                                               featurestore_id, "cachedFeaturegroupDTO")
 
 
 def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_metadata, featurestore):
@@ -1937,9 +1946,9 @@ def _do_get_redshift_featuregroup(storage_connector_name, query, featurestore_me
             .load()
     elif storage_connector.type not in metadata_cache.settings.feature_import_connectors:
         raise StorageConnectorTypeNotSupportedForFeatureImport("The storage conector type: {} is not supported for "
-                                                                   "feature importation. Supported feature storage "
-                                                                   "connectors for importation are: " \
-                                                                   .format(storage_connector.type))
+                                                               "feature importation. Supported feature storage "
+                                                               "connectors for importation are: " \
+                                                               .format(storage_connector.type))
 
 
 def _do_add_tag(name, tag, value, featurestore, version, resource):
@@ -2011,6 +2020,7 @@ def _do_remove_tag(name, tag, featurestore, version, resource):
 
     rest_rpc._remove_tag(featurestore_id, id, tag, resource)
 
+
 def _do_get_fs_tags():
     """
     Get tags that can be attached to a featuregroup or training dataset
@@ -2020,6 +2030,7 @@ def _do_get_fs_tags():
     """
 
     return rest_rpc._get_fs_tags()
+
 
 # Fetch on-load and cache it on the client
 try:
