@@ -266,7 +266,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
                 "Append is not supported for training datasets stored in tf-records format, only overwrite, "
                 "set the optional argument write_mode='overwrite'")
         # TODO (davit): tfrecord format supports append mode
-        self.df.write.format(self.spark_tfrecord_format).option(
+        self.df.write.format(self._spark_tfrecord_format).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(self.write_mode).save(self.path)
 
