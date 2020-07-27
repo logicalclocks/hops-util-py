@@ -66,7 +66,7 @@ class FeatureFrame(object):
             return ImageFeatureFrame(**kwargs)
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
                 kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
-            return TFRecordsFeatureFrame(kwargs["data_format"], **kwargs)
+            return TFRecordsFeatureFrame(**kwargs)
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
             return NumpyFeatureFrame(**kwargs)
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_HDF5_FORMAT:
@@ -207,12 +207,12 @@ class TFRecordsFeatureFrame(FeatureFrame):
     FeatureFrame implementation for TFRecords training datasets
     """
 
-    def __init__(self, spark_tfrecord_format, **kwargs):
+    def __init__(self, **kwargs):
         """
         Initialize featureframe state using the parent class constructor
         """
-        super(TFRecordsFeatureFrame, self).__init__(spark_tfrecord_format, **kwargs)
-        self.spark_tfrecord_format = spark_tfrecord_format
+        super(TFRecordsFeatureFrame, self).__init__(**kwargs)
+        self._spark_tfrecord_format = kwargs["data_format"]
         
 
     def read_featureframe(self, spark):
@@ -231,11 +231,11 @@ class TFRecordsFeatureFrame(FeatureFrame):
         if hasattr(self, 'training_dataset') and self.training_dataset.training_dataset_type != \
                 constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
             if hdfs.exists(self.path):
-                spark_df = spark.read.format(self.spark_tfrecord_format).option(
+                spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
             elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-                spark_df = spark.read.format(self.spark_tfrecord_format).option(
+                spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
                     self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
@@ -244,7 +244,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
                 raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
                     self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
         else:
-            spark_df = spark.read.format(self.spark_tfrecord_format).option(
+            spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
@@ -261,12 +261,15 @@ class TFRecordsFeatureFrame(FeatureFrame):
               :ValueError: if the user supplied a write mode that is not supported
         """
         print("write feature frame, write_mode: {}".format(self.write_mode))
-        if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise ValueError(
-                "Append is not supported for training datasets stored in tf-records format, only overwrite, "
-                "set the optional argument write_mode='overwrite'")
         # TODO (davit): tfrecord format supports append mode
-        self.df.write.format(self.spark_tfrecord_format).option(
+        if (self._spark_tfrecord_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT
+                and self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+            raise ValueError(
+                "Append is not supported for training datasets stored in tfrecords format, only overwrite, "
+                "set the optional argument write_mode='overwrite'. Append mode is only supported in tfrecord format. "
+                "set optional arguments data_format='tfrecord' and write_mode='append'")
+
+        self.df.write.format(self._spark_tfrecord_format).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(self.write_mode).save(self.path)
 

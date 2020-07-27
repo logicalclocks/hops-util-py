@@ -918,7 +918,7 @@ def get_training_dataset_features_list(training_dataset, version=None, featurest
 
 
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
-                            data_format="tfrecords", training_dataset_version=1,
+                            data_format="tfrecords", write_mode="overwrite", training_dataset_version=1,
                             jobs=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                             corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True, sink=None, path=None):
@@ -974,7 +974,7 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     if util.get_job_name() is not None:
         jobs.append(util.get_job_name())
     storage_connector = core._do_get_storage_connector(sink, featurestore)
-    core._do_create_training_dataset(df, training_dataset, description, featurestore, data_format,
+    core._do_create_training_dataset(df, training_dataset, description, featurestore, data_format, write_mode,
                                      training_dataset_version, jobs, descriptive_statistics,
                                      feature_correlation, feature_histograms, cluster_analysis, stat_columns,
                                      num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector,

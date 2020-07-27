@@ -851,7 +851,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
 
 
 def _do_create_training_dataset(df, training_dataset, description="", featurestore=None,
-                                data_format="tfrecords", training_dataset_version=1,
+                                data_format="tfrecords", write_mode="overwrite", training_dataset_version=1,
                                 jobs=[], descriptive_statistics=True, feature_correlation=True,
                                 feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                                 corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True,
@@ -866,6 +866,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         :description: a description of the training dataset
         :featurestore: the featurestore that the training dataset is linked to
         :data_format: the format of the materialized training dataset
+        :write_mode: operation to overwrite or append to existing dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :jobs: list of job names linked to the training dataset
         :descriptive_statistics: a boolean flag whether to compute descriptive statistics (min,max,mean etc)
@@ -903,6 +904,11 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
             "to save it to the Feature Store, error: {}".format(
                 str(e)))
 
+    if data_format==constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT and \
+        write_mode==constants.SPARK_CONFIG.SPARK_APPEND_MODE:
+        raise NotImplementedError(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT +
+                                  " supports only " + constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE)
+
     featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
     features_schema = _parse_spark_features_schema(spark_df.schema)
     fs_utils._validate_metadata(training_dataset, features_schema, description, featurestore_metadata.settings)
@@ -930,6 +936,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
 
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
+        path = path.replace("hopsfs", "hdfs")
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
                 data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
             try:
@@ -939,7 +946,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                 fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
         featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
-                                                     write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
+                                                     write_mode=write_mode,
                                                      training_dataset=td,
                                                      petastorm_args=petastorm_args)
     else:
@@ -948,7 +955,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
         path = fs_utils._get_external_training_dataset_path(td.location)
         featureframe = FeatureFrame.get_featureframe(path=path,
                                                      data_format=data_format, df=spark_df,
-                                                     write_mode=constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE,
+                                                     write_mode=write_mode,
                                                      training_dataset=td,
                                                      petastorm_args=petastorm_args)
     spark = util._find_spark()
@@ -1146,15 +1153,20 @@ def _do_insert_into_training_dataset(
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
-        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
-                data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
-            # TODO (davit): TFRECORD_FORMAT supports append mode thus here provide option for write_mode
+        path = path.replace("hopsfs", "hdfs")
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             write_mode = constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE
-            try:
-                tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
-                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
-            except Exception as e:
-                fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+        elif data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
+            write_mode = constants.SPARK_CONFIG.SPARK_APPEND_MODE
+        else:
+            raise ValueError("only %s and %s are supported " %
+                             (constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE, constants.SPARK_CONFIG.SPARK_APPEND_MODE))
+
+        try:
+            tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
+            fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+        except Exception as e:
+            fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
 
         featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
