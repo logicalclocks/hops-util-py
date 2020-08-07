@@ -450,6 +450,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
         :description: a description of the training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :data_format: the format of the training dataset
+        :write_mode: mode in which dataset is written
         :jobs: list of Hopsworks jobs linked to the training dataset
         :features_schema_data: the schema of the training dataset
         :feature_corr_data: json-string with the feature correlation matrix of the training dataset
@@ -498,7 +499,10 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
 
     if response.status_code != 201 and response.status_code != 200:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
+        # raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
+        #                    "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+        #     resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+        print("Could not create training dataset (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
