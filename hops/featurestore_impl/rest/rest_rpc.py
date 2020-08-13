@@ -450,7 +450,6 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
         :description: a description of the training dataset
         :training_dataset_version: the version of the training dataset (defaults to 1)
         :data_format: the format of the training dataset
-        :write_mode: mode in which dataset is written
         :jobs: list of Hopsworks jobs linked to the training dataset
         :features_schema_data: the schema of the training dataset
         :feature_corr_data: json-string with the feature correlation matrix of the training dataset
