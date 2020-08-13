@@ -498,10 +498,7 @@ def _create_training_dataset_rest(training_dataset, featurestore_id, description
 
     if response.status_code != 201 and response.status_code != 200:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        # raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
-        #                    "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-        #     resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-        print("Could not create training dataset (url: {}), server response: \n " \
+        raise RestAPIError("Could not create training dataset (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 

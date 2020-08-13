@@ -936,6 +936,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
 
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
+        path = path.replace("hopsfs", "hdfs")
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
                 data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
             try:
