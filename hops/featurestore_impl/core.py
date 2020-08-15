@@ -1153,15 +1153,20 @@ def _do_insert_into_training_dataset(
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
         path = util.abspath(td.location)
-        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
-                data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
-            # TODO (davit): TFRECORD_FORMAT supports append mode thus here provide option for write_mode
+        path = path.replace("hopsfs", "hdfs")
+        if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             write_mode = constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE
-            try:
-                tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
-                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
-            except Exception as e:
-                fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+        elif data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
+            write_mode = constants.SPARK_CONFIG.SPARK_APPEND_MODE
+        else:
+            raise ValueError("only %s and %s are supported " %
+                             (constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE, constants.SPARK_CONFIG.SPARK_APPEND_MODE))
+
+        try:
+            tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
+            fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+        except Exception as e:
+            fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
 
         featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
