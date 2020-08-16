@@ -28,6 +28,37 @@ from xml.dom import minidom
 tls_enabled = None
 webhdfs_address = None
 
+
+# Replace Pydoop split method to be able to support hopsfs:// schemes
+class _HopsFSPathSplitter(hdfs.path._HdfsPathSplitter):
+    import os
+    import re
+    import time
+    @classmethod
+    def split(cls, hdfs_path, user):
+        if not hdfs_path:
+            cls.raise_bad_path(hdfs_path, "empty")
+        scheme, netloc, path = cls.parse(hdfs_path)
+        if not scheme:
+            scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
+        if scheme == "hdfs" or scheme == "hopsfs":
+            if not path:
+                cls.raise_bad_path(hdfs_path, "path part is empty")
+            if ":" in path:
+                cls.raise_bad_path(
+                    hdfs_path, "':' not allowed outside netloc part"
+                )
+            hostname, port = cls.split_netloc(netloc)
+            if not path.startswith("/"):
+                path = "/user/%s/%s" % (user, path)
+        elif scheme == "file":
+            hostname, port, path = "", 0, netloc + path
+        else:
+            cls.raise_bad_path(hdfs_path, "unsupported scheme %r" % scheme)
+        return hostname, port, path
+
+hdfs.path._HdfsPathSplitter = _HopsFSPathSplitter
+
 def get_plain_path(abs_path):
     """
     Convert absolute HDFS/HOPSFS path to plain path (dropping prefix and ip)
