@@ -31,9 +31,6 @@ webhdfs_address = None
 
 # Replace Pydoop split method to be able to support hopsfs:// schemes
 class _HopsFSPathSplitter(hdfs.path._HdfsPathSplitter):
-    import os
-    import re
-    import time
     @classmethod
     def split(cls, hdfs_path, user):
         if not hdfs_path:
