@@ -837,7 +837,7 @@ def _do_get_training_dataset(training_dataset_name, featurestore_metadata, train
                                                             training_dataset_name,
                                                             training_dataset_version)
     if training_dataset.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = util.abspath(training_dataset.location + constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name)
+        path = training_dataset.location + constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
     else:
         s3_connector = _do_get_storage_connector(training_dataset.connector_name, featurestore)
         fs_utils._setup_s3_credentials_for_spark(s3_connector.access_key, s3_connector.secret_key, util._find_spark())
@@ -935,16 +935,15 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
     td = TrainingDataset(td_json)
 
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = util.abspath(td.location)
-        path = path.replace("hopsfs", "hdfs")
+
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
                 data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
             try:
                 tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
-                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, td.location)
             except Exception as e:
                 fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
-        featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
+        featureframe = FeatureFrame.get_featureframe(path=td.location + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=write_mode,
                                                      training_dataset=td,
@@ -1152,8 +1151,6 @@ def _do_insert_into_training_dataset(
                                            corr_method=corr_method, num_clusters=num_clusters)
     data_format = td.data_format
     if td.training_dataset_type == featurestore_metadata.settings.hopsfs_training_dataset_type:
-        path = util.abspath(td.location)
-        path = path.replace("hopsfs", "hdfs")
         if data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
             write_mode = constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE
         elif data_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
@@ -1163,12 +1160,12 @@ def _do_insert_into_training_dataset(
                              (constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE, constants.SPARK_CONFIG.SPARK_APPEND_MODE))
 
         try:
-            tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
-            fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, path)
+                tf_record_schema_json = fs_utils._get_dataframe_tf_record_schema_json(spark_df, fixed=fixed)[1]
+                fs_utils._store_tf_record_schema_hdfs(tf_record_schema_json, td.location)
         except Exception as e:
-            fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
+                fs_utils._log("Could not infer tfrecords schema for the dataframe, {}".format(str(e)))
 
-        featureframe = FeatureFrame.get_featureframe(path=path + constants.DELIMITERS.SLASH_DELIMITER + td.name,
+        featureframe = FeatureFrame.get_featureframe(path=td.location + constants.DELIMITERS.SLASH_DELIMITER + td.name,
                                                      data_format=data_format, df=spark_df,
                                                      write_mode=write_mode,
                                                      training_dataset=td)
@@ -1270,10 +1267,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
         hdfs_path = hdfs_path + constants.FEATURE_STORE.TRAINING_DATASET_HDF5_SUFFIX
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
         hdfs_path = training_dataset.location
-    # abspath means "hdfs://namenode:port/ is preprended
-    abspath = util.abspath(hdfs_path)
-    return abspath
-
+    return hdfs_path
 
 def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestore_metadata, training_dataset_version=1,
                                               featurestore=None):
@@ -1302,9 +1296,8 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(
                 training_dataset.data_format))
-    hdfs_path = util.abspath(training_dataset.location)
     tf_record_json_schema = json.loads(hdfs.load(
-        hdfs_path + constants.DELIMITERS.SLASH_DELIMITER +
+        training_dataset.location + constants.DELIMITERS.SLASH_DELIMITER +
         constants.FEATURE_STORE.TRAINING_DATASET_TF_RECORD_SCHEMA_FILE_NAME))
     return fs_utils._convert_tf_record_schema_json_to_dict(tf_record_json_schema)
 

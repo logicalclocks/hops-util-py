@@ -38,12 +38,6 @@ try:
 except:
     pass
 
-# Compatibility with SageMaker
-try:
-    import pydoop.hdfs
-except:
-    pass
-
 try:
     import tensorflow
 except:
@@ -278,14 +272,6 @@ def get_jwt():
 
     with open(jwt_path, "r") as jwt:
         return jwt.read()
-
-
-def abspath(hdfs_path):
-    if constants.ENV_VARIABLES.API_KEY_ENV_VAR in os.environ:
-        return hdfs_path
-    else:
-        return pydoop.hdfs.path.abspath(hdfs_path)
-
 
 def parse_redhift_jdbc_url(url):
     """
