@@ -1176,7 +1176,7 @@ def _do_insert_into_training_dataset(
     spark = util._find_spark()
     _verify_hive_enabled(spark)
     spark.sparkContext.setJobGroup("Materializing dataframe as training dataset",
-                                   "Saving training dataset in path: {} in format {}".format(path, data_format))
+                                   "Saving training dataset in path: {} in format {}".format(td.location, data_format))
     print("Writing Feature Frame, data format: {}".format(data_format))
     featureframe.write_featureframe()
     spark.sparkContext.setJobGroup("", "")
