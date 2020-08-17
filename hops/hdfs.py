@@ -15,6 +15,9 @@ from hops.service_discovery import ServiceDiscovery
 import sys
 import subprocess
 
+import ntpath
+import importlib
+
 # Compatibility with SageMaker
 try:
     import pydoop.hdfs as hdfs
@@ -796,10 +799,11 @@ def add_module(hdfs_path, project=None):
         py_path = copy_to_local(hdfs_path, localized_deps, overwrite=True)
         if py_path not in sys.path:
             sys.path.append(py_path)
+        _reload(py_path)
         return py_path
     elif path.isfile(hdfs_path) and hdfs_path.endswith('.ipynb'):
         ipynb_path = copy_to_local(hdfs_path, localized_deps, overwrite=True)
-        python_path = os.environ['PYSPARK_PYTHON']
+        python_path = sys.executable
         jupyter_binary = os.path.dirname(python_path) + '/jupyter'
         if not os.path.exists(jupyter_binary):
             raise Exception('Could not find jupyter binary on path {}'.format(jupyter_binary))
@@ -817,10 +821,18 @@ def add_module(hdfs_path, project=None):
             raise Exception('Could not find converted .py file on path {}'.format(converted_py_path))
         if converted_py_path not in sys.path:
             sys.path.append(converted_py_path)
+        _reload(converted_py_path)
         return converted_py_path
     else:
         raise Exception("Given path " + hdfs_path + " does not point to a .py or .ipynb file")
 
+def _reload(path):
+    try:
+        module_name = ntpath.basename(path).split(".")[0]
+        imported_module = importlib.import_module(module_name)
+        importlib.reload(imported_module)
+    except Exception as err:
+        print('Failed to automatically reload module on path {} with exception: {}'.format(path, err))
 
 def is_tls_enabled():
     """
