@@ -22,6 +22,7 @@ import importlib
 try:
     import pydoop.hdfs as hdfs
     import pydoop.hdfs.path as path
+    import pydoop.hdfs.fs as hdfs_fs
 except:
     pass
 
