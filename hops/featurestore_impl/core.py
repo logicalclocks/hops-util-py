@@ -1283,10 +1283,8 @@ def _do_get_training_dataset_tf_record_schema(training_dataset_name, featurestor
     training_dataset = query_planner._find_training_dataset(featurestore_metadata.training_datasets,
                                                             training_dataset_name,
                                                             training_dataset_version)
-    if training_dataset.data_format != \
-            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
-            training_dataset.data_format != \
-            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
+    if training_dataset.data_format not in [constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT,
+            constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT]:
         raise TFRecordSchemaNotFound(
             "Cannot fetch tf records schema for a training dataset that is not stored in tfrecords format, "
             "this training dataset is stored in format: {}".format(

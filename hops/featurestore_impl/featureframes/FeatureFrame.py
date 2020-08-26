@@ -213,7 +213,6 @@ class TFRecordsFeatureFrame(FeatureFrame):
         """
         super(TFRecordsFeatureFrame, self).__init__(**kwargs)
         self._spark_tfrecord_format = kwargs["data_format"]
-        
 
     def read_featureframe(self, spark):
         """
@@ -260,14 +259,13 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
         """
-        print("write feature frame, write_mode: {}".format(self.write_mode))
-        # TODO (davit): tfrecord format supports append mode
-        if (self._spark_tfrecord_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT
-                and self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise ValueError(
-                "Append is not supported for training datasets stored in tfrecords format, only overwrite, "
-                "set the optional argument write_mode='overwrite'. Append mode is only supported in tfrecord format. "
-                "set optional arguments data_format='tfrecord' and write_mode='append'")
+        # print("write feature frame, write_mode: {}".format(self.write_mode))
+        # if (self._spark_tfrecord_format == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT
+        #         and self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
+        #     raise ValueError(
+        #         "Append is not supported for training datasets stored in tfrecords format, only overwrite, "
+        #         "set the optional argument write_mode='overwrite'. Append mode is only supported in tfrecord format. "
+        #         "set optional arguments data_format='tfrecord' and write_mode='append'")
 
         self.df.write.format(self._spark_tfrecord_format).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
