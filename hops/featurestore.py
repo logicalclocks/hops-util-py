@@ -217,7 +217,7 @@ warnings.simplefilter("always", StatisticsDeprecationWarning)
 def _deprecation_warning(fn):
     @functools.wraps(fn)
     def deprecated(*args, **kwargs):
-        warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), DeprecationWarning, stacklevel=2)
+        warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), StatisticsDeprecationWarning)
         return fn(*args, **kwargs)
     return deprecated
 
