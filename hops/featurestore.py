@@ -206,6 +206,14 @@ import warnings
 import functools
 
 
+def _deprecation_warning(fn):
+    @functools.wraps(fn)
+    def deprecated(*args, **kwargs):
+        warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), DeprecationWarning, stacklevel=2)
+        return fn(*args, **kwargs)
+    return deprecated
+
+
 def project_featurestore():
     """
     Gets the project's featurestore name (project_featurestore)
@@ -2310,10 +2318,3 @@ def get_tags():
 
     return core._do_get_fs_tags()
 
-
-def _deprecation_warning(fn):
-    @functools.wraps(fn)
-    def deprecated(*args, **kwargs):
-        warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), DeprecationWarning, stacklevel=2)
-        return fn(*args, **kwargs)
-    return deprecated
