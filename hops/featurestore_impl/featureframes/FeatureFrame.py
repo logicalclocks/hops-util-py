@@ -64,7 +64,8 @@ class FeatureFrame(object):
             return ORCFeatureFrame(**kwargs)
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_IMAGE_FORMAT:
             return ImageFeatureFrame(**kwargs)
-        if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT:
+        if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT or \
+                kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_TFRECORD_FORMAT:
             return TFRecordsFeatureFrame(**kwargs)
         if kwargs["data_format"] == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
             return NumpyFeatureFrame(**kwargs)
@@ -211,8 +212,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Initialize featureframe state using the parent class constructor
         """
         super(TFRecordsFeatureFrame, self).__init__(**kwargs)
-
-
+        self._spark_tfrecord_format = kwargs["data_format"]
 
     def read_featureframe(self, spark):
         """
@@ -230,11 +230,11 @@ class TFRecordsFeatureFrame(FeatureFrame):
         if hasattr(self, 'training_dataset') and self.training_dataset.training_dataset_type != \
                 constants.REST_CONFIG.JSON_TRAINING_DATASET_EXTERNAL_TYPE:
             if hdfs.exists(self.path):
-                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+                spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
             elif hdfs.exists(self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX):
-                spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+                spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(
                     self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX)
@@ -243,7 +243,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
                 raise TrainingDatasetNotFound("Could not find a training dataset in folder {} or in file {}".format(
                     self.path, self.path + constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_SUFFIX))
         else:
-            spark_df = spark.read.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+            spark_df = spark.read.format(self._spark_tfrecord_format).option(
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
                 constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).load(self.path)
         return fs_utils._return_dataframe_type(spark_df, self.dataframe_type)
@@ -259,12 +259,7 @@ class TFRecordsFeatureFrame(FeatureFrame):
         Raises:
               :ValueError: if the user supplied a write mode that is not supported
         """
-        print("write feature frame, write_mode: {}".format(self.write_mode))
-        if (self.write_mode == constants.SPARK_CONFIG.SPARK_APPEND_MODE):
-            raise ValueError(
-                "Append is not supported for training datasets stored in tf-records format, only overwrite, "
-                "set the optional argument write_mode='overwrite'")
-        self.df.write.format(constants.FEATURE_STORE.TRAINING_DATASET_TFRECORDS_FORMAT).option(
+        self.df.write.format(self._spark_tfrecord_format).option(
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE,
             constants.SPARK_CONFIG.SPARK_TF_CONNECTOR_RECORD_TYPE_EXAMPLE).mode(self.write_mode).save(self.path)
 
