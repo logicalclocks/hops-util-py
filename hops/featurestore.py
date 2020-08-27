@@ -199,8 +199,7 @@ from hops import util, constants, project
 from hops.featurestore_impl.rest import rest_rpc
 from hops.featurestore_impl.util import fs_utils
 from hops.featurestore_impl import core
-from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDataframe, FeatureVisualizationError, \
-    StatisticsComputationError
+from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDataframe, FeatureVisualizationError
 import os
 from pathlib import Path
 import warnings
