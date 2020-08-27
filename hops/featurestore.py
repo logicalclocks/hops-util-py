@@ -1106,12 +1106,6 @@ def insert_into_training_dataset(
                                                                               update_cache=False),
                                               featurestore,
                                               training_dataset_version=training_dataset_version,
-                                              descriptive_statistics=descriptive_statistics,
-                                              feature_correlation=feature_correlation,
-                                              feature_histograms=feature_histograms,
-                                              cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-                                              num_bins=num_bins,
-                                              corr_method=corr_method, num_clusters=num_clusters,
                                               write_mode=write_mode)
         fs_utils._log("Insertion into training dataset was successful")
     except:
@@ -1120,12 +1114,6 @@ def insert_into_training_dataset(
                                                                               update_cache=True),
                                               featurestore,
                                               training_dataset_version=training_dataset_version,
-                                              descriptive_statistics=descriptive_statistics,
-                                              feature_correlation=feature_correlation,
-                                              feature_histograms=feature_histograms,
-                                              cluster_analysis=cluster_analysis, stat_columns=stat_columns,
-                                              num_bins=num_bins,
-                                              corr_method=corr_method, num_clusters=num_clusters,
                                               write_mode=write_mode)
         fs_utils._log("Insertion into training dataset was successful")
 
