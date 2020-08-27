@@ -459,7 +459,7 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
                                           featurestore=featurestore, featuregroup_version=featuregroup_version,
                                           mode=mode, online=online, offline=offline)
 
-@_deprecation_error
+@_deprecation_warning
 def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=None,
                               feature_correlation=None, feature_histograms=None, cluster_analysis=None,
                               stat_columns=None, num_bins=None, num_clusters=None, corr_method=None):
@@ -1199,7 +1199,7 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
                                                                                             update_cache=False))
 
 
-@_deprecation_error
+@_deprecation_warning
 def update_training_dataset_stats(training_dataset, training_dataset_version=1, featurestore=None,
                                   descriptive_statistics=True,
                                   feature_correlation=True, feature_histograms=True, cluster_analysis=True,
@@ -1287,7 +1287,7 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
                                                     core._get_featurestore_metadata(featurestore, update_cache=True),
                                                     featurestore, featuregroup_version, dataframe_type)
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=None,
                                          color='lightblue', log=False, align="center", plot=True):
     """
@@ -1330,7 +1330,7 @@ def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, f
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_featuregroup_correlations(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
                                         cmap="coolwarm", annot=True, fmt=".2f", linewidths=.05, plot=True):
     """
@@ -1375,7 +1375,7 @@ def visualize_featuregroup_correlations(featuregroup_name, featurestore=None, fe
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
                                     plot=True):
     """
@@ -1412,7 +1412,7 @@ def visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featur
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=None, featuregroup_version=1):
     """
     **Deprecated**
@@ -1442,7 +1442,7 @@ def visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=Non
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_training_dataset_distributions(training_dataset_name, featurestore=None, training_dataset_version=1,
                                              figsize=(16, 12), color='lightblue', log=False, align="center", plot=True):
     """
@@ -1486,7 +1486,7 @@ def visualize_training_dataset_distributions(training_dataset_name, featurestore
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_training_dataset_correlations(training_dataset_name, featurestore=None, training_dataset_version=1,
                                             figsize=(16,12), cmap="coolwarm", annot=True, fmt=".2f",
                                             linewidths=.05, plot=True):
@@ -1532,7 +1532,7 @@ def visualize_training_dataset_correlations(training_dataset_name, featurestore=
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_training_dataset_clusters(training_dataset_name, featurestore=None, training_dataset_version=1,
                                         figsize=(16,12), plot=True):
     """
@@ -1569,7 +1569,7 @@ def visualize_training_dataset_clusters(training_dataset_name, featurestore=None
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore=None, training_dataset_version=1):
     """
     **Deprecated**
@@ -1599,7 +1599,7 @@ def visualize_training_dataset_descriptive_stats(training_dataset_name, features
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregroup_version=1):
     """
     **Deprecated**
@@ -1626,7 +1626,7 @@ def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregro
     pass
 
 
-@_deprecation_error
+@_deprecation_warning
 def get_training_dataset_statistics(training_dataset_name, featurestore=None, training_dataset_version=1):
     """
     **Deprecated**
@@ -2312,20 +2312,9 @@ def get_tags():
     return core._do_get_fs_tags()
 
 
-def _deprecation_error(fn):
-    @functools.wraps(fn)
-    def deprecated(*args, **kwargs):
-        raise DeprecationError("Statistics have been deprecated in `hops-util-py`. `{}` is not supported anymore. Please switch to use the new `hsfs` Python client.".format(fn.__name__))
-    return deprecated
-
-
 def _deprecation_warning(fn):
     @functools.wraps(fn)
     def deprecated(*args, **kwargs):
         warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), DeprecationWarning, stacklevel=2)
         return fn(*args, **kwargs)
     return deprecated
-
-
-class DeprecationError(Exception):
-    """This Error will be raised when a method as been deprecated."""
