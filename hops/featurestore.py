@@ -206,11 +206,16 @@ import warnings
 import functools
 
 
+def fs_formatwarning(message, category, filename, lineno, line=None):
+    return "{}:{}: {}: {}\n".format(filename, lineno, category.__name__, message)
+
+
 class StatisticsDeprecationWarning(Warning):
     """A Warning to be raised when methods with deprecated statistics functionality are used."""
     pass
 
 
+warnings.formatwarning = fs_formatwarning
 warnings.simplefilter("always", StatisticsDeprecationWarning)
 
 
