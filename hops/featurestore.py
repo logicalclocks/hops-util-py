@@ -205,7 +205,13 @@ from pathlib import Path
 import warnings
 import functools
 
-warnings.simplefilter("always", DeprecationWarning)
+
+class StatisticsDeprecationWarning(Warning):
+    """A Warning to be raised when methods with deprecated statistics functionality are used."""
+    pass
+
+
+warnings.simplefilter("always", StatisticsDeprecationWarning)
 
 
 def _deprecation_warning(fn):
