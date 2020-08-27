@@ -562,7 +562,7 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
                          "connector is of type: {}".format(jdbc_connector.type))
     featurestore_id = core._get_featurestore_id(featurestore)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
-                                       None, None, None, None, None, None,
+                                       None, None, None, None, None,
                                        "onDemandFeaturegroupDTO", sql_query, jdbc_connector.id, False)
 
     # update metadata cache
