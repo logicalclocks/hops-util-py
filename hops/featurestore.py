@@ -203,6 +203,8 @@ from hops.featurestore_impl.exceptions.exceptions import CouldNotConvertDatafram
     StatisticsComputationError
 import os
 from pathlib import Path
+import warnings
+import functools
 
 
 def project_featurestore():
@@ -402,10 +404,14 @@ def sql(query, featurestore=None, dataframe_type="spark", online=False):
     spark.sparkContext.setJobGroup("", "")
     return fs_utils._return_dataframe_type(result, dataframe_type)
 
-
+@_deprecation_warning
 def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_version=1, mode="append", online=False,
                              offline=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. This method will not compute statistics.
+    Please switch to use the new `hsfs` Python client.
+
     Saves the given dataframe to the specified featuregroup. Defaults to the project-featurestore
     This will append to the featuregroup. To overwrite a featuregroup, create a new version of the featuregroup
     from the UI and append to that table. Statistics will be updated depending on the settings made at creation time of
@@ -453,11 +459,14 @@ def insert_into_featuregroup(df, featuregroup, featurestore=None, featuregroup_v
                                           featurestore=featurestore, featuregroup_version=featuregroup_version,
                                           mode=mode, online=online, offline=offline)
 
-
+@_deprecation_error
 def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore=None, descriptive_statistics=None,
                               feature_correlation=None, feature_histograms=None, cluster_analysis=None,
                               stat_columns=None, num_bins=None, num_clusters=None, corr_method=None):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Updates the statistics settings of a featuregroup and recomputes the specified statistics with spark and then saves
     them to Hopsworks by making a REST call. Leaving a setting set to `None` will keep the previous value.
 
@@ -498,22 +507,7 @@ def update_featuregroup_stats(featuregroup, featuregroup_version=1, featurestore
     Returns:
         None
     """
-    try:
-        # always update cache to get the metadata to have most recent settings
-        core._do_update_featuregroup_stats(featuregroup,
-                                           core._get_featurestore_metadata(featurestore, update_cache=True),
-                                           featuregroup_version=featuregroup_version, featurestore=featurestore,
-                                           descriptive_statistics=descriptive_statistics,
-                                           feature_correlation=feature_correlation,
-                                           feature_histograms=feature_histograms,
-                                           cluster_analysis=cluster_analysis,
-                                           stat_columns=stat_columns, num_bins=num_bins,
-                                           corr_method=corr_method, num_clusters=num_clusters)
-    except Exception as e:
-        raise StatisticsComputationError("There was an error in computing the statistics for feature group: {}"
-                                         " , with version: {} in featurestore: {}. "
-                                         "Error: {}".format(featuregroup, featuregroup_version,
-                                                            featurestore, str(e)))
+    pass
 
 
 def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, featurestore=None,
@@ -548,8 +542,9 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
                          "connector is of type: {}".format(jdbc_connector.type))
     featurestore_id = core._get_featurestore_id(featurestore)
     rest_rpc._create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, [],
-                                       None, None, None, None, None, None, None, None, None, None, None, None, None,
+                                       None, None, None, None, None, None,
                                        "onDemandFeaturegroupDTO", sql_query, jdbc_connector.id, False)
+
     # update metadata cache
     try:
         core._get_featurestore_metadata(featurestore, update_cache=True)
@@ -558,6 +553,7 @@ def create_on_demand_featuregroup(sql_query, featuregroup, jdbc_connector_name, 
     fs_utils._log("Feature group created successfully")
 
 
+@_deprecation_warning
 def create_featuregroup(df, featuregroup, primary_key=[], description="", featurestore=None,
                         featuregroup_version=1, jobs=[],
                         descriptive_statistics=True, feature_correlation=True,
@@ -565,6 +561,10 @@ def create_featuregroup(df, featuregroup, primary_key=[], description="", featur
                         corr_method='pearson', num_clusters=5, partition_by=[], online=False, online_types=None,
                         offline=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. This method will not compute statistics.
+    Please switch to use the new `hsfs` Python client.
+
     Creates a new cached featuregroup from a dataframe of features (sends the metadata to Hopsworks with a REST call
     to create the Hive table and store the metadata and then inserts the data of the spark dataframe into the newly
     created table).
@@ -632,8 +632,7 @@ def create_featuregroup(df, featuregroup, primary_key=[], description="", featur
                                      featurestore=featurestore, featuregroup_version=featuregroup_version,
                                      jobs=jobs, descriptive_statistics=descriptive_statistics,
                                      feature_correlation=feature_correlation, feature_histograms=feature_histograms,
-                                     cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
-                                     corr_method=corr_method, num_clusters=num_clusters, partition_by=partition_by,
+                                     stat_columns=stat_columns, partition_by=partition_by,
                                      online=online, online_types=online_types, offline=offline)
     # If it fails, update cache and retry
     except:
@@ -642,8 +641,7 @@ def create_featuregroup(df, featuregroup, primary_key=[], description="", featur
                                      featurestore=featurestore, featuregroup_version=featuregroup_version,
                                      jobs=jobs, descriptive_statistics=descriptive_statistics,
                                      feature_correlation=feature_correlation, feature_histograms=feature_histograms,
-                                     cluster_analysis=cluster_analysis, stat_columns=stat_columns, num_bins=num_bins,
-                                     corr_method=corr_method, num_clusters=num_clusters, partition_by=partition_by,
+                                     stat_columns=stat_columns, partition_by=partition_by,
                                      online=online, online_types=online_types, offline=offline)
 
     # update metadata cache since we created a new feature group and added new metadata
@@ -917,12 +915,17 @@ def get_training_dataset_features_list(training_dataset, version=None, featurest
             training_dataset, version, core._get_featurestore_metadata(featurestore, update_cache=True))
 
 
+@_deprecation_warning
 def create_training_dataset(df, training_dataset, description="", featurestore=None,
                             data_format="tfrecords", write_mode="overwrite", training_dataset_version=1,
                             jobs=[], descriptive_statistics=True, feature_correlation=True,
                             feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20,
                             corr_method='pearson', num_clusters=5, petastorm_args={}, fixed=True, sink=None, path=None):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. This method will not compute statistics.
+    Please switch to use the new `hsfs` Python client.
+
     Creates a new training dataset from a dataframe, saves metadata about the training dataset to the database
     and saves the materialized dataset on hdfs
 
@@ -976,9 +979,8 @@ def create_training_dataset(df, training_dataset, description="", featurestore=N
     storage_connector = core._do_get_storage_connector(sink, featurestore)
     core._do_create_training_dataset(df, training_dataset, description, featurestore, data_format, write_mode,
                                      training_dataset_version, jobs, descriptive_statistics,
-                                     feature_correlation, feature_histograms, cluster_analysis, stat_columns,
-                                     num_bins, corr_method, num_clusters, petastorm_args, fixed, storage_connector,
-                                     path)
+                                     feature_correlation, feature_histograms, stat_columns,
+                                     petastorm_args, fixed, storage_connector, path)
 
 
 def get_storage_connectors(featurestore = None):
@@ -1030,12 +1032,17 @@ def get_storage_connector(storage_connector_name, featurestore = None):
     return core._do_get_storage_connector(storage_connector_name, featurestore)
 
 
+@_deprecation_warning
 def insert_into_training_dataset(
         df, training_dataset, featurestore=None, training_dataset_version=1,
         descriptive_statistics=True, feature_correlation=True,
         feature_histograms=True, cluster_analysis=True, stat_columns=None, num_bins=20, corr_method='pearson',
         num_clusters=5, write_mode="overwrite", ):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. This method will not compute statistics.
+    Please switch to use the new `hsfs` Python client.
+
     Inserts the data in a training dataset from a spark dataframe (append or overwrite)
 
     Example usage:
@@ -1192,12 +1199,16 @@ def get_latest_featuregroup_version(featuregroup, featurestore=None):
                                                                                             update_cache=False))
 
 
+@_deprecation_error
 def update_training_dataset_stats(training_dataset, training_dataset_version=1, featurestore=None,
                                   descriptive_statistics=True,
                                   feature_correlation=True, feature_histograms=True, cluster_analysis=True,
                                   stat_columns=None, num_bins=20,
                                   num_clusters=5, corr_method='pearson'):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Updates the statistics of a featuregroup by computing the statistics with spark and then saving it to Hopsworks by
     making a REST call.
 
@@ -1238,33 +1249,7 @@ def update_training_dataset_stats(training_dataset, training_dataset_version=1, 
     Returns:
         None
     """
-    try:
-        core._do_update_training_dataset_stats(training_dataset,
-                                               core._get_featurestore_metadata(featurestore, update_cache=False),
-                                               featurestore=featurestore,
-                                               training_dataset_version=training_dataset_version,
-                                               descriptive_statistics=descriptive_statistics,
-                                               feature_correlation=feature_correlation,
-                                               feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                               stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                               num_clusters=num_clusters)
-    except:
-        # Retry with updated cache
-        try:
-            core._do_update_training_dataset_stats(training_dataset,
-                                                   core._get_featurestore_metadata(featurestore, update_cache=True),
-                                                   featurestore=featurestore,
-                                                   training_dataset_version=training_dataset_version,
-                                                   descriptive_statistics=descriptive_statistics,
-                                                   feature_correlation=feature_correlation,
-                                                   feature_histograms=feature_histograms, cluster_analysis=cluster_analysis,
-                                                   stat_columns=stat_columns, num_bins=num_bins, corr_method=corr_method,
-                                                   num_clusters=num_clusters)
-        except Exception as e:
-            raise StatisticsComputationError("There was an error in computing the statistics for training dataset: {}"
-                                            ", with version: {} in featurestore: {}. "
-                                            "Error: {}".format(training_dataset, training_dataset_version,
-                                                               featurestore, str(e)))
+    pass
 
 
 def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_version=1, dataframe_type="spark"):
@@ -1302,10 +1287,13 @@ def get_featuregroup_partitions(featuregroup, featurestore=None, featuregroup_ve
                                                     core._get_featurestore_metadata(featurestore, update_cache=True),
                                                     featurestore, featuregroup_version, dataframe_type)
 
-
+@_deprecation_error
 def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=None,
                                          color='lightblue', log=False, align="center", plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature distributions (if they have been computed) for a featuregroup in the featurestore
 
     Example usage:
@@ -1339,43 +1327,16 @@ def visualize_featuregroup_distributions(featuregroup_name, featurestore=None, f
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature distributions
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_featuregroup_distributions(featuregroup_name, featurestore, featuregroup_version,
-                                                            figsize=figsize, color=color, log=log, align=align)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_featuregroup_distributions(featuregroup_name, featurestore, featuregroup_version,
-                                                                figsize=figsize, color=color, log=log, align=align)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature distributions for "
-                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
-                featuregroup_name, featuregroup_version, featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_featuregroup_correlations(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
                                         cmap="coolwarm", annot=True, fmt=".2f", linewidths=.05, plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature correlations (if they have been computed) for a featuregroup in the featurestore
 
     Example usage:
@@ -1411,45 +1372,16 @@ def visualize_featuregroup_correlations(featuregroup_name, featurestore=None, fe
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature correlations
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_featuregroup_correlations(featuregroup_name, featurestore, featuregroup_version,
-                                                            figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
-                                                           linewidths=linewidths)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_featuregroup_correlations(featuregroup_name, featurestore, featuregroup_version,
-                                                               figsize=figsize, cmap=cmap, annot=annot, fmt=fmt,
-                                                               linewidths=linewidths)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature correlations for "
-                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
-                featuregroup_name, featuregroup_version, featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featuregroup_version=1, figsize=(16,12),
                                     plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature clusters (if they have been computed) for a featuregroup in the featurestore
 
     Example usage:
@@ -1477,42 +1409,15 @@ def visualize_featuregroup_clusters(featuregroup_name, featurestore=None, featur
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature clusters
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_featuregroup_clusters(featuregroup_name, featurestore, featuregroup_version,
-                                                           figsize=figsize)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_featuregroup_clusters(featuregroup_name, featurestore, featuregroup_version,
-                                                               figsize=figsize)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature clusters for "
-                                            "feature group: {} with version: {} in featurestore: {}. Error: {}".format(
-                featuregroup_name, featuregroup_version, featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=None, featuregroup_version=1):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the descriptive stats (if they have been computed) for a featuregroup in the featurestore
 
     Example usage:
@@ -1534,30 +1439,16 @@ def visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore=Non
     Raises:
         :FeatureVisualizationError: if there was an error in fetching the descriptive statistics
     """
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        df = core._do_visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore,
-                                                                   featuregroup_version)
-        return df
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            df = core._do_visualize_featuregroup_descriptive_stats(featuregroup_name, featurestore,
-                                                                       featuregroup_version)
-            return df
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the descriptive statistics for "
-                                            "featuregroup: {} with version: {} in featurestore: {}. "
-                                            "Error: {}".format(featuregroup_name, featuregroup_version,
-                                                               featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_training_dataset_distributions(training_dataset_name, featurestore=None, training_dataset_version=1,
                                              figsize=(16, 12), color='lightblue', log=False, align="center", plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature distributions (if they have been computed) for a training dataset in the featurestore
 
     Example usage:
@@ -1592,47 +1483,17 @@ def visualize_training_dataset_distributions(training_dataset_name, featurestore
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature distributions
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_training_dataset_distributions(training_dataset_name, featurestore,
-                                                            training_dataset_version, figsize=figsize, color=color,
-                                                            log=log, align=align)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_training_dataset_distributions(training_dataset_name, featurestore,
-                                                                training_dataset_version, figsize=figsize, color=color,
-                                                                log=log, align=align)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature distributions for "
-                                            "training dataset: {} with version: {} in featurestore: {}. "
-                                            "Error: {}".format(training_dataset_name, training_dataset_version,
-                                                               featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_training_dataset_correlations(training_dataset_name, featurestore=None, training_dataset_version=1,
                                             figsize=(16,12), cmap="coolwarm", annot=True, fmt=".2f",
                                             linewidths=.05, plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature distributions (if they have been computed) for a training dataset in the featurestore
 
     Example usage:
@@ -1668,47 +1529,16 @@ def visualize_training_dataset_correlations(training_dataset_name, featurestore=
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature correlations
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_training_dataset_correlations(training_dataset_name, featurestore,
-                                                               training_dataset_version, figsize=figsize, cmap=cmap,
-                                                               annot=annot, fmt=fmt, linewidths=linewidths)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_training_dataset_correlations(training_dataset_name, featurestore,
-                                                                   training_dataset_version, figsize=figsize,
-                                                                   cmap=cmap, annot=annot, fmt=fmt,
-                                                                   linewidths=linewidths)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature correlations for "
-                                            "training dataset: {} with version: {} in featurestore: {}. "
-                                            "Error: {}".format(training_dataset_name, training_dataset_version,
-                                                               featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_training_dataset_clusters(training_dataset_name, featurestore=None, training_dataset_version=1,
                                         figsize=(16,12), plot=True):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the feature clusters (if they have been computed) for a training dataset in the featurestore
 
     Example usage:
@@ -1736,43 +1566,15 @@ def visualize_training_dataset_clusters(training_dataset_name, featurestore=None
     Raises:
         :FeatureVisualizationError: if there was an error visualizing the feature clusters
     """
-    if plot:
-        fs_utils._visualization_validation_warning()
-        fs_utils._matplotlib_magic_reminder()
-
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        # Construct the figure
-        fig = core._do_visualize_training_dataset_clusters(training_dataset_name, featurestore,
-                                                           training_dataset_version, figsize=figsize)
-        if plot:
-            # Plot the figure
-            fig.tight_layout()
-        else:
-            return fig
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            # Construct the figure
-            fig = core._do_visualize_training_dataset_clusters(training_dataset_name, featurestore,
-                                                               training_dataset_version, figsize=figsize)
-            if plot:
-                # Plot the figure
-                fig.tight_layout()
-            else:
-                return fig
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the feature clusters for "
-                                            "training dataset: {} with version: {} in featurestore: {}. "
-                                            "Error: {}".format(training_dataset_name, training_dataset_version,
-                                                               featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore=None, training_dataset_version=1):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Visualizes the descriptive stats (if they have been computed) for a training dataset in the featurestore
 
     Example usage:
@@ -1794,29 +1596,15 @@ def visualize_training_dataset_descriptive_stats(training_dataset_name, features
     Raises:
         :FeatureVisualizationError: if there was an error in fetching the descriptive statistics
     """
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        df = core._do_visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore,
-                                                                   training_dataset_version)
-        return df
-    except:
-        # Retry with updated cache
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        try:
-            df = core._do_visualize_training_dataset_descriptive_stats(training_dataset_name, featurestore,
-                                                                       training_dataset_version)
-            return df
-
-        except Exception as e:
-            raise FeatureVisualizationError("There was an error in visualizing the descriptive statistics for "
-                                            "training dataset: {} with version: {} in featurestore: {}. "
-                                            "Error: {}".format(training_dataset_name, training_dataset_version,
-                                                               featurestore, str(e)))
+    pass
 
 
+@_deprecation_error
 def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregroup_version=1):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Gets the computed statistics (if any) of a featuregroup
 
     Example usage:
@@ -1835,17 +1623,15 @@ def get_featuregroup_statistics(featuregroup_name, featurestore=None, featuregro
     Returns:
           A Statistics Object
     """
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        return core._do_get_featuregroup_statistics(featuregroup_name, featurestore, featuregroup_version)
-    except:
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        return core._do_get_featuregroup_statistics(featuregroup_name, featurestore, featuregroup_version)
+    pass
 
 
+@_deprecation_error
 def get_training_dataset_statistics(training_dataset_name, featurestore=None, training_dataset_version=1):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. Please switch to use the new `hsfs` Python client.
+
     Gets the computed statistics (if any) of a training dataset
 
     Example usage:
@@ -1864,13 +1650,7 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
     Returns:
           A Statistics Object
     """
-    if featurestore is None:
-        featurestore = project_featurestore()
-    try:
-        return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
-    except:
-        core._get_featurestore_metadata(featurestore, update_cache=True)
-        return core._do_get_training_dataset_statistics(training_dataset_name, featurestore, training_dataset_version)
+    pass
 
 def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION,
             secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops",
@@ -2044,11 +1824,16 @@ def print_instructions(cert_folder, dbfs_folder, host):
 
     print(instructions)
 
+@_deprecation_warning
 def sync_hive_table_with_featurestore(featuregroup, description="", featurestore=None,
                                       featuregroup_version=1, jobs=[], feature_corr_data = None,
                                       featuregroup_desc_stats_data = None, features_histogram_data = None,
                                       cluster_analysis_data = None):
     """
+    **Deprecated**
+    Statistics have been deprecated in `hops-util-py`. This method will not compute statistics.
+    Please switch to use the new `hsfs` Python client.
+
     Synchronizes an existing Hive table with a Feature Store.
 
     Example usage:
@@ -2082,14 +1867,12 @@ def sync_hive_table_with_featurestore(featuregroup, description="", featurestore
         core._sync_hive_table_with_featurestore(
             featuregroup, core._get_featurestore_metadata(featurestore, update_cache=False),
             description=description, featurestore=featurestore, featuregroup_version=featuregroup_version,
-            jobs=jobs, feature_corr_data=feature_corr_data, featuregroup_desc_stats_data=featuregroup_desc_stats_data,
-            features_histogram_data=features_histogram_data, cluster_analysis_data=cluster_analysis_data)
+            jobs=jobs)
     except: # Try again after updating the cache
         core._sync_hive_table_with_featurestore(
             featuregroup, core._get_featurestore_metadata(featurestore, update_cache=True),
             description=description, featurestore=featurestore, featuregroup_version=featuregroup_version,
-            jobs=jobs, feature_corr_data=feature_corr_data, featuregroup_desc_stats_data=featuregroup_desc_stats_data,
-            features_histogram_data=features_histogram_data, cluster_analysis_data=cluster_analysis_data)
+            jobs=jobs)
 
     # update metadata cache
     try:
@@ -2527,3 +2310,22 @@ def get_tags():
     """
 
     return core._do_get_fs_tags()
+
+
+def _deprecation_error(fn):
+    @functools.wraps(fn)
+    def deprecated(*args, **kwargs):
+        raise DeprecationError("Statistics have been deprecated in `hops-util-py`. `{}` is not supported anymore. Please switch to use the new `hsfs` Python client.".format(fn.__name__))
+    return deprecated
+
+
+def _deprecation_warning(fn):
+    @functools.wraps(fn)
+    def deprecated(*args, **kwargs):
+        warnings.warn("Statistics have been deprecated in `hops-util-py`. `{}` will not compute statistics. Please switch to use the new `hsfs` Python client.".format(fn.__name__), DeprecationWarning, stacklevel=2)
+        return fn(*args, **kwargs)
+    return deprecated
+
+
+class DeprecationError(Exception):
+    """This Error will be raised when a method as been deprecated."""
