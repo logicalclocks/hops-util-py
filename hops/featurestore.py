@@ -205,6 +205,8 @@ from pathlib import Path
 import warnings
 import functools
 
+warnings.simplefilter("always", DeprecationWarning)
+
 
 def _deprecation_warning(fn):
     @functools.wraps(fn)
