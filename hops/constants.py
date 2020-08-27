@@ -371,7 +371,6 @@ class REST_CONFIG:
     JSON_FEATUREGROUP_DESCRIPTION = "description"
     JSON_FEATUREGROUP_CREATED = "created"
     JSON_FEATUREGROUP_CREATOR = "creator"
-    JSON_FEATUREGROUP_HDFS_PATH = "hdfsStorePaths"
     JSON_FEATUREGROUPS = "featuregroups"
     JSON_FEATUREGROUP_ONLINE = "onlineEnabled"
     JSON_FEATUREGROUP_HUDI = "hudiEnabled"

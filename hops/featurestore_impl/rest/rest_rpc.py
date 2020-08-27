@@ -170,13 +170,7 @@ def _pre_process_jobs_list(jobNames):
 def _create_featuregroup_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
                               features_schema, feature_corr_enabled,
                               featuregroup_desc_stats_enabled, features_histogram_enabled,
-<<<<<<< HEAD
-                              cluster_analysis_enabled, stat_columns, num_bins, num_clusters, corr_method,
-                              featuregroup_type, sql_query, jdbc_connector_id, online_fg):
-=======
-                              stat_columns,
-                              featuregroup_type, featuregroup_dto_type, sql_query, jdbc_connector_id, online_fg):
->>>>>>> remove statistics from featurestore
+                              stat_columns, featuregroup_type, sql_query, jdbc_connector_id, online_fg):
     """
     Sends a REST call to hopsworks to create a new featuregroup with specified metadata
 
@@ -207,20 +201,12 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION: description,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES: features_schema,
-<<<<<<< HEAD
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_TYPE: featuregroup_type,
-=======
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type,
->>>>>>> remove statistics from featurestore
                      constants.REST_CONFIG.JSON_FEATUREGROUP_ONLINE: online_fg,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED: featuregroup_desc_stats_enabled,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED: feature_corr_enabled,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_HISTOGRAM_ENABLED: features_histogram_enabled,
+                     constants.REST_CONFIG.JSON_FEATUREGROUP_STATISTIC_COLUMNS: stat_columns
                      }
     if featuregroup_type == "onDemandFeaturegroupDTO":
         json_contents[constants.REST_CONFIG.JSON_FEATUREGROUP_ON_DEMAND_QUERY] = sql_query
@@ -247,89 +233,6 @@ def _create_featuregroup_rest(featuregroup, featurestore_id, description, featur
     return response_object
 
 
-<<<<<<< HEAD
-def _update_featuregroup_stats_rest(featuregroup_id, featurestore_id, feature_corr,
-                                    featuregroup_desc_stats_data, features_histogram_data, cluster_analysis_data,
-                                    descriptive_statistics, feature_correlation, feature_histograms, cluster_analysis,
-                                    stat_columns, num_bins, num_clusters, corr_method, featuregroup_type, jobs):
-    """
-    Makes a REST call to hopsworks appservice for updating the statistics of a particular featuregroup
-
-    Args:
-        :featuregroup_id: id of the featuregroup
-        :featurestore_id: id of the featurestore where the featuregroup resides
-        :feature_corr: the feature correlation matrix
-        :featuregroup_desc_stats_data: the descriptive statistics of the featuregroup
-        :features_histogram_data: the histograms of the features in the featuregroup
-        :cluster_analysis_data: the clusters from cluster analysis on the featuregroup
-        :descriptive_statistics: the setting to be saved for descripte statistics of the featuregroup
-        :feature_correlation: the setting to be saved for feature correlation of the featuregroup
-        :feature_histograms: the setting to be saved for feature histograms of the featuregroup
-        :cluster_analysis: the setting to be saved for cluster analysis of the featuregroup
-        :stat_columns: the columns to compute statistics of the featuregroup for
-        :num_bins: the number of bins to use for the histograms of the featuregroup
-        :num_clusters: the number of clusters to use for the cluster analysis of the featuregroup
-        :corr_method: the correlation method to use for the correlation analysis of the featuregroup
-        :featuregroup_type: type of the featuregroup (on-demand or cached)
-        :jobs: a list of jobs for updating the feature group stats
-
-    Returns:
-        The REST response
-
-    Raises:
-        :RestAPIError: if there was an error in the REST call to Hopsworks
-    """
-    json_contents = {constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED: feature_correlation,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED: descriptive_statistics,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_HISTOGRAM_ENABLED: feature_histograms,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_CLUSTER_ANALYSIS_ENABLED: cluster_analysis,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_STATISTIC_COLUMNS: stat_columns,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS: num_bins,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS: num_clusters,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD: corr_method,
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
-                     }
-    json_embeddable = json.dumps(json_contents, allow_nan=False)
-    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    method = constants.HTTP_CONFIG.HTTP_PUT
-    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    str(featurestore_id) +
-                    constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATUREGROUPS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
-                    + str(featuregroup_id) + "?" + constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATS_QUERY_PARAM
-                    + "=true" + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_METADATA_QUERY_PARAM + "=false"
-                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_ENABLE_ONLINE_QUERY_PARAM
-                    + "=false" + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_DISABLE_ONLINE_QUERY_PARAM + "=false"
-                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_STATISTICS_SETTINGS + "=true"
-                    + constants.DELIMITERS.AMPERSAND_DELIMITER +
-                    constants.REST_CONFIG.JSON_FEATURESTORE_UPDATE_JOB_QUERY_PARAM + "=" + json.dumps(len(jobs) > 0)
-                    )
-    response = util.send_request(method, resource_url, data=json_embeddable, headers=headers)
-    response_object = response.json()
-    if response.status_code != 200:
-        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise RestAPIError("Could not update featuregroup stats (url: {}), server response: \n " \
-                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-
-    return response_object
-
-
-=======
->>>>>>> remove statistics from featurestore
 def _enable_featuregroup_online_rest(featuregroup, featuregroup_version, featuregroup_id, featurestore_id,
                                      featuregroup_type, features_schema):
     """
@@ -569,12 +472,7 @@ def _get_training_dataset_rest(training_dataset_id, featurestore_id):
 
 
 def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, description, featuregroup_version, jobs,
-<<<<<<< HEAD
-                                            feature_corr_data, featuregroup_desc_stats_data,
-                                            features_histogram_data, cluster_analysis_data, featuregroup_type):
-=======
-                                            featuregroup_type, featuregroup_dto_type):
->>>>>>> remove statistics from featurestore
+                                            featuregroup_type):
     """
     Sends a REST call to hopsworks to synchronize a Hive table with the feature store
 
@@ -596,16 +494,7 @@ def _sync_hive_table_with_featurestore_rest(featuregroup, featurestore_id, descr
                      constants.REST_CONFIG.JSON_FEATUREGROUP_VERSION: featuregroup_version,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTION: description,
                      constants.REST_CONFIG.JSON_FEATUREGROUP_JOBS: _pre_process_jobs_list(jobs),
-<<<<<<< HEAD
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION: feature_corr_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_DESC_STATS: featuregroup_desc_stats_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_HISTOGRAM: features_histogram_data,
-                     constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURES_CLUSTERS: cluster_analysis_data,
                      constants.REST_CONFIG.JSON_TYPE: featuregroup_type,
-=======
-                     constants.REST_CONFIG.JSON_TYPE: featuregroup_dto_type,
-                     constants.REST_CONFIG.JSON_FEATURESTORE_SETTINGS_FEATUREGROUP_TYPE: featuregroup_type
->>>>>>> remove statistics from featurestore
                      }
 
     json_embeddable = json.dumps(json_contents)
