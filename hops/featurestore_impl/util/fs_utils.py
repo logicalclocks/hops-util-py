@@ -7,7 +7,8 @@ import json
 import numpy as np
 from hops.featurestore_impl.exceptions.exceptions import InferTFRecordSchemaError, \
     InvalidPrimaryKey, SparkToHiveSchemaConversionError, CouldNotConvertDataframe, \
-    SparkToMySQLSchemaConversionError, FeatureNotFound
+    SparkToMySQLSchemaConversionError, FeatureNotFound, FeaturegroupNotFound, \
+    TrainingDatasetNotFound
 import pandas as pd
 import math
 import re
@@ -55,7 +56,8 @@ def _do_get_latest_training_dataset_version(training_dataset_name, featurestore_
     if (len(versions) > 0):
         return max(versions)
     else:
-        return 0;
+        return TrainingDatasetNotFound("There was no version for featuregroup {} "
+                               "found".format(training_dataset_name))
 
 
 def _get_spark_array_size(spark_df, array_col_name):
@@ -257,7 +259,8 @@ def _do_get_latest_featuregroup_version(featuregroup_name, featurestore_metadata
     if (len(versions) > 0):
         return max(versions)
     else:
-        return 0
+        raise FeaturegroupNotFound("There was no version for featuregroup {} "
+                               "found".format(featuregroup_name))
 
 
 def _get_default_primary_key(featuregroup_df):
