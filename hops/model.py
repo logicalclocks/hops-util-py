@@ -173,6 +173,10 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     model_dir_hdfs = project_path + constants.MODEL_SERVING.MODELS_DATASET + \
                      constants.DELIMITERS.SLASH_DELIMITER + model_name + constants.DELIMITERS.SLASH_DELIMITER
 
+    if not hdfs.exists(model_dir_hdfs):
+        hdfs.mkdir(model_dir_hdfs)
+        hdfs.chmod(model_dir_hdfs, "ug+rwx")
+
     # User did not specify model_version, pick the current highest version + 1, set to 1 if no model exists
     version_list = []
     if not model_version and hdfs.exists(model_dir_hdfs):
