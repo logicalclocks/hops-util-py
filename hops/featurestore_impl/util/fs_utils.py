@@ -56,7 +56,7 @@ def _do_get_latest_training_dataset_version(training_dataset_name, featurestore_
     if (len(versions) > 0):
         return max(versions)
     else:
-        return TrainingDatasetNotFound("There was no version for featuregroup {} "
+        return TrainingDatasetNotFound("There was no version for training dataset {} "
                                "found".format(training_dataset_name))
 
 
