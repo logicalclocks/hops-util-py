@@ -176,7 +176,7 @@ def savez_compressed(hdfs_filename, *args, **kwds):
 
 def _copyHdfsToLocalOverwrite(hdfs_filename):
     hdfs_path = hdfs._expand_path(hdfs_filename)
-    local_path = hdfs.copy_to_local(hdfs_path)
+    local_path = hdfs.copy_to_local(hdfs_path, overwrite=True)
     return local_path
     
 def _copyToHdfsOverwrite(hdfs_filename):

@@ -4,7 +4,7 @@ Model module is used for exporting, versioning, attaching metadata to models. In
 
 """
 
-from hops import constants, util, hdfs
+from hops import constants, util, hdfs, project
 from hops.experiment_impl.util import experiment_utils
 from hops.exceptions import RestAPIError
 import json
@@ -65,7 +65,7 @@ def get_best_model(name, metric, direction):
     return json.loads(response_object.content.decode("UTF-8"))['items'][0]
 
 
-def get_model(name, version):
+def get_model(name, version, project_name=None):
     """
     Get a specific model version given a model name and a version.
 
@@ -79,6 +79,8 @@ def get_model(name, version):
     Args:
         :name: name of the model
         :version: version of the model
+        :project_name name of the project parent of the model. By default, this project is the current project running
+        the experiment
 
     Returns:
         The specified model version
@@ -88,14 +90,15 @@ def get_model(name, version):
     """
 
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-
+    project_id = project.project_id_as_shared(project_name)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   str(name) + "_" + str(version)
+                   str(name) + "_" + str(version) + "?filter_by=endpoint_id:" + project_id
 
+    print("get model:" + resource_url)
     response_object = util.send_request('GET', resource_url, headers=headers)
 
     if response_object.ok:
@@ -103,8 +106,8 @@ def get_model(name, version):
 
     raise ModelNotFound("No model with name: {} and version {} could be found".format(name, version))
 
-
-def export(model_path, model_name, model_version=None, overwrite=False, metrics=None, description=None, synchronous=True, synchronous_timeout=120):
+def export(model_path, model_name, model_version=None, overwrite=False, metrics=None, description=None,
+           synchronous=True, synchronous_timeout=120, project=None):
     """
     Copies a trained model to the Models directory in the project and creates the directory structure of:
 
@@ -132,7 +135,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     the "variables" directory.
 
     Args:
-        :model_path: path to the trained model (HDFS or local)
+        :model_path: absolute path to the trained model (HDFS or local)
         :model_name: name of the model
         :model_version: version of the model
         :overwrite: boolean flag whether to overwrite in case a model already exists in the exported directory
@@ -140,12 +143,13 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         :description: description about the model
         :synchronous: whether to synchronously wait for the model to be indexed in the models rest endpoint
         :synchronous_timeout: max timeout in seconds for waiting for the model to be indexed
+        :project: the name of the project where the model should be saved to (default: current project). Note, the project must share its 'Models' dataset and make it writeable for this client.
 
     Returns:
         The path to where the model was exported
 
     Raises:
-        :ValueError: if there was an error with th of the model due to invalid user input
+        :ValueError: if there was an error with the model due to invalid user input
         :ModelNotFound: if the model was not found
     """
 
@@ -158,7 +162,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     if not description:
         description = 'A collection of models for ' + model_name
 
-    project_path = hdfs.project_path()
+    project_path = hdfs.project_path(project)
 
     assert hdfs.exists(project_path + "Models"), "Your project is missing a dataset named Models, please create it."
 
@@ -207,7 +211,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
        hdfs.delete(model_version_dir_hdfs, recursive=True)
        hdfs.mkdir(model_version_dir_hdfs)
 
-    # At this point we can create the version directory if it does not exists
+    # At this point we can create the version directory if it does not exist
     if not hdfs.exists(model_version_dir_hdfs):
        hdfs.mkdir(model_version_dir_hdfs)
 
@@ -228,16 +232,22 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         kernelId = os.environ[constants.ENV_VARIABLES.KERNEL_ID_ENV_VAR]
 
     # Attach modelName_modelVersion to experiment directory
-    model_summary = {'name': model_name, 'version': model_version, 'metrics': metrics,
-    'experimentId': None, 'description': description, 'jobName': jobName, 'kernelId': kernelId}
+    if project is None:
+        model_project_name = hdfs.project_name()
+    else :
+        model_project_name = project
+    experiment_project_name = hdfs.project_name()
+    model_summary = { 'name': model_name, 'projectName': model_project_name, 'version': model_version, 'metrics':  metrics,
+                      'experimentId': None, 'experimentProjectName': experiment_project_name,
+                      'description':  description, 'jobName': jobName, 'kernelId': kernelId }
     if 'ML_ID' in os.environ:
-        # Attach link from experiment to model
-        experiment_utils._attach_model_link_xattr(os.environ['ML_ID'], model_name + '_' + str(model_version))
-        # Attach model metadata to models version folder
         model_summary['experimentId'] = os.environ['ML_ID']
-        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
-    else:
-        experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
+        # Attach link from experiment to model
+        experiment_json = experiment_utils._populate_experiment_model(model_name + '_' + str(model_version), project=project)
+        experiment_utils._attach_experiment_xattr(os.environ['ML_ID'], experiment_json, 'MODEL_UPDATE')
+
+    # Attach model metadata to models version folder
+    experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
 
     # Model metadata is attached asynchronously by Epipe, therefore this necessary to ensure following steps in a pipeline will not fail
     if synchronous:
@@ -247,7 +257,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
             try:
                 time.sleep(sleep_seconds)
                 print("Polling " + model_name + " version " + str(model_version) + " for model availability.")
-                resp = get_model(model_name, model_version)
+                resp = get_model(model_name, model_version, project_name=project)
                 if resp.ok:
                     print("Model now available.")
                     return

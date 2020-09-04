@@ -95,6 +95,7 @@ def get_project_info(project_name):
 
     Returns:
         JSON response
+        See https://github.com/logicalclocks/hopsworks-ee/blob/master/hopsworks-common/src/main/java/io/hops/hopsworks/common/project/ProjectDTO.java
 
     Raises:
         :RestAPIError: if there was an error in the REST call to Hopsworks
@@ -104,3 +105,39 @@ def get_project_info(project_name):
                      constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                      constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                      project_name)
+
+def get_project_info_as_shared(project_name):
+    """
+    Makes a REST call to hopsworks to get all metadata of a project for the provided project.
+
+    Args:
+        :project_name: the name of the project
+
+    Returns:
+        JSON response
+        See https://github.com/logicalclocks/hopsworks-ee/blob/master/hopsworks-common/src/main/java/io/hops/hopsworks/common/project/ProjectDTO.java
+
+    Raises:
+        :RestAPIError: if there was an error in the REST call to Hopsworks
+    """
+    return util.http(constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_AS_SHARED + constants.DELIMITERS.SLASH_DELIMITER +
+                     constants.REST_CONFIG.HOPSWORKS_PROJECT_INFO_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                     project_name)
+
+def project_id_as_shared(name=None):
+    """
+    Get the Hopsworks project id from the project name. This endpoint can be used also for projects parents of shared datasets
+
+    Args:
+         :name: the name of the project, current project if none is supplied
+    Returns: the Hopsworks project id
+
+    """
+    if not name:
+        return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
+
+    project_info = get_project_info_as_shared(name)
+    return str(project_info['projectId'])

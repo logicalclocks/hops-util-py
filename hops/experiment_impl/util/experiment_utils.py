@@ -420,15 +420,14 @@ def _time_diff(task_start, task_end):
 def _seconds_to_milliseconds(time):
     return int(round(time * 1000))
 
-def _attach_experiment_xattr(app_id, run_id, json_data, xattr):
+def _attach_experiment_xattr(ml_id, json_data, op_type):
     """
     Utility method for putting JSON data into elastic search
 
     Args:
-        :project: the project of the user/app
-        :appid: the YARN appid
-        :elastic_id: the id in elastic
-        :json_data: the data to put
+        :ml_id: experiment id
+        :json_data: the experiment json object
+        :op_type: operation type INIT/MODEL_UPDATE/FULL_UPDATE
 
     Returns:
         None
@@ -443,7 +442,7 @@ def _attach_experiment_xattr(app_id, run_id, json_data, xattr):
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_EXPERIMENTS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   app_id + "_" + str(run_id) + "?xattr=" + xattr
+                   ml_id + "?type=" + op_type
 
     response = util.send_request('PUT', resource_url, data=json_data, headers=headers)
 
@@ -456,37 +455,12 @@ def _attach_experiment_xattr(app_id, run_id, json_data, xattr):
     else:
         return response_object
 
-def _attach_model_link_xattr(ml_id, model):
-    """
-    Utility method for putting JSON data into elastic search
-
-    Args:
-        :project: the project of the user/app
-        :appid: the YARN appid
-        :elastic_id: the id in elastic
-        :json_data: the data to put
-
-    Returns:
-        None
-
-    """
-    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
-                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
-                   constants.REST_CONFIG.HOPSWORKS_EXPERIMENTS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   ml_id + "?model=" + model + '&xattr=CREATE'
-
-    resp = util.send_request('PUT', resource_url)
-
 def _attach_model_xattr(ml_id, json_data):
     """
     Utility method for putting JSON data into elastic search
 
     Args:
-        :project: the project of the user/app
-        :appid: the YARN appid
-        :elastic_id: the id in elastic
+        :ml_id: the id of the model
         :json_data: the data to put
 
     Returns:
@@ -528,9 +502,23 @@ def _populate_experiment(model_name, function, type, hp, description, app_id, di
     if model_name == 'no-name' and jobName:
         model_name = jobName
 
-    return {'id': os.environ['ML_ID'], 'name': model_name, 'description': description, 'state': 'RUNNING', 'function': function, 'experimentType': type,
-                       'appId': app_id, 'direction': direction, 'optimizationKey': optimization_key, 'jobName': jobName,
-                       'kernelId': kernelId}
+    return {'id': os.environ['ML_ID'], 'name': model_name, 'projectName': hdfs.project_name(), 'description': description,
+            'state': 'RUNNING', 'function': function, 'experimentType': type, 'appId': app_id, 'direction': direction,
+            'optimizationKey': optimization_key, 'jobName': jobName, 'kernelId': kernelId}
+
+def _populate_experiment_model(model, project=None):
+    """
+    Args:
+         :model:
+         :project_name:
+
+    Returns:
+
+    """
+
+    if project is None:
+        project = hdfs.project_name()
+    return {'id': os.environ['ML_ID'], 'model': model, 'modelProjectName': project }
 
 def grid_params(dict):
     """
@@ -679,8 +667,8 @@ def _finalize_experiment(experiment_json, metric, app_id, run_id, state, duratio
     experiment_json['metric'] = metric
     experiment_json['state'] = state
     experiment_json['duration'] = duration
-
-    _attach_experiment_xattr(app_id, run_id, experiment_json, 'REPLACE')
+    exp_ml_id = app_id + "_" + str(run_id)
+    _attach_experiment_xattr(exp_ml_id, experiment_json, 'FULL_UPDATE')
 
 def _find_task_and_index(host_port, cluster_spec):
     """
