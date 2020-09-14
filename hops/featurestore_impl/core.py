@@ -201,6 +201,30 @@ def _parse_spark_features_schema(spark_schema, primary_key=[], partition_by=[], 
     return parsed_features
 
 
+def _convert_field_to_training_dataset_feature_json(field_dict):
+    return {
+        constants.REST_CONFIG.JSON_FEATURE_NAME: field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_NAME],
+        constants.REST_CONFIG.JSON_FEATURE_TYPE:
+            fs_utils._convert_spark_dtype_to_hive_dtype(field_dict[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELD_TYPE])
+    }
+
+
+def _parse_spark_training_dataset_schema(spark_schema):
+    """
+    Helper function for parsing the schema of a spark dataframe into a list of feature-dicts
+
+    Args:
+        :spark_schema: the spark schema to parse
+
+    Returns:
+        A list of the parsed features
+
+    """
+    raw_schema = json.loads(spark_schema.json())
+    raw_fields = raw_schema[constants.SPARK_CONFIG.SPARK_SCHEMA_FIELDS]
+    return list(map(lambda field: _convert_field_to_training_dataset_feature_json(field), raw_fields))
+
+
 def _get_featuregroup_id(featurestore, featuregroup_name, featuregroup_version):
     """
     Gets the id of a featuregroup (temporary workaround until HOPSWORKS-860 where we use Name to refer to resources)
@@ -787,7 +811,7 @@ def _do_create_training_dataset(df, training_dataset, description="", featuresto
                                   " supports only " + constants.SPARK_CONFIG.SPARK_OVERWRITE_MODE)
 
     featurestore_metadata = _get_featurestore_metadata(featurestore, update_cache=False)
-    features_schema = _parse_spark_features_schema(spark_df.schema)
+    features_schema = _parse_spark_training_dataset_schema(spark_df.schema)
     fs_utils._validate_metadata(training_dataset, features_schema, description, featurestore_metadata.settings)
     featurestore_id = _get_featurestore_id(featurestore)
 
@@ -980,7 +1004,7 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
     hdfs_path = training_dataset.location + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
 
-    # If the path starts with `hopsfs` remove it so we can pass it 
+    # If the path starts with `hopsfs` remove it so we can pass it
     # to TensorFlow
     if hdfs_path.startswith("hopsfs://"):
         hdfs_path = hdfs_path.replace("hopsfs://", "hdfs://")

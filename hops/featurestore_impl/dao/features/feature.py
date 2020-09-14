@@ -2,7 +2,7 @@ from hops import constants
 
 class Feature(object):
     """
-    Represents an individual feature in the feature store, either in a feature group or in a training dataset
+    Represents an individual feature in the feature store in a feature group
     """
 
     def __init__(self, feature_json):

@@ -404,6 +404,7 @@ class REST_CONFIG:
 
     JSON_FEATURE_NAME = "name"
     JSON_FEATURE_TYPE = "type"
+    JSON_FEATURE_INDEX = "index"
     JSON_FEATURE_DESCRIPTION = "description"
     JSON_FEATURE_PRIMARY = "primary"
     JSON_FEATURE_PARTITION = "partition"

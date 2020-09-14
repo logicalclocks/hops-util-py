@@ -678,7 +678,8 @@ def _validate_metadata(name, schema, description, featurestore_settings):
             raise ValueError("Illegal feature name, the provided feature name {} is invalid. Feature names can only "
                 "contain lower case characters, numbers and underscores and cannot be longer than {} characters or "
                 "empty.".format(f[constants.REST_CONFIG.JSON_FEATURE_NAME], featurestore_settings.entity_name_max_len))
-        if len(f[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]) > featurestore_settings.entity_description_max_len:
+        if constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION in f and 
+            len(f[constants.REST_CONFIG.JSON_FEATURE_DESCRIPTION]) > featurestore_settings.entity_description_max_len:
             raise ValueError("Invalid feature description, the provided feature description of {} is too long with {} "
                 "characters. Feature descriptions cannot be longer than {} characters."
                 .format(f[constants.REST_CONFIG.JSON_FEATURE_NAME],
