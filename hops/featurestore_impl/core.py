@@ -1255,6 +1255,12 @@ def _do_get_training_dataset_path(training_dataset_name, featurestore_metadata, 
                                                             training_dataset_version)
     hdfs_path = training_dataset.location + \
                 constants.DELIMITERS.SLASH_DELIMITER + training_dataset.name
+
+    # If the path starts with `hopsfs` remove it so we can pass it 
+    # to TensorFlow
+    if hdfs_path.startswith("hopsfs://"):
+        hdfs_path = hdfs_path[hdfs_path.index("/", 9):]
+
     data_format = training_dataset.data_format
     if data_format == constants.FEATURE_STORE.TRAINING_DATASET_NPY_FORMAT:
         hdfs_path = hdfs_path + constants.FEATURE_STORE.TRAINING_DATASET_NPY_SUFFIX
