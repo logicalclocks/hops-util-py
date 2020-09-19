@@ -38,11 +38,6 @@ try:
 except:
     pass
 
-try:
-    import tensorflow
-except:
-    pass
-
 # in case importing in %%local
 try:
     from pyspark.sql import SparkSession
