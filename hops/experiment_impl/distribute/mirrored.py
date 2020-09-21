@@ -17,12 +17,12 @@ import json
 from . import mirrored_reservation
 
 
-def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=False):
+def _run(sc, train_fn, run_id, local_logdir=False, name="no-name", evaluator=False):
     """
 
     Args:
         sc:
-        map_fun:
+        train_fn:
         local_logdir:
         name:
 
@@ -43,7 +43,7 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
     server_addr = server.start()
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, evaluator, util.num_executors()))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, evaluator, util.num_executors()))
 
     logdir = experiment_utils._get_logdir(app_id, run_id)
 
@@ -58,13 +58,13 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
 
     return logdir, None
 
-def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, evaluator, num_executors):
+def _prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, evaluator, num_executors):
     """
 
     Args:
         app_id:
         run_id:
-        map_fun:
+        train_fn:
         local_logdir:
         server_addr:
 
@@ -144,7 +144,7 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, evaluator,
             print('-------------------------------------------------------')
             print('Started running task')
             task_start = time.time()
-            retval = map_fun()
+            retval = train_fn()
 
             if is_chief:
                 experiment_utils._handle_return_simple(retval, experiment_utils._get_logdir(app_id, run_id), logfile)

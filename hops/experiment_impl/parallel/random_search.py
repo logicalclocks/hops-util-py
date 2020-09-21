@@ -12,12 +12,12 @@ import time
 import random
 import os
 
-def _run(sc, map_fun, run_id, args_dict, samples, direction=Direction.MAX, local_logdir=False, name="no-name", optimization_key=None):
+def _run(sc, train_fn, run_id, args_dict, samples, direction=Direction.MAX, local_logdir=False, name="no-name", optimization_key=None):
     """
 
     Args:
         sc:
-        map_fun:
+        train_fn:
         args_dict:
         local_logdir:
         name:
@@ -61,10 +61,10 @@ def _run(sc, map_fun, run_id, args_dict, samples, direction=Direction.MAX, local
     #Each TF task should be run on 1 executor
     nodeRDD = sc.parallelize(range(new_samples), new_samples)
 
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, random_dict, local_logdir, optimization_key))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, train_fn, random_dict, local_logdir, optimization_key))
 
-    arg_count = six.get_function_code(map_fun).co_argcount
-    arg_names = six.get_function_code(map_fun).co_varnames
+    arg_count = six.get_function_code(train_fn).co_argcount
+    arg_names = six.get_function_code(train_fn).co_varnames
     exp_dir = experiment_utils._get_logdir(app_id, run_id)
 
     max_val, max_hp, min_val, min_hp, avg, max_return_dict, min_return_dict = experiment_utils._get_best(random_dict, new_samples, arg_names, arg_count, exp_dir, optimization_key)
@@ -120,13 +120,13 @@ def _remove_duplicates(random_dict, samples):
     return random_dict, samples - len(indices_to_skip)
 
 #Helper to put Spark required parameter iter in function signature
-def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization_key):
+def _prepare_func(app_id, run_id, train_fn, args_dict, local_logdir, optimization_key):
     """
 
     Args:
         app_id:
         run_id:
-        map_fun:
+        train_fn:
         args_dict:
         local_logdir:
 
@@ -159,7 +159,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization
         try:
             #Arguments
             if args_dict:
-                param_string, params, args = experiment_utils.build_parameters(map_fun, executor_num, args_dict)
+                param_string, params, args = experiment_utils.build_parameters(train_fn, executor_num, args_dict)
                 hdfs_exec_logdir, hdfs_appid_logdir = experiment_utils._create_experiment_subdirectories(app_id, run_id, param_string, 'random_search', params=params)
                 logfile = experiment_utils._init_logger(hdfs_exec_logdir)
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
@@ -167,7 +167,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization
                 print('-------------------------------------------------------')
                 print('Started running task ' + param_string)
                 task_start = time.time()
-                retval = map_fun(*args)
+                retval = train_fn(*args)
                 task_end = time.time()
                 experiment_utils._handle_return(retval, hdfs_exec_logdir, optimization_key, logfile)
                 time_str = 'Finished task ' + param_string + ' - took ' + experiment_utils._time_diff(task_start, task_end)

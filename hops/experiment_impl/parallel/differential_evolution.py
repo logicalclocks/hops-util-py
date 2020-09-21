@@ -461,12 +461,11 @@ class DifferentialEvolution:
     def get_dict(self):
         return self._ordered_population_dict
 
-def _run(function, search_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name", optimization_key=None):
+def _run(train_fn, search_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, cleanup_generations=False, local_logdir=False, name="no-name", optimization_key=None):
     """
 
     Args:
-        :spark:
-        :function:
+        :train_fn:
         :search_dict:
         :direction:
         :generations:
@@ -476,6 +475,7 @@ def _run(function, search_dict, direction = Direction.MAX, generations=4, popula
         :cleanup_generations:
         :local_logdir:
         :name:
+        :optimization_key:
 
     Returns:
 
@@ -489,7 +489,7 @@ def _run(function, search_dict, direction = Direction.MAX, generations=4, popula
     spark = util._find_spark()
 
     global objective_function
-    objective_function = function
+    objective_function = train_fn
 
     global cleanup
     cleanup = cleanup_generations
@@ -497,8 +497,8 @@ def _run(function, search_dict, direction = Direction.MAX, generations=4, popula
     global opt_key
     opt_key = optimization_key
 
-    argcount = six.get_function_code(function).co_argcount
-    arg_names = six.get_function_code(function).co_varnames
+    argcount = six.get_function_code(train_fn).co_argcount
+    arg_names = six.get_function_code(train_fn).co_varnames
 
     ordered_arr = []
 
@@ -562,12 +562,12 @@ def _run(function, search_dict, direction = Direction.MAX, generations=4, popula
 
     return best_exp_logdir, experiment_utils._get_params_dict(best_exp_logdir), best_metric, return_dict
 
-def _evolutionary_launch(spark, map_fun, args_dict, name="no-name"):
+def _evolutionary_launch(spark, train_fn, args_dict, name="no-name"):
     """ Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
         :spark_session: SparkSession object
-        :map_fun: The TensorFlow function to run
+        :train_fn: The TensorFlow function to run
         :args_dict: (optional) A dictionary containing hyperparameter values to insert as arguments for each TensorFlow job
     """
 
@@ -589,7 +589,7 @@ def _evolutionary_launch(spark, map_fun, args_dict, name="no-name"):
 
     #Make SparkUI intuitive by grouping jobs
     sc.setJobGroup(os.environ['ML_ID'], "{} | Differential Evolution, Generation: {}".format(name, generation_id))
-    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key))
+    nodeRDD.foreachPartition(_prepare_func(app_id, generation_id, train_fn, args_dict, run_id, opt_key))
 
     generation_id += 1
 
@@ -597,13 +597,13 @@ def _evolutionary_launch(spark, map_fun, args_dict, name="no-name"):
 
 
 #Helper to put Spark required parameter iter in function signature
-def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key):
+def _prepare_func(app_id, generation_id, train_fn, args_dict, run_id, opt_key):
     """
 
     Args:
         :app_id:
         :generation_id:
-        :map_fun:
+        :train_fn:
         :args_dict:
         :run_id:
 
@@ -638,7 +638,7 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key):
         try:
             #Arguments
             if args_dict:
-                param_string, params, args = experiment_utils.build_parameters(map_fun, executor_num, args_dict)
+                param_string, params, args = experiment_utils.build_parameters(train_fn, executor_num, args_dict)
                 val = _get_return_file(param_string, app_id, generation_id, run_id)
                 hdfs_exec_logdir, hdfs_appid_logdir = experiment_utils._create_experiment_subdirectories(app_id, run_id, param_string, 'differential_evolution', sub_type='generation.' + str(generation_id), params=params)
                 logfile = experiment_utils._init_logger(hdfs_exec_logdir)
@@ -650,7 +650,7 @@ def _prepare_func(app_id, generation_id, map_fun, args_dict, run_id, opt_key):
                     val = json.loads(val)
                 task_start = time.time()
                 if val is None:
-                    val = map_fun(*args)
+                    val = train_fn(*args)
                 task_end = time.time()
                 time_str = 'Finished task ' + param_string + ' - took ' + experiment_utils._time_diff(task_start, task_end)
                 print(time_str)

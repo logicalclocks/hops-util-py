@@ -12,13 +12,13 @@ import six
 import time
 import os
 
-def _run(sc, map_fun, run_id, args_dict, direction=Direction.MAX, local_logdir=False, name="no-name", optimization_key=None):
+def _run(sc, train_fn, run_id, args_dict, direction=Direction.MAX, local_logdir=False, name="no-name", optimization_key=None):
     """
     Run the wrapper function with each hyperparameter combination as specified by the dictionary
 
     Args:
         sc:
-        map_fun:
+        train_fn:
         args_dict:
         direction:
         local_logdir:
@@ -47,10 +47,10 @@ def _run(sc, map_fun, run_id, args_dict, direction=Direction.MAX, local_logdir=F
     sc.setJobGroup(os.environ['ML_ID'], "{} | Grid Search".format(name))
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization_key))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, train_fn, args_dict, local_logdir, optimization_key))
 
-    arg_count = six.get_function_code(map_fun).co_argcount
-    arg_names = six.get_function_code(map_fun).co_varnames
+    arg_count = six.get_function_code(train_fn).co_argcount
+    arg_names = six.get_function_code(train_fn).co_varnames
     exp_dir = experiment_utils._get_logdir(app_id, run_id)
 
     max_val, max_hp, min_val, min_hp, avg, max_return_dict, min_return_dict = experiment_utils._get_best(args_dict, num_executions, arg_names, arg_count, exp_dir, optimization_key)
@@ -66,7 +66,6 @@ def _run(sc, map_fun, run_id, args_dict, direction=Direction.MAX, local_logdir=F
     elif direction.upper() == Direction.MIN:
         param_combination = min_hp
         best_val = str(min_val)
-        return_dict
         return_dict = min_return_dict
 
     print('Finished Experiment \n')
@@ -75,13 +74,13 @@ def _run(sc, map_fun, run_id, args_dict, direction=Direction.MAX, local_logdir=F
 
     return best_dir, experiment_utils._get_params_dict(best_dir), best_val, return_dict
 
-def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization_key):
+def _prepare_func(app_id, run_id, train_fn, args_dict, local_logdir, optimization_key):
     """
 
     Args:
         app_id:
         run_id:
-        map_fun:
+        train_fn:
         args_dict:
         local_logdir:
 
@@ -114,7 +113,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization
         try:
             #Arguments
             if args_dict:
-                param_string, params, args = experiment_utils.build_parameters(map_fun, executor_num, args_dict)
+                param_string, params, args = experiment_utils.build_parameters(train_fn, executor_num, args_dict)
                 hdfs_exec_logdir, hdfs_appid_logdir = experiment_utils._create_experiment_subdirectories(app_id, run_id, param_string, 'grid_search', params=params)
                 logfile = experiment_utils._init_logger(hdfs_exec_logdir)
                 tb_hdfs_path, tb_pid = tensorboard._register(hdfs_exec_logdir, hdfs_appid_logdir, executor_num, local_logdir=local_logdir)
@@ -122,7 +121,7 @@ def _prepare_func(app_id, run_id, map_fun, args_dict, local_logdir, optimization
                 print('-------------------------------------------------------')
                 print('Started running task ' + param_string)
                 task_start = time.time()
-                retval = map_fun(*args)
+                retval = train_fn(*args)
                 task_end = time.time()
                 experiment_utils._handle_return(retval, hdfs_exec_logdir, optimization_key, logfile)
                 time_str = 'Finished task ' + param_string + ' - took ' + experiment_utils._time_diff(task_start, task_end)

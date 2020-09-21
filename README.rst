@@ -24,12 +24,9 @@ Sample usage:
 
 >>> from hops import experiment
 >>> from hops import hdfs
->>> notebook = hdfs.project_path() + "Jupyter/Experiment/..." #path to your notebook
->>> # minimal_mnist is a function you defined
->>> experiment.launch(minimal_mnist, #minimal_mnist is your training function
+>>> experiment.launch(train_fn,
 >>>                   name='mnist estimator',
->>>                   description='A minimal mnist example with two hidden layers',
->>>                   versioned_resources=[notebook]
+>>>                   description='A minimal mnist example with two hidden layers')
 
 
 ------------------------
@@ -46,7 +43,7 @@ Documentation
 
 An overview of HopsML, a python-first ML pipeline is available here: hopsML_
 
-Example notebooks for doing deep learning and big data processing on Hops are available here: hops-examples_
+Example notebooks for running deep learning and big data processing on Hops are available here: hops-examples_
 
 API documentation is available here: API-docs_
 

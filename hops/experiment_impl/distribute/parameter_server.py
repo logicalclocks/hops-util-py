@@ -16,12 +16,12 @@ import json
 
 from . import parameter_server_reservation
 
-def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=False):
+def _run(sc, train_fn, run_id, local_logdir=False, name="no-name", evaluator=False):
     """
 
     Args:
         sc:
-        map_fun:
+        train_fn:
         local_logdir:
         name:
 
@@ -45,7 +45,7 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
     num_ps = util.num_param_servers()
 
     #Force execution on executor, since GPU is located on executor
-    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps, evaluator))
+    nodeRDD.foreachPartition(_prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, num_ps, evaluator))
 
     logdir = experiment_utils._get_logdir(app_id, run_id)
 
@@ -60,7 +60,7 @@ def _run(sc, map_fun, run_id, local_logdir=False, name="no-name", evaluator=Fals
 
     return logdir, None
 
-def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps, evaluator):
+def _prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, num_ps, evaluator):
     """
 
     Args:
@@ -160,11 +160,11 @@ def _prepare_func(app_id, run_id, map_fun, local_logdir, server_addr, num_ps, ev
 
             retval=None
             if role == "ps":
-                ps_thread = threading.Thread(target=lambda: map_fun())
+                ps_thread = threading.Thread(target=lambda: train_fn())
                 ps_thread.start()
                 client.await_all_workers_finished()
             else:
-                retval = map_fun()
+                retval = train_fn()
 
             if role == "chief":
                 experiment_utils._handle_return_simple(retval, experiment_utils._get_logdir(app_id, run_id), logfile)
