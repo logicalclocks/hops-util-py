@@ -35,11 +35,11 @@ pipeline {
         """
       }
     }
-    stage ('update-it-notebook') {
-      steps {
-        sh 'scp it_tests/integration_tests.ipynb snurran:/var/www/hops/hops-util-py_tests'
-      }
-    }
+    //stage ('update-it-notebook') {
+    //  steps {
+    //    sh 'scp it_tests/integration_tests.ipynb snurran:/var/www/hops/hops-util-py_tests'
+    //  }
+    // }
     stage ('deploy-bin') {
       environment {
         PYPI = credentials('977daeb0-e1c8-43a0-b35a-fc37bb9eee9b')
