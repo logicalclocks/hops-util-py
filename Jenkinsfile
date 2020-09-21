@@ -63,7 +63,8 @@ pipeline {
         then
           echo "Ignored"
         else
-          scp -r docs/_build/html/* jenkins@hops-py.logicalclocks.com:/var/www/hops-py;
+          rm -r /opt/hops-py/*
+          cp -r docs/_build/html/* /opt/hops-py/
         fi
         """
       }
