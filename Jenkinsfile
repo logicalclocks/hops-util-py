@@ -36,7 +36,7 @@ pipeline {
       }
     }
     //stage ('update-it-notebook') {
-    //  steps {
+     //  steps {
     //    sh 'scp it_tests/integration_tests.ipynb snurran:/var/www/hops/hops-util-py_tests'
     //  }
     // }
