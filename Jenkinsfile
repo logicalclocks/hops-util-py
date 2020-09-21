@@ -1,7 +1,7 @@
 pipeline {
   agent {
     node {
-      label 'platform_testing'
+      label 'local'
     }
   }
 
