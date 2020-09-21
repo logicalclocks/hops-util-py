@@ -55,7 +55,7 @@ pipeline {
       steps {
         sh """
         set -x
-        version=`curl http://hops-py.logicalclocks.com/ --silent | grep -A1 "\\"version\\"" | tail -1`
+        version=`curl https://hops-py.logicalclocks.com/ --silent | grep -A1 "\\"version\\"" | tail -1`
         current_version=`cat hops/version.py | head -1 | awk -F '=' {'print \$2'}`
         current_version=`echo \${current_version//\\'}`
 
