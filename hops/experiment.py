@@ -21,7 +21,7 @@ from hops.experiment_impl.parallel import differential_evolution as diff_evo_imp
     random_search as r_search_impl
 from hops.experiment_impl.util import experiment_utils
 from hops.experiment_impl.distribute import parameter_server as ps_impl, mirrored as mirrored_impl
-from hops import util, tensorboard, hdfs
+from hops import util
 
 import time
 import atexit
@@ -132,18 +132,18 @@ def random_search(train_fn, boundary_dict, direction=Direction.MAX, samples=10, 
 
     >>> from hops import experiment
     >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
-    >>> def train_fn(learning_rate, layers, dropout):
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
     >>>    # Put all code inside the train_fn function
     >>>    return network.evaluate(learning_rate, layers, dropout)
-    >>> experiment.differential_evolution(train_fn, boundary_dict, direction='max')
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max')
 
     Returning multiple outputs, including images and logs:
 
     >>> from hops import experiment
     >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
-    >>> def train_fn(learning_rate, layers, dropout):
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
     >>>    # Put all code inside the train_fn function
@@ -155,7 +155,7 @@ def random_search(train_fn, boundary_dict, direction=Direction.MAX, samples=10, 
     >>>    img.save('diagram.png')
     >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
     >>> # Important! Remember: optimization_key must be set when returning multiple outputs
-    >>> experiment.differential_evolution(train_fn, boundary_dict, direction='max', optimization_key='accuracy')
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max', optimization_key='accuracy')
 
 
     Args:
@@ -220,16 +220,16 @@ def differential_evolution(train_fn, boundary_dict, direction = Direction.MAX, g
 
     >>> from hops import experiment
     >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
-    >>> def train_fn(learning_rate, layers, dropout):
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    import tensorflow
     >>>    return network.evaluate(learning_rate, layers, dropout)
-    >>> experiment.differential_evolution(train_fn, boundary_dict, direction=Direction.MAX)
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction=Direction.MAX)
 
     Returning multiple outputs, including images and logs:
 
     >>> from hops import experiment
     >>> boundary_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
-    >>> def train_fn(learning_rate, layers, dropout):
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
     >>>    # Put all code inside the train_fn function
@@ -241,7 +241,7 @@ def differential_evolution(train_fn, boundary_dict, direction = Direction.MAX, g
     >>>    img.save('diagram.png')
     >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
     >>> # Important! Remember: optimization_key must be set when returning multiple outputs
-    >>> experiment.differential_evolution(train_fn, boundary_dict, direction=Direction.MAX, optimization_key='accuracy')
+    >>> experiment.differential_evolution(train_nn, boundary_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
         :train_fn: the function to run, must return a metric
@@ -316,13 +316,13 @@ def grid_search(train_fn, grid_dict, direction=Direction.MAX, name='no-name', lo
     >>>    import tensorflow
     >>>    # Put all code inside the train_fn function
     >>>    return network.evaluate(learning_rate, layers, dropout)
-    >>> experiment.grid_search(train_fn, grid_dict, direction=Direction.MAX)
+    >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX)
 
     Returning multiple outputs, including images and logs:
 
     >>> from hops import experiment
     >>> grid_dict = {'learning_rate': [0.1, 0.3], 'layers': [2, 9], 'dropout': [0.1,0.9]}
-    >>> def train_fn(learning_rate, layers, dropout):
+    >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
     >>>    # Put all code inside the train_fn function
@@ -334,7 +334,7 @@ def grid_search(train_fn, grid_dict, direction=Direction.MAX, name='no-name', lo
     >>>    img.save('diagram.png')
     >>>    return {'accuracy': accuracy, 'loss': loss, 'logfile': 'logfile.txt', 'diagram': 'diagram.png'}
     >>> # Important! Remember: optimization_key must be set when returning multiple outputs
-    >>> experiment.grid_search(train_fn, grid_dict, direction=Direction.MAX, optimization_key='accuracy')
+    >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
         :train_fn: the function to run, must return a metric
