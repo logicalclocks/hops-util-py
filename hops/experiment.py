@@ -1,8 +1,8 @@
 """
 Experiment module used for running Experiments, Parallel Experiments (hyperparameter optimization) and Distributed Training on Hopsworks.
 
-The programming model is that you wrap the code to run inside a wrapper function.
-Inside that wrapper function provide all imports and parts that make up your experiment, see examples below.
+The programming model is that you wrap the code to run inside a training function.
+Inside that training function provide all imports and parts that make up your experiment, see examples below.
 Whenever a function to run an experiment is invoked it is also registered in the Experiments service.
 
 *Three different types of experiments*
@@ -21,7 +21,7 @@ from hops.experiment_impl.parallel import differential_evolution as diff_evo_imp
     random_search as r_search_impl
 from hops.experiment_impl.util import experiment_utils
 from hops.experiment_impl.distribute import parameter_server as ps_impl, mirrored as mirrored_impl
-from hops import util, tensorboard, hdfs
+from hops import util
 
 import time
 import atexit
@@ -32,12 +32,12 @@ app_id = None
 experiment_json = None
 running = False
 
-def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, description=None, metric_key=None):
+def launch(train_fn, args_dict=None, name='no-name', local_logdir=False, description=None, metric_key=None):
     """
 
     *Experiment* or *Parallel Experiment*
 
-    Run an Experiment contained in *map_fun* one time with no arguments or multiple times with different arguments if
+    Run an Experiment contained in *train_fn* one time with no arguments or multiple times with different arguments if
     *args_dict* is specified.
 
     Example usage:
@@ -46,7 +46,7 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
     >>> def train_nn():
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    accuracy, loss = network.evaluate(learning_rate, layers, dropout)
     >>> experiment.launch(train_nn)
 
@@ -56,7 +56,7 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
     >>> def train_nn():
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from PIL import Image
     >>>    f = open('logfile.txt', 'w')
     >>>    f.write('Starting training...')
@@ -67,7 +67,7 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
     >>> experiment.launch(train_nn)
 
     Args:
-        :map_fun: The function to run
+        :train_fn: The function to run
         :args_dict: If specified will run the same function multiple times with different arguments, {'a':[1,2], 'b':[5,3]} would run the function two times with arguments (1,5) and (2,3) provided that the function signature contains two arguments like *def func(a,b):*
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
@@ -106,7 +106,7 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
 
         experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        logdir, return_dict = launcher._run(sc, map_fun, run_id, args_dict, local_logdir)
+        logdir, return_dict = launcher._run(sc, train_fn, run_id, args_dict, local_logdir)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         metric = experiment_utils._get_metric(return_dict, metric_key)
@@ -119,12 +119,12 @@ def launch(map_fun, args_dict=None, name='no-name', local_logdir=False, descript
     finally:
         _end_run(sc)
 
-def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
+def random_search(train_fn, boundary_dict, direction=Direction.MAX, samples=10, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
 
     *Parallel Experiment*
 
-    Run an Experiment contained in *map_fun* for configured number of random samples controlled by the *samples* parameter. Each hyperparameter is contained in *boundary_dict* with the key
+    Run an Experiment contained in *train_fn* for configured number of random samples controlled by the *samples* parameter. Each hyperparameter is contained in *boundary_dict* with the key
     corresponding to the name of the hyperparameter and a list containing two elements defining the lower and upper bound.
     The experiment must return a metric corresponding to how 'good' the given hyperparameter combination is.
 
@@ -135,7 +135,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
     >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    return network.evaluate(learning_rate, layers, dropout)
     >>> experiment.differential_evolution(train_nn, boundary_dict, direction='max')
 
@@ -146,7 +146,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
     >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from PIL import Image
     >>>    f = open('logfile.txt', 'w')
     >>>    f.write('Starting training...')
@@ -159,7 +159,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
 
 
     Args:
-        :map_fun: The function to run
+        :train_fn: The function to run
         :boundary_dict: dict containing hyperparameter name and corresponding boundaries, each experiment randomize a value in the boundary range.
         :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
         :samples: the number of random samples to evaluate for each hyperparameter given the boundaries, for example samples=3 would result in 3 hyperparameter combinations in total to evaluate
@@ -196,7 +196,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
 
         experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        logdir, best_param, best_metric, return_dict = r_search_impl._run(sc, map_fun, run_id, boundary_dict, samples, direction=direction, local_logdir=local_logdir, optimization_key=optimization_key)
+        logdir, best_param, best_metric, return_dict = r_search_impl._run(sc, train_fn, run_id, boundary_dict, samples, direction=direction, local_logdir=local_logdir, optimization_key=optimization_key)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
@@ -208,7 +208,7 @@ def random_search(map_fun, boundary_dict, direction=Direction.MAX, samples=10, n
     finally:
         _end_run(sc)
 
-def differential_evolution(objective_function, boundary_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
+def differential_evolution(train_fn, boundary_dict, direction = Direction.MAX, generations=4, population=6, mutation=0.5, crossover=0.7, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
     *Parallel Experiment*
 
@@ -232,7 +232,7 @@ def differential_evolution(objective_function, boundary_dict, direction = Direct
     >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from PIL import Image
     >>>    f = open('logfile.txt', 'w')
     >>>    f.write('Starting training...')
@@ -244,8 +244,8 @@ def differential_evolution(objective_function, boundary_dict, direction = Direct
     >>> experiment.differential_evolution(train_nn, boundary_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
-        :objective_function: the function to run, must return a metric
-        :boundary_dict: a dict where each key corresponds to an argument of *objective_function* and the correspond value should be a list of two elements. The first element being the lower bound for the parameter and the the second element the upper bound.
+        :train_fn: the function to run, must return a metric
+        :boundary_dict: a dict where each key corresponds to an argument of *train_fn* and the correspond value should be a list of two elements. The first element being the lower bound for the parameter and the the second element the upper bound.
         :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
         :generations: number of generations
         :population: size of population
@@ -286,7 +286,7 @@ def differential_evolution(objective_function, boundary_dict, direction = Direct
 
         experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        logdir, best_param, best_metric, return_dict = diff_evo_impl._run(objective_function, boundary_dict, direction=direction, generations=generations, population=population, mutation=mutation, crossover=crossover, cleanup_generations=False, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
+        logdir, best_param, best_metric, return_dict = diff_evo_impl._run(train_fn, boundary_dict, direction=direction, generations=generations, population=population, mutation=mutation, crossover=crossover, cleanup_generations=False, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
@@ -299,7 +299,7 @@ def differential_evolution(objective_function, boundary_dict, direction = Direct
     finally:
         _end_run(sc)
 
-def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
+def grid_search(train_fn, grid_dict, direction=Direction.MAX, name='no-name', local_logdir=False, description=None, optimization_key='metric'):
     """
     *Parallel Experiment*
 
@@ -314,7 +314,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
     >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    return network.evaluate(learning_rate, layers, dropout)
     >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX)
 
@@ -325,7 +325,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
     >>> def train_nn(learning_rate, layers, dropout):
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from PIL import Image
     >>>    f = open('logfile.txt', 'w')
     >>>    f.write('Starting training...')
@@ -337,7 +337,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
     >>> experiment.grid_search(train_nn, grid_dict, direction=Direction.MAX, optimization_key='accuracy')
 
     Args:
-        :map_fun: the function to run, must return a metric
+        :train_fn: the function to run, must return a metric
         :grid_dict: a dict with a key for each argument with a corresponding value being a list containing the hyperparameters to test, internally all possible combinations will be generated and run as separate Experiments
         :direction: Direction.MAX to maximize the returned metric, Direction.MIN to minize the returned metric
         :name: name of the experiment
@@ -375,7 +375,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
 
         grid_params = experiment_utils.grid_params(grid_dict)
 
-        logdir, best_param, best_metric, return_dict = grid_search_impl._run(sc, map_fun, run_id, grid_params, direction=direction, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
+        logdir, best_param, best_metric, return_dict = grid_search_impl._run(sc, train_fn, run_id, grid_params, direction=direction, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         experiment_utils._finalize_experiment(experiment_json, best_metric, app_id, run_id, 'FINISHED', duration, experiment_utils._get_logdir(app_id, run_id), logdir, optimization_key)
@@ -387,7 +387,7 @@ def grid_search(map_fun, grid_dict, direction=Direction.MAX, name='no-name', loc
     finally:
         _end_run(sc)
 
-def parameter_server(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
+def parameter_server(train_fn, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
     """
     *Distributed Training*
 
@@ -401,7 +401,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
     >>> def distributed_training():
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
@@ -409,7 +409,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
     >>> experiment.parameter_server(distributed_training, local_logdir=True)
 
     Args:f
-        :map_fun: contains the code where you are using ParameterServerStrategy.
+        :train_fn: contains the code where you are using ParameterServerStrategy.
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :description: a longer description for the experiment
@@ -448,7 +448,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
 
         experiment_json = experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        logdir, return_dict = ps_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
+        logdir, return_dict = ps_impl._run(sc, train_fn, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         metric = experiment_utils._get_metric(return_dict, metric_key)
@@ -462,7 +462,7 @@ def parameter_server(map_fun, name='no-name', local_logdir=False, description=No
     finally:
         _end_run(sc)
 
-def mirrored(map_fun, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
+def mirrored(train_fn, name='no-name', local_logdir=False, description=None, evaluator=False, metric_key=None):
     """
     *Distributed Training*
 
@@ -472,7 +472,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
     >>> def mirrored_training():
     >>>    # Do all imports in the function
     >>>    import tensorflow
-    >>>    # Put all code inside the wrapper function
+    >>>    # Put all code inside the train_fn function
     >>>    from hops import tensorboard
     >>>    from hops import devices
     >>>    logdir = tensorboard.logdir()
@@ -480,7 +480,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
     >>> experiment.mirrored(mirrored_training, local_logdir=True)
 
     Args:
-        :map_fun: contains the code where you are using MirroredStrategy.
+        :train_fn: contains the code where you are using MirroredStrategy.
         :name: name of the experiment
         :local_logdir: True if *tensorboard.logdir()* should be in the local filesystem, otherwise it is in HDFS
         :description: a longer description for the experiment
@@ -519,7 +519,7 @@ def mirrored(map_fun, name='no-name', local_logdir=False, description=None, eval
 
         experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
 
-        logdir, return_dict = mirrored_impl._run(sc, map_fun, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
+        logdir, return_dict = mirrored_impl._run(sc, train_fn, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
 
         metric = experiment_utils._get_metric(return_dict, metric_key)
