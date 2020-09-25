@@ -33,12 +33,7 @@ class Featuregroup(FeaturestoreEntity):
             constants.REST_CONFIG.JSON_FEATUREGROUP_DESCRIPTIVE_STATISTICS_ENABLED]
         self.feat_corr_enabled = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_CORRELATION_ENABLED]
         self.feat_hist_enabled = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_FEATURE_HISTOGRAM_ENABLED]
-        self.cluster_analysis_enabled = featuregroup_json[
-            constants.REST_CONFIG.JSON_FEATUREGROUP_CLUSTER_ANALYSIS_ENABLED]
         self.stat_columns = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_STATISTIC_COLUMNS]
-        self.num_bins = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_BINS]
-        self.num_clusters = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_NUM_CLUSTERS]
-        self.corr_method = featuregroup_json[constants.REST_CONFIG.JSON_FEATUREGROUP_CORR_METHOD]
 
         if(self.featuregroup_type == "onDemandFeaturegroupDTO"):
             self.on_demand_featuregroup = OnDemandFeaturegroup(featuregroup_json)
