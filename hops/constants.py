@@ -520,6 +520,24 @@ class REST_CONFIG:
     JSON_KAFKA_NUM_PARTITIONS = "numOfPartitions"
     JSON_KAFKA_NUM_REPLICAS = "numOfReplicas"
 
+    HOPSWORKS_CLOUD_RESOURCE = "cloud"
+    HOPSWORKS_CLOUD_SESSION_TOKEN_RESOURCE = "session-token"
+    HOPSWORKS_CLOUD_ROLE_MAPPINGS_RESOURCE = "role-mappings"
+    HOPSWORKS_CLOUD_SESSION_TOKEN_RESOURCE_QUERY_ROLE = "roleARN"
+    HOPSWORKS_CLOUD_SESSION_TOKEN_RESOURCE_QUERY_SESSION = "roleSessionName"
+    HOPSWORKS_CLOUD_SESSION_TOKEN_RESOURCE_QUERY_SESSION_DURATION = "durationSeconds"
+
+    JSON_ACCESS_KEY_ID = "accessKeyId"
+    JSON_SECRET_KEY_ID = "secretAccessKey"
+    JSON_SESSION_TOKEN_ID = "sessionToken"
+    JSON_ARRAY_ITEMS = "items"
+    JSON_CLOUD_ROLE = "cloudRole"
+
+    JSON_KAFKA_TOPIC_SCHEMA_VERSION = "schemaVersion"
+    JSON_KAFKA_TOPIC_NAME = "name"
+    JSON_KAFKA_NUM_PARTITIONS = "numOfPartitions"
+    JSON_KAFKA_NUM_REPLICAS = "numOfReplicas"
+
 
 class DELIMITERS:
     """
@@ -544,6 +562,9 @@ class S3_CONFIG:
     S3_FILE_PREFIX = "s3a://"
     S3_ACCESS_KEY_ENV = "fs.s3a.access.key"
     S3_SECRET_KEY_ENV = "fs.s3a.secret.key"
+    S3_SESSION_KEY_ENV = "fs.s3a.session.token"
+    S3_CREDENTIAL_PROVIDER_ENV = "fs.s3a.aws.credentials.provider"
+    S3_TEMPORARY_CREDENTIAL_PROVIDER = "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider"
     S3_TRAINING_DATASETS_FOLDER = "TRAINING_DATASETS"
 
 class AWS:
