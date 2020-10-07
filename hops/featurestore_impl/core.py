@@ -1175,7 +1175,10 @@ def _do_get_online_featurestore_connector(featurestore, featurestore_metadata):
     else:
         featurestore_id = _get_featurestore_id(featurestore)
         response_object = rest_rpc._get_online_featurestore_jdbc_connector_rest(featurestore_id)
-        return JDBCStorageConnector(response_object)
+        if response_object is not None:
+            return JDBCStorageConnector(response_object)
+        else:
+            raise StorageConnectorNotFound("Could not find online featurestore jdbc storage connector")
 
 
 def _do_create_featuregroup(df, featurestore_metadata, featuregroup, primary_key=[], description="", featurestore=None,

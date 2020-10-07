@@ -93,7 +93,6 @@ def _get_featurestore_metadata(featurestore):
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_METADATA_RESOURCE)
     response = util.send_request(method, resource_url)
     response_object = response.json()
-
     if response.status_code != 200:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise RestAPIError("Could not fetch featurestore metadata for featurestore: {} (url: {}), "
@@ -537,9 +536,7 @@ def _get_online_featurestore_jdbc_connector_rest(featurestore_id):
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     str(featurestore_id) + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_STORAGE_CONNECTORS_RESOURCE +
-                    constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_ONLINE_FEATURESTORE_STORAGE_CONNECTOR_RESOURCE)
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORES_STORAGE_CONNECTORS_RESOURCE)
     response = util.send_request(method, resource_url)
     response_object = response.json()
     if response.status_code != 200:
@@ -547,7 +544,12 @@ def _get_online_featurestore_jdbc_connector_rest(featurestore_id):
         raise RestAPIError("Could not fetch online featurestore connector (url: {}), server response: \n " \
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-    return response_object
+    online_connector = None
+    for conn in response_object:
+         if constants.FEATURE_STORE.ONLINE_FEATURESTORE_JDBC_CONNECTOR_SUFFIX in conn["name"]:
+             online_connector = conn
+             break
+    return online_connector
 
 
 def _add_tag(featurestore_id, id, tag, value, resource):

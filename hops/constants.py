@@ -266,7 +266,7 @@ class FEATURE_STORE:
     JDBC_KEYSTORE_ARG = "sslKeyStore"
     JDBC_KEYSTORE_PW_ARG = "keyStorePassword"
     IMPORT_HOPS_UTIL_FEATURESTORE_HELPER = "import io.hops.util.featurestore.FeaturestoreHelper"
-
+    ONLINE_FEATURESTORE_JDBC_CONNECTOR_SUFFIX = "_onlinefeaturestore"
 
 class PETASTORM_CONFIG:
     """
