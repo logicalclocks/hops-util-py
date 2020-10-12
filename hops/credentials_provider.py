@@ -6,11 +6,12 @@ AWS temporary credential provider.
 from hops import constants, util, hdfs
 from hops.exceptions import RestAPIError
 import uuid
+import os
 
 
 def assume_role(role, role_session_name=" ", duration_seconds=3600):
     """
-    Assume a role and sets the temporary credential to the spark context hadoop configuration.
+    Assume a role and sets the temporary credential to the spark context hadoop configuration and environment variables.
 
     Args:
         :role: (string) the role arn to be assumed
@@ -37,15 +38,8 @@ def assume_role(role, role_session_name=" ", duration_seconds=3600):
 
     response = util.send_request(method, resource_url)
     json_content = _parse_response(response, resource_url)
-    sc = util._find_spark().sparkContext
-    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_CREDENTIAL_PROVIDER_ENV,
-                                      constants.S3_CONFIG.S3_TEMPORARY_CREDENTIAL_PROVIDER)
-    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_ACCESS_KEY_ENV,
-                                      json_content[constants.REST_CONFIG.JSON_ACCESS_KEY_ID])
-    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SECRET_KEY_ENV,
-                                      json_content[constants.REST_CONFIG.JSON_SECRET_KEY_ID])
-    sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SESSION_KEY_ENV,
-                                      json_content[constants.REST_CONFIG.JSON_SESSION_TOKEN_ID])
+    _set_spark_hadoop_conf(json_content)
+    _set_envs(json_content)
     return json_content
 
 
@@ -82,6 +76,26 @@ def get_role(role_id):
     """
     json_content = _get_roles(role_id=role_id)
     return json_content[constants.REST_CONFIG.JSON_CLOUD_ROLE]
+
+
+def _set_spark_hadoop_conf(json_content):
+    spark = util._find_spark()
+    if spark is not None:
+        sc = spark.sparkContext
+        sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_CREDENTIAL_PROVIDER_ENV,
+                                          constants.S3_CONFIG.S3_TEMPORARY_CREDENTIAL_PROVIDER)
+        sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_ACCESS_KEY_ENV,
+                                          json_content[constants.REST_CONFIG.JSON_ACCESS_KEY_ID])
+        sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SECRET_KEY_ENV,
+                                          json_content[constants.REST_CONFIG.JSON_SECRET_KEY_ID])
+        sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_SESSION_KEY_ENV,
+                                          json_content[constants.REST_CONFIG.JSON_SESSION_TOKEN_ID])
+
+
+def _set_envs(json_content):
+    os.environ[constants.S3_CONFIG.AWS_ACCESS_KEY_ID_ENV] = json_content[constants.REST_CONFIG.JSON_ACCESS_KEY_ID]
+    os.environ[constants.S3_CONFIG.AWS_SECRET_ACCESS_KEY_ENV] = json_content[constants.REST_CONFIG.JSON_SECRET_KEY_ID]
+    os.environ[constants.S3_CONFIG.AWS_SESSION_TOKEN_ENV] = json_content[constants.REST_CONFIG.JSON_SESSION_TOKEN_ID]
 
 
 def _get_roles(role_id=None):
