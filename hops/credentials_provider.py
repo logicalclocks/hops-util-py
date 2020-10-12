@@ -79,7 +79,10 @@ def get_role(role_id):
 
 
 def _set_spark_hadoop_conf(json_content):
-    spark = util._find_spark()
+    try:
+        spark = util._find_spark()
+    except:
+        return
     if spark is not None:
         sc = spark.sparkContext
         sc._jsc.hadoopConfiguration().set(constants.S3_CONFIG.S3_CREDENTIAL_PROVIDER_ENV,
