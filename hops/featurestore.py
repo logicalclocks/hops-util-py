@@ -1953,7 +1953,8 @@ def setup_databricks(host, project_name, cert_folder="hops",
     
     write_init_script(dbfs_folder)
 
-    private_host = rest_rpc._get_hostname()
+    hive_endpoint = rest_rpc._get_featurestores()[0]['hiveEndpoint']
+    private_host = rest.split(":")[0]
 
     print_instructions(cert_folder, dbfs_folder, private_host)
     
