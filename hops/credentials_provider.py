@@ -80,7 +80,7 @@ def get_role(role_id):
 
 def _set_spark_hadoop_conf(json_content):
     spark = None
-    if "IS_HOPS_DRIVER" in os.environ:
+    if constants.ENV_VARIABLES.SPARK_IS_DRIVER in os.environ:
         spark = util._find_spark()
     if spark is not None:
         sc = spark.sparkContext
