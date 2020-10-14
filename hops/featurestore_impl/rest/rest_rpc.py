@@ -689,25 +689,3 @@ def _get_fs_tags():
         for tag in response_object['items']:
             results.append(tag['name'])
     return results
-
-def _get_hostname():
-    """
-    Makes a REST call to Hopsworks to get hostname of the Hopsworks machine
-
-    Returns:
-        The hostname
-    """
-
-    resource_url= (constants.DELIMITERS.SLASH_DELIMITER +
-                 constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                 constants.REST_CONFIG.HOPSWORKS_VARIABLES_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                 constants.REST_CONFIG.HOPSWORKS_ENDPOINT)
-    response = util.send_request(constants.HTTP_CONFIG.HTTP_GET, resource_url)
-    if (response.status_code // 100) != 2:
-        error_code, error_msg, user_msg = "", "", ""
-
-        raise RestAPIError("Could not execute HTTP request (url: {}), server response: \n "
-                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
-
-    return response.json()['successMessage'].split(':')[0]
