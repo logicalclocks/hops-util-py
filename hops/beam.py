@@ -10,7 +10,7 @@ from random import randint
 import time
 import atexit
 
-from hops import constants, util,hdfs as hopsfs, jobs, exceptions
+from hops import constants, util, hdfs as hopsfs, jobs
 
 # Dict of running jobserver and their flink clusters
 clusters = []
@@ -21,7 +21,11 @@ jobserver_port = -1
 
 def start_beam_jobserver(flink_session_name,
                          artifacts_dir="Resources",
-                         jobserver_jar=None):
+                         jobserver_jar=os.path.join(util.get_flink_lib_dir(),
+                                                    "beam-runners-flink-1.9-job-server-2.24.0.jar"),
+                         jobserver_main_class="org.apache.beam.runners.flink.FlinkJobServerDriver",
+                         service_discover_jar=os.path.join(util.get_flink_lib_dir(),
+                                                           "service-discovery-client-0.5-SNAPSHOT.jar")):
     """
     Start the Java Beam job server that connects to the flink session cluster. User needs to provide the
     job name that started the Flink session and optionally the worker parallelism.
@@ -33,8 +37,6 @@ def start_beam_jobserver(flink_session_name,
     Returns:
         artifact_port, expansion_port, job_host, job_port, jobserver.pid
     """
-    if jobserver_jar is None:
-        jobserver_jar = os.path.join(util.get_flink_conf_dir(), "beam-runners-flink-1.9-job-server-2.19.0.jar")
     # Get Flink master URL (flink session cluster) from an ExecutionDTO
     method = constants.HTTP_CONFIG.HTTP_GET
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
@@ -60,17 +62,25 @@ def start_beam_jobserver(flink_session_name,
                           "-" + str(job_port) + ".log"
     # copy jar to local
     with open(beam_jobserver_log, "wb") as out, open(beam_jobserver_log, "wb") as err:
+        # Get the hadoop glob classpath and filter out service-discover-client as there is a shading issue with
+        # jackson dependency
+        jobserver_cp_list = list(filter(lambda x: "service-discovery" not in x and x.endswith(".jar"), util.get_hadoop_classpath_glob().split(":")))
+        jobserver_cp_list.extend((service_discover_jar, jobserver_jar))
+        jobserver_cp_path = ":".join(jobserver_cp_list).replace("\n","")
+
         jobserver = subprocess.Popen(["java",
-                                       "-jar", jobserver_jar,
-                                       "--artifacts-dir=%s" % hopsfs.project_path() + artifacts_dir,
-                                       "--flink-master-url=%s" % flink_master_url,
-                                       "--artifact-port=%d" % artifact_port,
-                                       "--expansion-port=%d" % expansion_port,
-                                       "--job-host=%s" % job_host,
-                                       "--job-port=%d" % job_port],
-                                      stdout=out,
-                                      stderr=err,
-                                      preexec_fn=util._on_executor_exit('SIGTERM'))
+                                      "-cp",
+                                      "%s" % jobserver_cp_path,
+                                      jobserver_main_class,
+                                      "--artifacts-dir=%s" % hopsfs.project_path() + artifacts_dir,
+                                      "--flink-master-url=%s" % flink_master_url,
+                                      "--artifact-port=%d" % artifact_port,
+                                      "--expansion-port=%d" % expansion_port,
+                                      "--job-host=%s" % job_host,
+                                      "--job-port=%d" % job_port],
+                                     stdout=out,
+                                     stderr=err,
+                                     preexec_fn=util._on_executor_exit('SIGTERM'))
     global clusters
     clusters.append(flink_session_name)
     global jobserver_host
@@ -101,7 +111,7 @@ def get_sdk_worker():
     Returns:
         the path to sdk_worker.sh
     """
-    return os.path.join(util.get_flink_conf_dir(), "sdk_worker.sh")
+    return os.path.join(util.get_flink_lib_dir(), "sdk_worker.sh")
 
 
 def create_runner(runner_name, jobmanager_heap_size=1024, num_of_taskmanagers=1, taskmanager_heap_size=4096,
@@ -155,8 +165,7 @@ def stop_runner(runner_name):
 
 
 def start(runner_name="runner", jobmanager_heap_size=1024,
-          num_of_taskmanagers=1, taskmanager_heap_size=4096, num_task_slots=1, cleanup_runner=False,
-          ignore_running=False):
+          num_of_taskmanagers=1, taskmanager_heap_size=4096, num_task_slots=1, cleanup_runner=False):
     """
     Creates and starts a Beam runner and then starts the beam job server.
 
@@ -169,7 +178,6 @@ def start(runner_name="runner", jobmanager_heap_size=1024,
         taskmanager_heap_size: The memory(mb) of the each TaskManager in the Flink cluster.
         num_task_slots: Number of slots of the Flink cluster.
         cleanup_runner: Kill runner when Python terminates
-        ignore_running: Ignore currently running instances of Runner
     Returns:
         The artifact_port, expansion_port, job_host, job_port, jobserver.pid
     """

@@ -325,6 +325,40 @@ def get_flink_conf_dir():
     if constants.ENV_VARIABLES.FLINK_CONF_DIR in os.environ:
         return os.environ[constants.ENV_VARIABLES.FLINK_CONF_DIR]
 
+
+def get_flink_lib_dir():
+    """
+    Returns the Flink libraries directory.
+
+    Returns:
+        The Flink libraries dir path.
+    """
+    if constants.ENV_VARIABLES.FLINK_LIB_DIR in os.environ:
+        return os.environ[constants.ENV_VARIABLES.FLINK_LIB_DIR]
+
+
+def get_hadoop_home():
+    """
+    Returns the Hadoop home directory.
+
+    Returns:
+        The Hadoop home dir path.
+    """
+    if constants.ENV_VARIABLES.HADOOP_HOME in os.environ:
+        return os.environ[constants.ENV_VARIABLES.HADOOP_HOME]
+
+
+def get_hadoop_classpath_glob():
+    """
+    Returns the Hadoop glob classpath.
+
+    Returns:
+        The Hadoop glob classpath.
+    """
+    if constants.ENV_VARIABLES.HADOOP_CLASSPATH_GLOB in os.environ:
+        return os.environ[constants.ENV_VARIABLES.HADOOP_CLASSPATH_GLOB]
+
+
 def _validate_enable_online_featuregroup_schema(featuregroup_schema):
     """
     Validates the user-provided schema of an online feature group
