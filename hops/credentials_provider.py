@@ -129,7 +129,7 @@ def _query_string(role, role_session_name, duration_seconds):
         if query != "":
             query += "&"
         query += constants.REST_CONFIG.HOPSWORKS_CLOUD_SESSION_TOKEN_RESOURCE_QUERY_SESSION_DURATION + "=" + \
-                 duration_seconds
+                 str(duration_seconds)
 
     if query != "":
         query = "?" + query
