@@ -20,6 +20,10 @@ def assume_role(role_arn=None, role_session_name=None, duration_seconds=3600):
     >>> from hops.credentials_provider import assume_role
     >>> assume_role(role_arn="arn:aws:iam::<AccountNumber>:role/analyst")
 
+    or
+
+    >>> assume_role() # to assume the default role
+
     Returns:
         temporary credentials
     """
@@ -61,6 +65,8 @@ def get_role(role_id="default"):
 
     >>> from hops.credentials_provider import get_role
     >>> get_role(id)
+    or
+    >>> get_role() # to get the default role
 
     Returns:
         A role arn
@@ -126,7 +132,7 @@ def _query_string(role, role_session_name, duration_seconds):
                  duration_seconds
 
     if query != "":
-        query += "?"
+        query = "?" + query
     return query
 
 
