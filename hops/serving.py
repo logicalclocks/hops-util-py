@@ -162,7 +162,7 @@ def _start_or_stop_serving_rest(serving_id, action):
 
 def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", model_version=1,
                              batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
-                             instances = 1):
+                             instances = 1, kfserving=False):
     """
     Creates a serving in Hopsworks if it does not exist, otherwise update the existing one.
 
@@ -179,6 +179,7 @@ def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", mod
         :batching_enabled: boolean flag whether to enable batching for the inference requests
         :instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
+        :kfserving: boolean flag whether to serve the model using KFServing
 
     Returns:
           None
@@ -186,16 +187,16 @@ def create_or_update(artifact_path, serving_name, serving_type="TENSORFLOW", mod
     serving_id = get_id(serving_name)
     artifact_path = hdfs._expand_path(artifact_path)
     _validate_user_serving_input(artifact_path, serving_name, serving_type, model_version, batching_enabled,
-                                 num_partitions, num_replicas, instances)
+                                 num_partitions, num_replicas, instances, kfserving)
     artifact_path = hdfs.get_plain_path(artifact_path)
     print("Creating a serving for model {} ...".format(serving_name))
     _create_or_update_serving_rest(artifact_path, serving_name, serving_type, model_version, batching_enabled,
-                                   topic_name, num_partitions, num_replicas, serving_id, instances)
+                                   topic_name, num_partitions, num_replicas, serving_id, instances, kfserving)
     print("Serving for model {} successfully created".format(serving_name))
 
 
 def _validate_user_serving_input(model_path, model_name, serving_type, model_version, batching_enabled,
-                                 num_partitions, num_replicas, instances):
+                                 num_partitions, num_replicas, instances, kfserving):
     """
     Validate user input on the client side before sending REST call to Hopsworks (additional validation will be done
     in the backend)
@@ -239,6 +240,11 @@ def _validate_user_serving_input(model_path, model_name, serving_type, model_ver
         if not isinstance(batching_enabled, bool):
             raise ValueError("Batching enabled must be a boolean, the provided value "
                              "is not: {}".format(batching_enabled))
+        if kfserving:
+            if batching_enabled:
+                raise ValueError("Batching requests is currently not supported in KFServing deployments")
+    if serving_type == constants.MODEL_SERVING.SERVING_TYPE_SKLEARN and kfserving:
+        raise ValueError("Sklearn is currently not supported in KFServing deployments")
     if not isinstance(instances, int):
         raise ValueError("The number of serving instances must be an integer, "
                          "the provided version is not: {}".format(instances))
@@ -246,7 +252,7 @@ def _validate_user_serving_input(model_path, model_name, serving_type, model_ver
 
 def _create_or_update_serving_rest(model_path, model_name, serving_type, model_version,
                                    batching_enabled = None, topic_name=None,  num_partitions = None,
-                                   num_replicas = None, serving_id = None, instances=1):
+                                   num_replicas = None, serving_id = None, instances=1, kfserving=False):
     """
     Makes a REST request to Hopsworks for creating or updating a model serving instance
 
@@ -262,6 +268,7 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
         :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
         :instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
+        :kfserving: boolean flag whether to serve the model using KFServing
 
     Returns:
         None
@@ -285,6 +292,8 @@ def _create_or_update_serving_rest(model_path, model_name, serving_type, model_v
         json_contents[constants.REST_CONFIG.JSON_SERVING_ID] = serving_id
     if serving_type == constants.MODEL_SERVING.SERVING_TYPE_TENSORFLOW:
         json_contents[constants.REST_CONFIG.JSON_SERVING_BATCHING_ENABLED] = batching_enabled
+    if kfserving:
+        json_contents[constants.REST_CONFIG.JSON_SERVING_TYPE] = constants.MODEL_SERVING.SERVING_TYPE_KFSERVING_SUFFIX + serving_type
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
@@ -587,6 +596,14 @@ class Serving(object):
             self.kafka_topic_dto = kafka.KafkaTopicDTO(serving_json[constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO])
         self.id = serving_json[constants.REST_CONFIG.JSON_SERVING_ID]
 
+        self._parse_kfserving_type()
+
+    def _parse_kfserving_type(self):
+        if self.serving_type.startswith(constants.MODEL_SERVING.SERVING_TYPE_KFSERVING_SUFFIX):
+            self.serving_type = self.serving_type.split('_')[1]
+            self.kfserving = True
+        else:
+            self.kfserving = False
 
 class ServingNotFound(Exception):
     """This exception will be raised if the requested serving could not be found"""
