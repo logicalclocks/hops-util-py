@@ -140,6 +140,14 @@ hops.beam module
         :undoc-members:
         :show-inheritance:
 
+hops.credentials_provider module
+----------------
+
+.. automodule:: hops.credentials_provider
+        :members:
+        :undoc-members:
+        :show-inheritance:
+
 Module contents
 ---------------
 
