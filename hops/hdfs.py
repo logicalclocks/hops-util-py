@@ -87,7 +87,6 @@ def project_id():
     """
     return os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_ID_ENV_VAR]
 
-
 def project_user():
     """
     Gets the project username ("project__user") from environment variables
@@ -128,7 +127,7 @@ def project_path(project=None, exclude_nn_addr=False):
     >>> print("Project path: {}".format(project_path))
 
     Args:
-        :project_name: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
+        :project: If this value is not specified, it will get the path to your project. If you need to path to another project, you can specify the name of the project as a string.
 
     Returns:
         returns the project absolute path

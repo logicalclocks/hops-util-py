@@ -104,7 +104,8 @@ def launch(train_fn, args_dict=None, name='no-name', local_logdir=False, descrip
         else:
             experiment_json = experiment_utils._populate_experiment(name, 'launch', 'EXPERIMENT', None, description, app_id, None, None)
 
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         logdir, return_dict = launcher._run(sc, train_fn, run_id, args_dict, local_logdir)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
@@ -193,8 +194,8 @@ def random_search(train_fn, boundary_dict, direction=Direction.MAX, samples=10, 
         experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'random_search', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
-
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         logdir, best_param, best_metric, return_dict = r_search_impl._run(sc, train_fn, run_id, boundary_dict, samples, direction=direction, local_logdir=local_logdir, optimization_key=optimization_key)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
@@ -283,8 +284,8 @@ def differential_evolution(train_fn, boundary_dict, direction = Direction.MAX, g
         experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'differential_evolution', 'PARALLEL_EXPERIMENTS', json.dumps(boundary_dict), description, app_id, direction, optimization_key)
-
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         logdir, best_param, best_metric, return_dict = diff_evo_impl._run(train_fn, boundary_dict, direction=direction, generations=generations, population=population, mutation=mutation, crossover=crossover, cleanup_generations=False, local_logdir=local_logdir, name=name, optimization_key=optimization_key)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
@@ -370,8 +371,8 @@ def grid_search(train_fn, grid_dict, direction=Direction.MAX, name='no-name', lo
         experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'grid_search', 'PARALLEL_EXPERIMENTS', json.dumps(grid_dict), description, app_id, direction, optimization_key)
-
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         grid_params = experiment_utils.grid_params(grid_dict)
 
@@ -445,8 +446,8 @@ def parameter_server(train_fn, name='no-name', local_logdir=False, description=N
         experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'parameter_server', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
-
-        experiment_json = experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         logdir, return_dict = ps_impl._run(sc, train_fn, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
@@ -516,8 +517,8 @@ def mirrored(train_fn, name='no-name', local_logdir=False, description=None, eva
         experiment_utils._create_experiment_dir(app_id, run_id)
 
         experiment_json = experiment_utils._populate_experiment(name, 'mirrored', 'DISTRIBUTED_TRAINING', None, description, app_id, None, None)
-
-        experiment_json = experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'CREATE')
+        exp_ml_id = app_id + "_" + str(run_id)
+        experiment_json = experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'INIT')
 
         logdir, return_dict = mirrored_impl._run(sc, train_fn, run_id, local_logdir=local_logdir, name=name, evaluator=evaluator)
         duration = experiment_utils._seconds_to_milliseconds(time.time() - start)
@@ -545,7 +546,8 @@ def _exception_handler(duration):
         if running and experiment_json != None:
             experiment_json['state'] = "FAILED"
             experiment_json['duration'] = duration
-            experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'REPLACE')
+            exp_ml_id = app_id + "_" + str(run_id)
+            experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'FULL_UPDATE')
     except Exception as err:
         print(err)
         pass
@@ -561,7 +563,8 @@ def _exit_handler():
         global experiment_json
         if running and experiment_json != None:
             experiment_json['state'] = "KILLED"
-            experiment_utils._attach_experiment_xattr(app_id, run_id, experiment_json, 'REPLACE')
+            exp_ml_id = app_id + "_" + str(run_id)
+            experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'FULL_UPDATE')
     except Exception as err:
         print(err)
         pass
