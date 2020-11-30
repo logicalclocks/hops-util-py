@@ -1665,7 +1665,7 @@ def get_training_dataset_statistics(training_dataset_name, featurestore=None, tr
 
 def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_REGION,
             secrets_store = 'parameterstore', api_key_file=None, cert_folder="hops",
-            hostname_verification=True, trust_store_path=None):
+            hostname_verification=True, trust_store_path=None, cert_folder_base="/dbfs/"):
     """
     Connects to a feature store from a remote environment such as Amazon SageMaker
 
@@ -1682,12 +1682,13 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
         :api_key_file: path to a file containing an API key. For secrets_store=local only.
         :cert_folder: the folder on dbfs where to store the HopsFS certificates
         :hostname_verification: whether or not to verify Hopsworks' certificate - default True
-        :trust_store_path: path on dbfs containing the Hopsworks certificates 
+        :trust_store_path: path on dbfs containing the Hopsworks certificates
+        :cert_folder_base: base dir for the cert forlder - default /dbfs
 
     Returns:
         None
     """
-    dbfs_folder = "/dbfs/" + cert_folder
+    dbfs_folder = cert_folder_base + cert_folder
     os.environ[constants.ENV_VARIABLES.REST_ENDPOINT_END_VAR] = "https://" + host + ':' + str(port)
     os.environ[constants.ENV_VARIABLES.HOPSWORKS_PROJECT_NAME_ENV_VAR] = project_name
     os.environ[constants.ENV_VARIABLES.REGION_NAME_ENV_VAR] = region_name
@@ -1695,7 +1696,7 @@ def connect(host, project_name, port = 443, region_name = constants.AWS.DEFAULT_
     os.environ[constants.ENV_VARIABLES.REQUESTS_VERIFY_ENV_VAR] = str(hostname_verification).lower()
 
     if not trust_store_path is None:
-        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = "/dbfs/" + trust_store_path
+        os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = cert_folder_base + trust_store_path
 
     project_info = project.get_project_info(project_name)
     project_id = str(project_info['projectId'])
