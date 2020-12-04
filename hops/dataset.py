@@ -207,7 +207,7 @@ def download(remote_path, file, chunk_size=None):
 
     Args:
         :remote_path: the path to the remote file in the dataset
-        :file: the absolute path where the file is downloaded
+        :file: the absolute or relative path where the file is downloaded
         :chunk_size: (Optional) chunk size used to download the file
 
     Returns:
