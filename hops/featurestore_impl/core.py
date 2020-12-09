@@ -1428,7 +1428,7 @@ def _do_remove_tag(name, tag, featurestore, version, resource):
     rest_rpc._remove_tag(featurestore_id, id, tag, resource)
 
 
-def _do_get_fs_tags():
+def _do_get_fs_schemas():
     """
     Get tags that can be attached to a featuregroup or training dataset
 
@@ -1436,7 +1436,22 @@ def _do_get_fs_tags():
           List of tags
     """
 
-    return rest_rpc._get_fs_tags()
+    return rest_rpc._get_fs_schemas()
+
+def _do_get_fs_schema(tagName):
+    """
+    Get tag schema that can be attached to a featuregroup or training dataset
+
+    """
+
+    return rest_rpc._get_fs_schema(tagName)
+
+def _do_post_fs_schema(schemaName, schemaValue):
+    """
+    Create schema for tags that can be attached to a featuregroup or training dataset
+    """
+
+    return rest_rpc._post_fs_schema(schemaName, schemaValue)
 
 
 # Fetch on-load and cache it on the client

@@ -558,7 +558,7 @@ def _add_tag(featurestore_id, id, tag, value, resource):
         :featurestore_id: the id of the featurestore
         :id: the id of the featuregroup or training dataset
         :tag: name of the tag to attach
-        :value: value of the tag
+        :value: value of the tag in json format
         :resource: featuregroup or training dataset resource
 
     Returns:
@@ -576,10 +576,8 @@ def _add_tag(featurestore_id, id, tag, value, resource):
                     constants.DELIMITERS.SLASH_DELIMITER + str(id) + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     tag)
-    if value is not None:
-        resource_url = resource_url + "?value=" + value
 
-    response = util.send_request(method, resource_url)
+    response = util.send_request(method, resource_url, data=value)
     response_object = response.json()
     if response.status_code >= 400:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
@@ -661,8 +659,31 @@ def _remove_tag(featurestore_id, id, tag, resource):
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
+def _get_fs_schema(tagName):
+    """
+    Makes a REST call to Hopsworks to get tag schema that can be attached to featuregroups or training datasets
 
-def _get_fs_tags():
+    """
+    method = constants.HTTP_CONFIG.HTTP_GET
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    tagName)
+    response = util.send_request(method, resource_url, headers=headers)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    tag = {}
+    if ('name' in response_object) and ('value' in response_object) :
+        tag[response_object['name']] = json.loads(response_object['value'])
+    return tag
+
+def _get_fs_schemas():
     """
     Makes a REST call to Hopsworks to get tags that can be attached to featuregroups or training datasets
 
@@ -684,8 +705,28 @@ def _get_fs_tags():
                            "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
             resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
 
-    results = []
+    tags = {}
     if 'items' in response_object:
         for tag in response_object['items']:
-            results.append(tag['name'])
-    return results
+            if ('name' in tag) and ('value' in tag) :
+                tags[tag['name']] = json.loads(tag['value'])
+    return tags
+
+def _post_fs_schema(schemaName, schemaValue):
+    """
+    Makes a REST call to Hopsworks to create schemas for tags that can be attached to datasets
+
+    """
+    method = constants.HTTP_CONFIG.HTTP_POST
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_FEATURESTORE_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    "?name=" + schemaName)
+    response = util.send_request(method, resource_url, headers=headers, data=schemaValue)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not create tag schema (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
