@@ -528,3 +528,18 @@ def write_b64_cert_to_bytes(b64_string, path):
     with open(path, 'wb') as f:
         cert_b64 = base64.b64decode(b64_string)
         f.write(cert_b64)
+
+def attach_jupyter_configuration_to_notebook(kernel_id):
+    method = constants.HTTP_CONFIG.HTTP_PUT
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   "project" + constants.DELIMITERS.SLASH_DELIMITER + os.environ["HOPSWORKS_PROJECT_ID"] + \
+                   constants.DELIMITERS.SLASH_DELIMITER + "jupyter/attachConfiguration" + \
+                   constants.DELIMITERS.SLASH_DELIMITER + os.environ["HADOOP_USER_NAME"] + \
+                   constants.DELIMITERS.SLASH_DELIMITER + kernel_id
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    response = send_request(method, resource_url, headers=headers)
+    if response.status_code >= 400:
+        response_object = response.json()
+        error_code, error_msg, user_msg = _parse_rest_error(response_object)
+        raise Exception(error_msg)
