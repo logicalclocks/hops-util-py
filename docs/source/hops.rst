@@ -36,14 +36,6 @@ hops.experiment module
     :undoc-members:
     :show-inheritance:
 
-hops.featurestore module
-------------------------
-
-.. automodule:: hops.featurestore
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 hops.hdfs module
 ----------------
 
