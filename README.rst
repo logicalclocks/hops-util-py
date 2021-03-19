@@ -317,7 +317,9 @@ In the `serving` module you can find an API for creating/starting/stopping/updat
   model.export(export_path, "mnist")
   model_path="/Models/mnist/"
   SERVING_NAME="mnist"
-  serving.create_or_update(model_path, "mnist", serving_type="TENSORFLOW", model_version=1)
+  serving.create_or_update(SERVING_NAME, model_path, model_server="TENSORFLOW_SERVING", model_version=1)
+  # Alternatively, the kfserving flag can be set to deploy the model server using this serving tool
+  serving.create_or_update(SERVING_NAME, model_path, model_server="TENSORFLOW_SERVING", model_version=1, kfserving=True)
   if serving.get_status("mnist") == 'Stopped':
       serving.start("mnist")
   data = {"signature_name": 'predict_images', "instances": [np.random.rand(784).tolist()]}
@@ -328,7 +330,7 @@ In the `serving` module you can find an API for creating/starting/stopping/updat
   model.export(script_path, "irisClassifier")
   if serving.exists("irisClassifier"):
       serving.delete("irisClassifier")
-  serving.create_or_update(script_path, "irisClassifier", serving_type="SKLEARN", model_version=1)
+  serving.create_or_update("irisClassifier", script_path, model_server="FLASK", model_version=1)
   serving.start("irisClassifier")
   data = {"inputs" : [[random.uniform(1, 8) for i in range(NUM_FEATURES)]]}
   response = serving.make_inference_request(SERVING_NAME, data)
