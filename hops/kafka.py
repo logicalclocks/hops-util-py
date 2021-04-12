@@ -170,7 +170,7 @@ def convert_json_schema_to_avro(json_schema):
          the avro schema
     """
 
-    return avro.schema.Parse(json_schema)
+    return avro.schema.parse(json_schema)
 
 
 
