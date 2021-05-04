@@ -422,7 +422,7 @@ def num_param_servers():
     """
     sc = _find_spark().sparkContext
     try:
-        return int(sc._conf.get("spark.tensorflow.num.ps"))
+        return int(os.environ['NUM_TF_PS'])
     except:
         return 0
 
