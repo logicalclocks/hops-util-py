@@ -68,6 +68,14 @@ hops.jobs module
     :undoc-members:
     :show-inheritance:
 
+hops.secret module
+----------------
+
+.. automodule:: hops.secret
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 hops.kafka module
 -----------------
 
