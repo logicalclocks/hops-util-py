@@ -21,7 +21,7 @@ def get_elasticsearch_index(index):
     Returns:
         A valid elasticsearch index name.
     """
-    return hdfs.project_name() + "_" + index
+    return (hdfs.project_name() + "_" + index).lower()
 
 
 def get_elasticsearch_config(index):
