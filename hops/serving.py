@@ -160,7 +160,7 @@ def _start_or_stop_serving_rest(serving_id, action):
 
 def create_or_update(serving_name, artifact_path, model_version=1, model_server=None, kfserving=False,
                              batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
-                             instances = 1):
+                             instances = 1, predictor_resource_config=None):
     """
     Creates a serving in Hopsworks if it does not exist, otherwise update the existing one.
     In case model server is not specified, it is inferred from the artifact files.
@@ -179,7 +179,8 @@ def create_or_update(serving_name, artifact_path, model_version=1, model_server=
         :batching_enabled: boolean flag whether to enable batching for the inference requests
         :instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
-        :kfserving: boolean flag whether to serve the model using KFServing
+        :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
+        example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
 
     Returns:
           None
@@ -190,16 +191,16 @@ def create_or_update(serving_name, artifact_path, model_version=1, model_server=
         model_server = _detect_model_server(artifact_path)
 
     _validate_user_serving_input(serving_name, artifact_path, model_version, model_server, kfserving, batching_enabled,
-                                 topic_name, num_partitions, num_replicas, instances)
+                                 topic_name, num_partitions, num_replicas, instances, predictor_resource_config)
     artifact_path = hdfs.get_plain_path(artifact_path)
     print("Creating serving {} for artifact {} ...".format(serving_name, artifact_path))
     _create_or_update_serving_rest(serving_name, artifact_path, model_version, model_server, kfserving, batching_enabled,
-                                   topic_name, num_partitions, num_replicas, serving_id, instances)
+                                   topic_name, num_partitions, num_replicas, serving_id, instances, predictor_resource_config)
     print("Serving {} successfully created".format(serving_name))
 
 
 def _validate_user_serving_input(serving_name, model_path, model_version, model_server, kfserving, batching_enabled, topic_name,
-                                 num_partitions, num_replicas, instances):
+                                 num_partitions, num_replicas, instances, predictor_resource_config):
     """
     Validate user input on the client side before sending REST call to Hopsworks (additional validation will be done
     in the backend)
@@ -215,6 +216,8 @@ def _validate_user_serving_input(serving_name, model_path, model_version, model_
         :num_replicas: kafka replicas
         :instances: the number of serving instances (the more instances the more inference requests can
                     be served in parallel)
+        :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
+        example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
 
     Returns:
         None
@@ -253,10 +256,15 @@ def _validate_user_serving_input(serving_name, model_path, model_version, model_
         raise ValueError("The number of serving instances must be an integer, "
                          "the provided version is not: {}".format(instances))
 
+    if predictor_resource_config is not None:
+      if type(predictor_resource_config) is not dict:
+        raise ValueError("predictor_resource_config must be a dict.")
+      if 'memory' not in predictor_resource_config or 'cores' not in predictor_resource_config:
+        raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
 
 def _create_or_update_serving_rest(serving_name, model_path, model_version, model_server, kfserving,
                                    batching_enabled=None, topic_name=None, num_partitions=None,
-                                   num_replicas=None, serving_id=None, instances=1):
+                                   num_replicas=None, serving_id=None, instances=1, predictor_resource_config=None):
     """
     Makes a REST request to Hopsworks for creating or updating a model serving instance
 
@@ -273,7 +281,8 @@ def _create_or_update_serving_rest(serving_name, model_path, model_version, mode
         :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
         :instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
-        :kfserving: boolean flag whether to serve the model using KFServing
+        :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
+        example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
 
     Returns:
         None
@@ -296,6 +305,7 @@ def _create_or_update_serving_rest(serving_name, model_path, model_version, mode
             constants.REST_CONFIG.JSON_KAFKA_NUM_REPLICAS: num_replicas
         },
         constants.REST_CONFIG.JSON_SERVING_REQUESTED_INSTANCES: instances,
+        constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG: predictor_resource_config
     }
     if serving_id is not None:
         json_contents[constants.REST_CONFIG.JSON_SERVING_ID] = serving_id
@@ -470,6 +480,25 @@ def get_status(serving_name):
     serving = _find_serving_with_name(serving_name, servings)
     return serving.status
 
+def get_predictor_resource_config(serving_name):
+    """
+    Gets the predictor resource config of a serving with a given name
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_predictor_resource_config(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the predictor resource config for
+
+    Returns:
+         the status of the serving
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.predictor_resource_config
+
 
 def get_all():
     """
@@ -623,12 +652,13 @@ class Serving(object):
         self.artifact_path = serving_json[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_PATH]
         self.name = serving_json[constants.REST_CONFIG.JSON_SERVING_NAME]
         self.creator = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATOR]
-        self.creator = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATOR]
         self.model_server = serving_json[constants.REST_CONFIG.JSON_MODEL_SERVER]
         self.serving_tool = serving_json[constants.REST_CONFIG.JSON_SERVING_TOOL]
         self.model_version = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION]
         self.created = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATED]
         self.requested_instances = serving_json[constants.REST_CONFIG.JSON_SERVING_REQUESTED_INSTANCES]
+        if constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG in serving_json:
+          self.predictor_resource_config = serving_json[constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG]
         if constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO in serving_json:
             self.kafka_topic_dto = kafka.KafkaTopicDTO(serving_json[constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO])
         self.id = serving_json[constants.REST_CONFIG.JSON_SERVING_ID]
