@@ -85,7 +85,7 @@ def _register(hdfs_exec_dir, endpoint_dir, exec_num, local_logdir=False):
 
         tb_pid = tb_proc.pid
 
-        host = socket.gethostname()
+        host = socket.getfqdn()
         global tb_url
         tb_url = "http://{0}:{1}".format(host, tb_port)
         global endpoint
@@ -154,7 +154,7 @@ def _restart_debugging(interactive=True):
 
     debugger_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     debugger_socket.bind(('',0))
-    debugger_addr, debugger_port = debugger_socket.getsockname()
+    debugger_addr, debugger_port = debugger_socket.getfqdn()
 
     debugger_socket.close()
 
