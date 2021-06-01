@@ -4,7 +4,7 @@ Model module is used for exporting, versioning, attaching metadata to models. In
 
 """
 
-from hops import constants, util, hdfs, project
+from hops import constants, util, hdfs, project, dataset
 from hops.experiment_impl.util import experiment_utils
 from hops.exceptions import RestAPIError
 import json
@@ -105,6 +105,58 @@ def get_model(name, version, project_name=None):
         return response_object
 
     raise ModelNotFound("No model with name: {} and version {} could be found".format(name, version))
+
+
+def download_model(name, version=None, project_name=None):
+    """
+    Download from the Hopsworks Models dataset an archive (zip file) containning the model artifcacts.
+    You first need to use the project.connect function to connect to Hopsworks.
+    If the Models dataset ths model resides in is a shared dataset from another project,
+    then you need to specify the name of the project that owns the Models dataset was shared from.
+
+    For example if you run this:
+
+    >>> from hops import model
+    >>> model.download_model('mnist')
+
+    Args:
+        :name: name of the model
+        :version: version of the model. If ommitted, all versions of the model will be included in the archive.
+        :project_name name of the project parent of the model. By default, this project is the current project running
+        the experiment
+
+    Returns:
+        A zip file containing the model artficats
+
+    Raises:
+        :ModelNotFound: if the model was not found
+    """
+    if project_name is None:
+        project_name = hdfs.project_name()
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    project_id = project.project_id_as_shared(project_name)
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   str(name) + "_" + str(version) + "?filter_by=endpoint_id:" + project_id
+
+    response_object = util.send_request('GET', resource_url, headers=headers)
+
+    if response_object.ok:
+        remote_path = '/Projects/' + project_name + "/Models/" + name
+        if version is not None:
+            remote_path+= "/" + str(version)
+
+        print("Preparing the model archive...")
+        zipa(remote_path, block=True, project_name=project_name)
+        print("Star downloading the model archive")
+        print("remote_path:"+remote_path)
+        dataset.download(remote_path+".zip", file = name + str(version) + ".zip")
+    else:
+        raise ModelNotFound("No model with name: {} and version {} could be found".format(name, version))
+
 
 def export(model_path, model_name, model_version=None, overwrite=False, metrics=None, description=None,
            synchronous=True, synchronous_timeout=120, project=None):

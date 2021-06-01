@@ -6,7 +6,9 @@ import re
 import os
 import ntpath
 import math
-from hops import constants, util
+import json
+
+from hops import constants, util, project
 from hops.exceptions import RestAPIError
 
 
@@ -214,3 +216,92 @@ def download(remote_path, file, chunk_size=None):
         None
     """
     HTTPDownload(remote_path, file, chunk_size).download()
+
+
+def check_path(remote_path, project_name=None):
+    """
+    Check if file exists.
+
+    Example usage:
+
+    >>> from hops import dataset
+    >>> dataset.check_path("Projects/project_name/Resources/myremotefile.txt")
+
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset.
+        :project_name: Name of the project this file or directory belongs to.
+
+    Returns:
+        The HTTP requests response object.
+    """
+    project_id = project.project_id_as_shared(project_name)
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   project_id + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   remote_path + "?action=stat"
+
+    response_object = util.send_request('GET', resource_url)
+
+    return response_object
+
+
+def zipa(remote_path,  block=False, project_name=None, timeout=120):
+    _archive(remote_path, action='zip', block=block, project_name=project_name, timeout=timeout)
+
+
+def unzip(remote_path,  block=False, project_name=None, timeout=120):
+    _archive(remote_path, action='unzip', block=block, project_name=project_name, timeout=timeout)
+
+
+def _archive(remote_path, action='zip', block=False, project_name=None, timeout=120):
+    """
+    Create an archive (zip file) of a file or directory in a Hopsworks dataset.
+
+    Example usage:
+
+    >>> from hops import dataset
+    >>> dataset.compress("Projects/project_name/Resources/myremotefile.txt")
+
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset
+        :block: whether this method should wait for the zipping process to complete beefore returning.
+        :project_name:
+
+    Returns:
+        None
+    """
+    print("hello")
+    project_id = project.project_id_as_shared(project_name)
+    resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   project_id + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   remote_path + "?action=" + action
+
+    response_object = util.send_request('POST', resource_url)
+
+    if block is True:
+        print("waiting...")
+        # Wait for zip file to appear. When it does, check that parent dir zipState is not set to CHOWNING
+        count = 0
+        while count < timeout:
+            # Get the status of the zipped file
+            check_path_zip_resp = check_path(remote_path + ".zip", project_name)
+            # Get the zipState of the directory being zipped
+            dir_status = json.loads(check_path(remote_path, project_name).content)
+            zip_state = dir_status['zipState'] if 'zipState' in dir_status else None
+            print("check_path_zip_resp.status_code: " + str(check_path_zip_resp.status_code))
+            print("zip_state: " + zip_state)
+
+            if check_path_zip_resp.ok and zip_state == 'NONE' :
+                print("Zipping completed")
+                return check_path_zip_resp
+            else:
+                print("still zipping...")
+                time.sleep(1)
+            count+=1
+    else:
+        return response_object
