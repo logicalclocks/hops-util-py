@@ -115,7 +115,6 @@ def _prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, num_ps, e
             else:
                 exec_spec["task_type"] = "worker"
             exec_spec["host_port"] = host_port
-            exec_spec["gpus_present"] = devices.get_num_gpus() > 0
 
             client.register(exec_spec)
 
@@ -146,7 +145,7 @@ def _prepare_func(app_id, run_id, train_fn, local_logdir, server_addr, num_ps, e
 
             dist_logdir = experiment_utils._get_logdir(app_id, run_id) + '/logdir'
 
-            is_chief = (cluster["task"]["type"] == "chief")
+            is_chief = (cluster_spec["task"]["type"] == "chief")
             if is_chief:
                 hdfs.mkdir(dist_logdir)
                 tensorboard._register(dist_logdir, experiment_utils._get_logdir(app_id, run_id), executor_num, local_logdir=local_logdir)
