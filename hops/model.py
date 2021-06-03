@@ -121,7 +121,7 @@ def download_model(name, version=None, project_name=None, overwrite=False):
 
     Args:
         :name: name of the model
-        :version: version of the model. If ommitted, all versions of the model will be included in the archive.
+        :version: version of the model. If omitted, all versions of the model will be included in the archive.
         :project_name name of the project parent of the model. By default, this project is the current project running
         the experiment
         :overwrite: Whether to overwrite the model archive  file if it already exists
