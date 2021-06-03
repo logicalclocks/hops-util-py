@@ -127,7 +127,7 @@ def download_model(name, version=None, project_name=None, overwrite=False):
         :overwrite: Whether to overwrite the model archive  file if it already exists
 
     Returns:
-        A zip file containing the model artficats
+        A zip file containing the model artifacts
 
     Raises:
         :ModelArchiveExists: if the model archive that contains the model artifcats already exists
