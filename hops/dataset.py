@@ -336,10 +336,10 @@ def compress(remote_path, project_name=None, block=False, timeout=120):
     Returns:
         None
     """
-    _archive(remote_path, action='zip', block=block, project_name=project_name, timeout=timeout)
+    _archive(remote_path, project_name=project_name, block=block, timeout=timeout, action='zip')
 
 
-def extract(remote_path,  block=False, project_name=None, timeout=120):
+def extract(remote_path, project_name=None, block=False, timeout=120):
     """
     Extract the dir or file in Hopsworks, specified by the remote_path.
 
@@ -357,10 +357,10 @@ def extract(remote_path,  block=False, project_name=None, timeout=120):
     Returns:
         None
     """
-    _archive(remote_path, action='unzip', block=block, project_name=project_name, timeout=timeout)
+    _archive(remote_path, project_name=project_name, block=block, timeout=timeout, action='unzip')
 
 
-def _archive(remote_path, action='zip', block=False, project_name=None, timeout=120):
+def _archive(remote_path, project_name=None, block=False, timeout=120, action='zip'):
     """
     Create an archive (zip file) of a file or directory in a Hopsworks dataset.
 
