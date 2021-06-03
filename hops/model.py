@@ -109,9 +109,9 @@ def get_model(name, version, project_name=None):
 
 def download_model(name, version=None, project_name=None, overwrite=False):
     """
-    Download from the Hopsworks Models dataset an archive (zip file) containning the model artifcacts.
+    Download from the Hopsworks Models dataset an archive (zip file) containing the model artifacts.
     You first need to use the project.connect function to connect to Hopsworks.
-    If the Models dataset ths model resides in is a shared dataset from another project,
+    If the Models dataset where the model resides is a shared dataset from another project,
     then you need to specify the name of the project that owns the Models dataset was shared from.
 
     For example if you run this:
@@ -123,16 +123,16 @@ def download_model(name, version=None, project_name=None, overwrite=False):
 
     Args:
         :name: name of the model
-        :version: version of the model. If ommitted, all versions of the model will be included in the archive.
+        :version: version of the model. If omitted, all versions of the model will be included in the archive.
         :project_name name of the project parent of the model. By default, this project is the current project running
         the experiment
         :overwrite: Whether to overwrite the model archive  file if it already exists
 
     Returns:
-        A zip file containing the model artficats
+        A zip file containing the model artifacts
 
     Raises:
-        :ModelArchiveExists: if the model archive that contains the model artifcats already exists
+        :ModelArchiveExists: if the model archive that contains the model artifacts already exists
     """
     if project_name is None:
         project_name = hdfs.project_name()
