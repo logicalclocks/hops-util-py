@@ -117,6 +117,8 @@ def download_model(name, version=None, project_name=None, overwrite=False):
     For example if you run this:
 
     >>> from hops import model
+    >>> # If connecting from an external client, you need to connect to Hopsworks
+    >>> project.connect(...) # see project module for documentation
     >>> model.download_model('mnist')
 
     Args:
@@ -142,7 +144,6 @@ def download_model(name, version=None, project_name=None, overwrite=False):
         name += str(version)
     archive_path = model_dir + ".zip"
     name += ".zip"
-    print("archive_path:" + archive_path)
     if dataset.path_exists(archive_path):
         if overwrite:
             dataset.delete(archive_path, block=True)
