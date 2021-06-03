@@ -111,7 +111,7 @@ def download_model(name, version=None, project_name=None, overwrite=False):
     """
     Download from the Hopsworks Models dataset an archive (zip file) containing the model artifacts.
     You first need to use the project.connect function to connect to Hopsworks.
-    If the Models dataset ths model resides in is a shared dataset from another project,
+    If the Models dataset where the model resides is a shared dataset from another project,
     then you need to specify the name of the project that owns the Models dataset was shared from.
 
     For example if you run this:
