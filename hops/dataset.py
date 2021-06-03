@@ -331,7 +331,7 @@ def compress(remote_path, project_name=None, block=False, timeout=120):
         :remote_path: the path to the remote file or directory in the dataset
         :project_name: whether this method should wait for the zipping process to complete before returning.
         :block: whether to wait for the compression to complete or not.
-        :timeout: Number of seconds to wait for the compression to complete before returning.
+        :timeout: number of seconds to wait for the compression to complete before returning.
 
     Returns:
         None
