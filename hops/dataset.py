@@ -369,7 +369,7 @@ def _archive(remote_path, project_name=None, block=False, timeout=120, action='z
         :action: Allowed values are zip/unzip. Whether to compress/extract respectively.
         :block: whether this method should wait for the zipping process to complete before returning.
         :project_name: whether this method should wait for the zipping process to complete beefore returning.
-        :timeout: Number of seconds to wait for the action to complete before returning.
+        :timeout: number of seconds to wait for the action to complete before returning.
     Returns:
         None
     """
