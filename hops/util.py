@@ -142,6 +142,7 @@ def connect(host=None, port=443, scheme="https", hostname_verification=False,
             os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = get_secret(secrets_store, 'api-key', api_key_file)
         except APIKeyFileNotFound:
             warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
+            os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = api_key_file
 
     if trust_store_path is not None:
         os.environ[constants.ENV_VARIABLES.DOMAIN_CA_TRUSTSTORE_PEM_ENV_VAR] = trust_store_path
