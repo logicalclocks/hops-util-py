@@ -4,7 +4,7 @@ Model module is used for exporting, versioning, attaching metadata to models. In
 
 """
 
-from hops import constants, util, hdfs, project
+from hops import constants, util, hdfs, project, dataset
 from hops.experiment_impl.util import experiment_utils
 from hops.exceptions import RestAPIError
 import json
@@ -105,6 +105,56 @@ def get_model(name, version, project_name=None):
         return response_object
 
     raise ModelNotFound("No model with name: {} and version {} could be found".format(name, version))
+
+
+def download_model(name, version=None, project_name=None, overwrite=False):
+    """
+    Download from the Hopsworks Models dataset an archive (zip file) containing the model artifacts.
+    You first need to use the project.connect function to connect to Hopsworks.
+    If the Models dataset where the model resides is a shared dataset from another project,
+    then you need to specify the name of the project that owns the Models dataset was shared from.
+
+    For example if you run this:
+
+    >>> from hops import model
+    >>> # If connecting from an external client, you need to connect to Hopsworks
+    >>> project.connect(...) # see project module for documentation
+    >>> model.download_model('mnist')
+
+    Args:
+        :name: name of the model
+        :version: version of the model. If omitted, all versions of the model will be included in the archive.
+        :project_name name of the project parent of the model. By default, this project is the current project running
+        the experiment
+        :overwrite: Whether to overwrite the model archive  file if it already exists
+
+    Returns:
+        A zip file containing the model artifacts
+
+    Raises:
+        :ModelArchiveExists: if the model archive that contains the model artifacts already exists
+    """
+    if project_name is None:
+        project_name = hdfs.project_name()
+
+    # Check if model archive already exists and if it should be deleted, otherwise return an error
+    model_dir = '/Projects/' + project_name + "/Models/" + name
+    if version is not None:
+        model_dir += "/" + str(version)
+        name += str(version)
+    archive_path = model_dir + ".zip"
+    name += ".zip"
+    if dataset.path_exists(archive_path):
+        if overwrite:
+            dataset.delete(archive_path, block=True)
+        else:
+            raise ModelArchiveExists("Model archive file already exists at {}. Either set overwrite=True or remove the file manually.".format(archive_path))
+
+    print("Preparing the model archive...")
+    dataset.compress(model_dir, block=True, project_name=project_name)
+    print("Downloading the model archive...")
+    dataset.download(archive_path, file = name)
+
 
 def export(model_path, model_name, model_version=None, overwrite=False, metrics=None, description=None,
            synchronous=True, synchronous_timeout=120, project=None):
@@ -337,3 +387,7 @@ class Metric:
 
 class ModelNotFound(Exception):
     """This exception will be raised if the requested model could not be found"""
+
+
+class ModelArchiveExists(Exception):
+    """This exception will be raised if the model archive already exists."""
