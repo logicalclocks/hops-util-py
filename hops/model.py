@@ -130,7 +130,7 @@ def download_model(name, version=None, project_name=None, overwrite=False):
         A zip file containing the model artifacts
 
     Raises:
-        :ModelArchiveExists: if the model archive that contains the model artifcats already exists
+        :ModelArchiveExists: if the model archive that contains the model artifacts already exists
     """
     if project_name is None:
         project_name = hdfs.project_name()
