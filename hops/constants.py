@@ -517,6 +517,7 @@ class REST_CONFIG:
     JSON_SERVING_MODEL_VERSION = "modelVersion"
     JSON_SERVING_CREATED = "created"
     JSON_SERVING_REQUESTED_INSTANCES = "requestedInstances"
+    JSON_SERVING_PREDICTOR_RESOURCE_CONFIG = "predictorResourceConfig"
     JSON_SERVING_BATCHING_ENABLED = "batchingEnabled"
     JSON_SERVING_AVAILABLE_INSTANCES = "availableInstances"
     JSON_SERVING_KAFKA_TOPIC_DTO = "kafkaTopicDTO"
