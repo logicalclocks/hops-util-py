@@ -25,7 +25,7 @@ def exists(serving_name):
     """
     try:
         return get_id(serving_name) is not None
-    except ServingNotFound as e:
+    except ServingNotFound:
         print("No serving with name {} was found in the project {}".format(serving_name, hdfs.project_name()))
         return False
 
@@ -158,26 +158,35 @@ def _start_or_stop_serving_rest(serving_id, action):
                                                             response.reason, error_code, error_msg, user_msg))
 
 
-def create_or_update(serving_name, artifact_path, model_version=1, model_server=None, kfserving=False,
-                             batching_enabled = False, topic_name="CREATE",  num_partitions = 1, num_replicas = 1,
-                             instances = 1, predictor_resource_config=None):
+def create_or_update(serving_name, model_path, model_version=1, artifact_version=None, transformer=None, model_server=None, kfserving=None,
+                     batching_enabled=False, topic_name="CREATE", num_partitions=1, num_replicas=1, inference_logging=constants.MODEL_SERVING.INFERENCE_LOGGING_ALL,
+                     instances=1, transformer_instances=None, predictor_resource_config=None):
     """
     Creates a serving in Hopsworks if it does not exist, otherwise update the existing one.
     In case model server is not specified, it is inferred from the artifact files.
+    If a transformer is specified, KFServing is enabled by default.
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.create_or_update("mnist", "/Models/mnist", 1)
+    >>> serving.create_or_update("mnist", "/Models/mnist")
 
     Args:
         :serving_name: name of the serving to create
-        :artifact_path: path to the artifact to serve (tf model dir or python script implementing the Predict class)
+        :model_path: path to the artifact to serve (tf model dir or python script implementing the Predict class)
         :model_version: version of the model to serve
+        :artifact_version: version of the artifact to serve (Kubernetes only), e.g "CREATE", "MODEL-ONLY" or version number.
+        :transformer: path to the transformer script (python script implementing the Transformer class).
         :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for the inference requests
+        :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
+        :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
+        :num_replicas: if a new kafka topic is to created, replication factor of the new topic
+        :inference_logging: inference data to log into the Kafka topic, e.g "MODEL_INPUTS", "PREDICTIONS" or "ALL"
         :instances: the number of serving instances (the more instances the more inference requests can
+        be served in parallel)
+        :transformer_instances: the number of serving instances (the more instances the more inference requests can
         be served in parallel)
         :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
         example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
@@ -185,22 +194,27 @@ def create_or_update(serving_name, artifact_path, model_version=1, model_server=
     Returns:
           None
     """
-    serving_id = get_id(serving_name)
-    artifact_path = hdfs._expand_path(artifact_path)
+    model_path = hdfs._expand_path(model_path)
     if model_server is None:
-        model_server = _detect_model_server(artifact_path)
+        model_server = _detect_model_server(model_path)
+    if transformer is not None and kfserving is None:
+        kfserving = True
 
-    _validate_user_serving_input(serving_name, artifact_path, model_version, model_server, kfserving, batching_enabled,
-                                 topic_name, num_partitions, num_replicas, instances, predictor_resource_config)
-    artifact_path = hdfs.get_plain_path(artifact_path)
-    print("Creating serving {} for artifact {} ...".format(serving_name, artifact_path))
-    _create_or_update_serving_rest(serving_name, artifact_path, model_version, model_server, kfserving, batching_enabled,
-                                   topic_name, num_partitions, num_replicas, serving_id, instances, predictor_resource_config)
+    _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+                                 batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
+                                 predictor_resource_config)
+    model_path = hdfs.get_plain_path(model_path)
+    serving_id = get_id(serving_name)
+    print("Creating serving {} for artifact {} ...".format(serving_name, model_path))
+    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+                                   batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
+                                   predictor_resource_config)
     print("Serving {} successfully created".format(serving_name))
 
 
-def _validate_user_serving_input(serving_name, model_path, model_version, model_server, kfserving, batching_enabled, topic_name,
-                                 num_partitions, num_replicas, instances, predictor_resource_config):
+def _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+                                 batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
+                                 predictor_resource_config):
     """
     Validate user input on the client side before sending REST call to Hopsworks (additional validation will be done
     in the backend)
@@ -208,14 +222,20 @@ def _validate_user_serving_input(serving_name, model_path, model_version, model_
     Args:
         :serving_name: the name of the serving to create
         :model_path: path to the model or artifact being served
-        :model_version: version of the serving
+        :model_version: version of the model to serve
+        :artifact_version: version of the artifact to serve
+        :transformer: path to the transformer script
         :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
-        :num_partitions: kafka partitions
-        :num_replicas: kafka replicas
+        :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
+        :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
+        :num_replicas: if a new kafka topic is to created, replication factor of the new topic
+        :inference_logging: inference data to log into the Kafka topic, e.g "MODEL_INPUTS", "PREDICTIONS" or "ALL"
         :instances: the number of serving instances (the more instances the more inference requests can
-                    be served in parallel)
+        be served in parallel)
+        :transformer_instances: the number of transformer instances (the more instances the more inference requests can
+        be served in parallel)
         :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
         example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
 
@@ -235,6 +255,9 @@ def _validate_user_serving_input(serving_name, model_path, model_version, model_
     if model_server not in constants.MODEL_SERVING.MODEL_SERVERS:
         raise ValueError("The provided model_server: {} is not supported, supported "
                          "model servers are: {}".format(model_server, ",".join(constants.MODEL_SERVING.MODEL_SERVERS)))
+    if inference_logging is not None and inference_logging not in constants.MODEL_SERVING.INFERENCE_LOGGING_MODES:
+        raise ValueError("The provided inference_logging: {} is not supported, supported "
+                         "inference logging modes are: {}".format(inference_logging, ",".join(constants.MODEL_SERVING.INFERENCE_LOGGING_MODES)))
     if not isinstance(model_version, int):
         raise ValueError("The model version must be an integer, the provided version is not: {}".format(model_version))
     if model_server == constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING:
@@ -256,30 +279,47 @@ def _validate_user_serving_input(serving_name, model_path, model_version, model_
         raise ValueError("The number of serving instances must be an integer, "
                          "the provided version is not: {}".format(instances))
 
-    if predictor_resource_config is not None:
-      if type(predictor_resource_config) is not dict:
-        raise ValueError("predictor_resource_config must be a dict.")
-      if 'memory' not in predictor_resource_config or 'cores' not in predictor_resource_config:
-        raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
+    if not kfserving:
+        if inference_logging is not None and inference_logging != constants.MODEL_SERVING.INFERENCE_LOGGING_ALL:
+            raise ValueError("Fine-grained inference logging is only supported in KFServing deployments")
+        if topic_name is not None and topic_name != "NONE" and inference_logging != constants.MODEL_SERVING.INFERENCE_LOGGING_ALL:
+            raise ValueError("Inference logging mode 'ALL' is the only mode supported for non-KFServing deployments")
 
-def _create_or_update_serving_rest(serving_name, model_path, model_version, model_server, kfserving,
-                                   batching_enabled=None, topic_name=None, num_partitions=None,
-                                   num_replicas=None, serving_id=None, instances=1, predictor_resource_config=None):
+    if kfserving:
+        if topic_name is not None and topic_name != "NONE" and inference_logging is None:
+            raise ValueError("Inference logging must be defined. Supported inference "
+                             "logging modes are: {}".format(",".join(constants.MODEL_SERVING.INFERENCE_LOGGING_MODES)))
+
+    if predictor_resource_config is not None:
+        if type(predictor_resource_config) is not dict:
+            raise ValueError("predictor_resource_config must be a dict.")
+        if 'memory' not in predictor_resource_config or 'cores' not in predictor_resource_config:
+            raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
+
+
+def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+                                   batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
+                                   predictor_resource_config):
     """
     Makes a REST request to Hopsworks for creating or updating a model serving instance
 
     Args:
+        :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
         :serving_name: the name of the serving to create
         :model_path: path to the model or artifact being served
-        :model_version: version of the serving
+        :model_version: version of the model to serve
+        :artifact_version: version of the artifact to serve
+        :transformer: path to the transformer script
         :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
-        :topic_name: name of the kafka topic ("CREATE" to create a new one, or "NONE" to not use kafka topic)
-        :num_partitions: kafka partitions
-        :num_replicas: kafka replicas
-        :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
+        :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
+        :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
+        :num_replicas: if a new kafka topic is to created, replication factor of the new topic
+        :inference_logging: inference data to log into the Kafka topic, e.g "MODEL_INPUTS", "PREDICTIONS" or "ALL"
         :instances: the number of serving instances (the more instances the more inference requests can
+        be served in parallel)
+        :transformer_instances: the number of transformer instances (the more instances the more inference requests can
         be served in parallel)
         :predictor_resource_config: dict for setting resource configuration parameters required to serve the model, for
         example {'memory': 2048, 'cores': 1, 'gpus': 0}. Currently only supported if Hopsworks is deployed with Kubernetes installed.
@@ -294,23 +334,34 @@ def _create_or_update_serving_rest(serving_name, model_path, model_version, mode
     serving_tool = constants.MODEL_SERVING.SERVING_TOOL_KFSERVING if kfserving else constants.MODEL_SERVING.SERVING_TOOL_DEFAULT
 
     json_contents = {
-        constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION: model_version,
-        constants.REST_CONFIG.JSON_SERVING_ARTIFACT_PATH: model_path,
-        constants.REST_CONFIG.JSON_MODEL_SERVER: model_server,
-        constants.REST_CONFIG.JSON_SERVING_TOOL: serving_tool,
         constants.REST_CONFIG.JSON_SERVING_NAME: serving_name,
+        constants.REST_CONFIG.JSON_SERVING_MODEL_PATH: model_path,
+        constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION: model_version,
+        constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION: artifact_version,
+        constants.REST_CONFIG.JSON_SERVING_TRANSFORMER: transformer,
+        constants.REST_CONFIG.JSON_SERVING_MODEL_SERVER: model_server,
+        constants.REST_CONFIG.JSON_SERVING_TOOL: serving_tool,
         constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO: {
             constants.REST_CONFIG.JSON_KAFKA_TOPIC_NAME: topic_name,
             constants.REST_CONFIG.JSON_KAFKA_NUM_PARTITIONS: num_partitions,
             constants.REST_CONFIG.JSON_KAFKA_NUM_REPLICAS: num_replicas
         },
+        constants.REST_CONFIG.JSON_SERVING_INFERENCE_LOGGING: inference_logging,
         constants.REST_CONFIG.JSON_SERVING_REQUESTED_INSTANCES: instances,
+        constants.REST_CONFIG.JSON_SERVING_REQUESTED_TRANSFORMER_INSTANCES: transformer_instances,
         constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG: predictor_resource_config
     }
     if serving_id is not None:
         json_contents[constants.REST_CONFIG.JSON_SERVING_ID] = serving_id
     if model_server == constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING:
         json_contents[constants.REST_CONFIG.JSON_SERVING_BATCHING_ENABLED] = batching_enabled
+    if artifact_version == "CREATE":
+        json_contents[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION] = -1
+    elif artifact_version == "MODEL-ONLY":
+        json_contents[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION] = 0
+    if topic_name is None or topic_name == "NONE":
+        json_contents[constants.REST_CONFIG.JSON_SERVING_INFERENCE_LOGGING] = None
+
     json_embeddable = json.dumps(json_contents)
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
     method = constants.HTTP_CONFIG.HTTP_PUT
@@ -324,15 +375,15 @@ def _create_or_update_serving_rest(serving_name, model_path, model_version, mode
     if response.status_code != 201 and response.status_code != 200:
         response_object = response.json()
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
-        raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
+        raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n "
                                       "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                       "user msg: {}".format(resource_url, response.status_code, response.reason,
                                                             error_code, error_msg, user_msg))
 
 
-def _detect_model_server(artifact_path):
+def _detect_model_server(model_path):
     model_server = constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING
-    if artifact_path.endswith(".py"):
+    if model_path.endswith(".py"):
         model_server = constants.MODEL_SERVING.MODEL_SERVER_FLASK
     print("Inferring model server from artifact files: {}".format(model_server))
     return model_server
@@ -361,14 +412,14 @@ def get_id(serving_name):
         return None
 
 
-def get_artifact_path(serving_name):
+def get_model_path(serving_name):
     """
     Gets the artifact path of a serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_artifact_path(serving_name)
+    >>> serving.get_model_path(serving_name)
 
     Args:
         :serving_name: name of the serving to get the artifact path for
@@ -378,7 +429,67 @@ def get_artifact_path(serving_name):
     """
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
-    return serving.artifact_path
+    return serving.model_path
+
+
+def get_model_version(serving_name):
+    """
+    Gets the version of the model served by a given serving instance
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_model_version(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the version for
+
+    Returns:
+         the version of the model being served
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.model_version
+
+
+def get_artifact_version(serving_name):
+    """
+    Gets the version of the artifact served by a given serving instance
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_artifact_version(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the version for
+
+    Returns:
+         the version of the artifact being served
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.artifact_version
+
+
+def get_transformer(serving_name):
+    """
+    Gets the transformer filename used in a given serving instance
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_transformer(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the version for
+
+    Returns:
+         the transformer filename
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.transformer
 
 
 def get_model_server(serving_name):
@@ -391,7 +502,7 @@ def get_model_server(serving_name):
     >>> serving.get_model_server(serving_name)
 
     Args:
-        :serving_name: name of the serving to get the type for
+        :serving_name: name of the serving
 
     Returns:
          the model server (e.g Tensorflow Serving or Flask)
@@ -411,7 +522,7 @@ def get_serving_tool(serving_name):
     >>> serving.get_serving_tool(serving_name)
 
     Args:
-        :serving_name: name of the serving to get the mode for
+        :serving_name: name of the serving
 
     Returns:
          the serving tool (e.g DEFAULT or KFSERVING)
@@ -421,24 +532,25 @@ def get_serving_tool(serving_name):
     return serving.serving_tool
 
 
-def get_version(serving_name):
+def get_available_instances(serving_name):
     """
-    Gets the version of a serving with a given name
+    Gets the number of available instances of the serving with a given name
 
     Example use-case:
 
     >>> from hops import serving
-    >>> serving.get_version(serving_name)
+    >>> serving.get_available_instances(serving_name)
 
     Args:
-        :serving_name: name of the serving to get the version for
+        :serving_name: name of the serving
 
     Returns:
-         the version of the serving
+         number of available replicas (e.g int or (int, int) if the serving includes a transformer)
     """
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
-    return serving.model_version
+    return serving.available_instances if serving.available_transformer_instances is None \
+        else (serving.available_instances, serving.available_transformer_instances)
 
 
 def get_kafka_topic(serving_name):
@@ -480,6 +592,7 @@ def get_status(serving_name):
     serving = _find_serving_with_name(serving_name, servings)
     return serving.status
 
+
 def get_predictor_resource_config(serving_name):
     """
     Gets the predictor resource config of a serving with a given name
@@ -498,6 +611,24 @@ def get_predictor_resource_config(serving_name):
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.predictor_resource_config
+
+
+def describe(serving_name):
+    """
+    Describes the serving with a given name
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.describe(serving_name)
+
+    Args:
+        :serving_name: name of the serving
+
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    print(', '.join("%s: %s" % item for item in vars(serving).items()))
 
 
 def get_all():
@@ -576,8 +707,8 @@ def _get_servings_rest():
         raise exceptions.RestAPIError("Could not fetch list of servings from Hopsworks REST API (url: {}), "
                                       "server response: \n "
                                       "HTTP code: {}, HTTP reason: {}, error code: {}, "
-                                      "error msg: {}, user msg: {}".format(
-            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+                                      "error msg: {}, user msg: {}".format(resource_url, response.status_code, response.reason,
+                                                                           error_code, error_msg, user_msg))
     return response_object
 
 
@@ -599,6 +730,7 @@ def make_inference_request(serving_name, data, verb=":predict"):
         the JSON response
     """
     return _make_inference_request_rest(serving_name, data, verb)
+
 
 def _make_inference_request_rest(serving_name, data, verb):
     """
@@ -623,18 +755,19 @@ def _make_inference_request_rest(serving_name, data, verb):
                     constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
                     hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_INFERENCE_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
-                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER
-                    + serving_name + verb)
+                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    serving_name + verb)
     response = util.send_request(method, resource_url, data=json_embeddable, headers=headers)
     response_object = response.json()
     error_code, error_msg, user_msg = util._parse_rest_error(response_object)
 
     if response.status_code != 201 and response.status_code != 200:
-        raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n " \
+        raise exceptions.RestAPIError("Could not create or update serving (url: {}), server response: \n "
                                       "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                       "user msg: {}".format(resource_url, response.status_code, response.reason,
                                                             error_code, error_msg, user_msg))
     return response_object
+
 
 class Serving(object):
     """
@@ -648,20 +781,33 @@ class Serving(object):
         Args:
             :feature_json: JSON data about the feature returned from Hopsworks REST API
         """
-        self.status = serving_json[constants.REST_CONFIG.JSON_SERVING_STATUS]
-        self.artifact_path = serving_json[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_PATH]
+        self.id = serving_json[constants.REST_CONFIG.JSON_SERVING_ID]
         self.name = serving_json[constants.REST_CONFIG.JSON_SERVING_NAME]
-        self.creator = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATOR]
-        self.model_server = serving_json[constants.REST_CONFIG.JSON_MODEL_SERVER]
-        self.serving_tool = serving_json[constants.REST_CONFIG.JSON_SERVING_TOOL]
+        self.model_path = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_PATH]
         self.model_version = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION]
-        self.created = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATED]
+        self.artifact_version = serving_json[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION] \
+            if constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION in serving_json \
+            else None
+        self.transformer = serving_json[constants.REST_CONFIG.JSON_SERVING_TRANSFORMER] \
+            if constants.REST_CONFIG.JSON_SERVING_TRANSFORMER in serving_json \
+            else None
+        self.model_server = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_SERVER]
+        self.serving_tool = serving_json[constants.REST_CONFIG.JSON_SERVING_TOOL]
         self.requested_instances = serving_json[constants.REST_CONFIG.JSON_SERVING_REQUESTED_INSTANCES]
+        self.available_instances = serving_json[constants.REST_CONFIG.JSON_SERVING_AVAILABLE_INSTANCES] \
+            if constants.REST_CONFIG.JSON_SERVING_AVAILABLE_INSTANCES in serving_json \
+            else 0
+        self.available_transformer_instances = serving_json[constants.REST_CONFIG.JSON_SERVING_AVAILABLE_TRANSFORMER_INSTANCES] \
+            if constants.REST_CONFIG.JSON_SERVING_AVAILABLE_TRANSFORMER_INSTANCES in serving_json \
+            else None
         if constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG in serving_json:
-          self.predictor_resource_config = serving_json[constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG]
+            self.predictor_resource_config = serving_json[constants.REST_CONFIG.JSON_SERVING_PREDICTOR_RESOURCE_CONFIG]
+        self.creator = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATOR]
+        self.created = serving_json[constants.REST_CONFIG.JSON_SERVING_CREATED]
+        self.status = serving_json[constants.REST_CONFIG.JSON_SERVING_STATUS]
+
         if constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO in serving_json:
             self.kafka_topic_dto = kafka.KafkaTopicDTO(serving_json[constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO])
-        self.id = serving_json[constants.REST_CONFIG.JSON_SERVING_ID]
 
 
 class ServingNotFound(Exception):
