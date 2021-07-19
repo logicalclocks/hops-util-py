@@ -12,14 +12,6 @@ Subpackages
 Submodules
 ----------
 
-hops.beam module
-----------------
-
-.. automodule:: hops.beam
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 hops.constants module
 ---------------------
 
