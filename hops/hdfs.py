@@ -213,7 +213,7 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
         project = project_name()
 
     # Absolute path
-    if local_path.startswith(os.getcwd()):
+    if os.path.isabs(local_path):
         full_local = local_path
     else:
         full_local = os.getcwd() + '/' + local_path
