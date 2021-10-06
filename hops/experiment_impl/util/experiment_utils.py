@@ -224,8 +224,9 @@ def _cleanup(tensorboard, gpu_thread):
 
     # Stop the gpu monitoring thread
     try:
-        gpu_thread.do_run = False
-        gpu_thread.join(timeout = 20)
+        if gpu_thread is not None and gpu_thread.is_alive():
+            gpu_thread.do_run = False
+            gpu_thread.join(timeout = 20)
     except Exception as err:
         print('Exception occurred while stopping GPU monitoring thread: {}'.format(err))
         pass
