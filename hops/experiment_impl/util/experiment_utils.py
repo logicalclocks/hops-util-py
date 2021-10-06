@@ -222,18 +222,20 @@ def _cleanup(tensorboard, gpu_thread):
     finally:
         tensorboard._reset_global()
 
+    # Stop the gpu monitoring thread
+    try:
+        if gpu_thread is not None and gpu_thread.is_alive():
+            gpu_thread.do_run = False
+            gpu_thread.join(timeout = 20)
+    except Exception as err:
+        print('Exception occurred while stopping GPU monitoring thread: {}'.format(err))
+        pass
+
     # Close and logging fd and flush
     try:
         _close_logger()
     except Exception as err:
         print('Exception occurred while closing logger: {}'.format(err))
-        pass
-
-    # Stop the gpu monitoring thread
-    try:
-        gpu_thread.do_run = False
-    except Exception as err:
-        print('Exception occurred while stopping GPU monitoring thread: {}'.format(err))
         pass
 
 def _store_local_tensorboard(local_tb_path, hdfs_exec_logdir):
