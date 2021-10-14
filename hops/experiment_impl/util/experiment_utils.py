@@ -469,6 +469,7 @@ def _attach_model_xattr(ml_id, json_data):
         None
 
     """
+
     headers = {'Content-type': 'application/json'}
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
@@ -476,6 +477,11 @@ def _attach_model_xattr(ml_id, json_data):
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    ml_id
+
+    if constants.ENV_VARIABLES.JOB_NAME_ENV_VAR in os.environ:
+        resource_url = resource_url + "?jobName=" + os.environ[constants.ENV_VARIABLES.JOB_NAME_ENV_VAR]
+    elif constants.ENV_VARIABLES.KERNEL_ID_ENV_VAR in os.environ:
+        resource_url = resource_url + "?kernelId=" + os.environ[constants.ENV_VARIABLES.KERNEL_ID_ENV_VAR]
 
     response = util.send_request('PUT', resource_url, data=json_data, headers=headers)
     response_object = response.json()

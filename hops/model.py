@@ -17,6 +17,17 @@ from six import string_types
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
 
+import warnings
+
+warnings.warn(
+    "The `model` module was deprecated with the "
+    "introduction of the new `HSML` client library to interact with the Hopsworks "
+    "Model Registry. It is recommended to use the new hsml library. "
+    "Please see: https://docs.hopsworks.ai/machine-learning-api/latest/",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 def get_best_model(name, metric, direction):
     """
     Get the best model version by sorting on attached metadata such as model accuracy.
@@ -273,14 +284,6 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
 
     print("Exported model " + model_name + " as version " + str(model_version) + " successfully.")
 
-    jobName=None
-    if constants.ENV_VARIABLES.JOB_NAME_ENV_VAR in os.environ:
-        jobName = os.environ[constants.ENV_VARIABLES.JOB_NAME_ENV_VAR]
-
-    kernelId=None
-    if constants.ENV_VARIABLES.KERNEL_ID_ENV_VAR in os.environ:
-        kernelId = os.environ[constants.ENV_VARIABLES.KERNEL_ID_ENV_VAR]
-
     # Attach modelName_modelVersion to experiment directory
     if project is None:
         model_project_name = hdfs.project_name()
@@ -289,7 +292,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     experiment_project_name = hdfs.project_name()
     model_summary = { 'name': model_name, 'projectName': model_project_name, 'version': model_version, 'metrics':  metrics,
                       'experimentId': None, 'experimentProjectName': experiment_project_name,
-                      'description':  description, 'jobName': jobName, 'kernelId': kernelId }
+                      'description':  description}
     if 'ML_ID' in os.environ:
         model_summary['experimentId'] = os.environ['ML_ID']
         # Attach link from experiment to model
