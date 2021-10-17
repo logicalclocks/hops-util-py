@@ -403,6 +403,134 @@ def _archive(remote_path, project_name=None, block=False, timeout=120, action='z
         raise CompressTimeout("Timeout of {} seconds exceeded while compressing {}.".format(timeout, remote_path))
 
 
+def get_tags(remote_path):
+    """
+    Makes a REST call to Hopsworks to get tags attached to a dataset
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset
+    Returns:
+        A dictionary containing the tags
+    """
+    method = constants.HTTP_CONFIG.HTTP_GET
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    project_id = project.project_id_as_shared(None)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    "all" + constants.DELIMITERS.SLASH_DELIMITER +
+                    remote_path)
+    response = util.send_request(method, resource_url, headers=headers)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    tags = {}
+    if "items" in response_object:
+        for tag in response_object["items"]:
+            if ("name" in tag) and ("value" in tag) :
+                tags[tag["name"]] = tag["value"]
+
+    return tags
+
+
+def get_tag(remote_path, tag_name):
+    """
+    Makes a REST call to Hopsworks to get a named tag attached to a dataset/dir
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset
+        :tag_name: the name of the tag
+    """
+    method = constants.HTTP_CONFIG.HTTP_GET
+    headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    project_id = project.project_id_as_shared(None)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    "schema" + constants.DELIMITERS.SLASH_DELIMITER + tag_name + constants.DELIMITERS.SLASH_DELIMITER +
+                    remote_path)
+    response = util.send_request(method, resource_url, headers=headers)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not get tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+    tag = {}
+    if ("name" in response_object) and ("value" in response_object) :
+        tag[response_object["name"]] = response_object["value"]
+    return tag
+
+
+def add_tag(remote_path, tag_name, tag_value):
+    """
+    Makes a REST call to Hopsworks to attach tags to a dataset
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset
+        :tag_name: name of the tag to attach
+        :tag_value: value of the tag in json format
+    Returns:
+        None
+    """
+    method = constants.HTTP_CONFIG.HTTP_PUT
+    project_id = project.project_id_as_shared(None)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    "schema" + constants.DELIMITERS.SLASH_DELIMITER + tag_name + constants.DELIMITERS.SLASH_DELIMITER +
+                    remote_path)
+
+    headers = {"content-type": "application/json"}
+    json_value = json.dumps(tag_value)
+    response = util.send_request(method, resource_url, headers=headers, data=json_value)
+    response_object = response.json()
+    if response.status_code >= 400:
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not attach tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+
+def remove_tag(remote_path, tag_name):
+    """
+    Makes a REST call to Hopsworks to delete tags attached to a dataset
+    Args:
+        :remote_path: the path to the remote file or directory in the dataset
+        :tag_name: name of the tag to attach
+    Returns:
+        None
+    """
+    method = constants.HTTP_CONFIG.HTTP_DELETE
+    project_id = project.project_id_as_shared(None)
+    resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    project_id + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    constants.REST_CONFIG.HOPSWORKS_DATASETS_TAGS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
+                    "schema" + constants.DELIMITERS.SLASH_DELIMITER + tag_name + constants.DELIMITERS.SLASH_DELIMITER +
+                    remote_path)
+    response = util.send_request(method, resource_url)
+    if response.status_code >= 400:
+        response_object = response.json()
+        error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+        raise RestAPIError("Could not remove tags (url: {}), server response: \n " \
+                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+
+
 class CompressTimeout(Exception):
     """This exception will be raised if the compression of a path times out."""
 
