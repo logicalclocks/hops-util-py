@@ -25,7 +25,6 @@ warnings.warn(
     "Model Registry. It is recommended to use the new hsml library. "
     "Please see: https://docs.hopsworks.ai/machine-learning-api/latest/",
     DeprecationWarning,
-    stacklevel=2,
 )
 
 def get_best_model(name, metric, direction):
