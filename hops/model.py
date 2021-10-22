@@ -22,7 +22,7 @@ import warnings
 warnings.warn(
     "The `model` module was deprecated with the "
     "introduction of the new `HSML` client library to interact with the Hopsworks "
-    "Model Registry. It is recommended to use the new hsml library. "
+    "Model Registry. It is recommended to use the new hsml library as this model module will be removed in a future release. "
     "Please see: https://docs.hopsworks.ai/machine-learning-api/latest/",
     DeprecationWarning,
 )
