@@ -18,6 +18,9 @@ import subprocess
 import ntpath
 import importlib
 
+import logging
+log = logging.getLogger(__name__)
+
 # Compatibility with SageMaker
 pydoop_available = True
 try:
@@ -226,12 +229,12 @@ def copy_to_hdfs(local_path, relative_hdfs_path, overwrite=False, project=None):
             # delete hdfs path since overwrite flag was set to true
             delete(hdfs_path, recursive=True)
 
-    print("Started copying local path {} to hdfs path {}\n".format(local_path, hdfs_path))
+    log.debug("Started copying local path {} to hdfs path {}\n".format(local_path, hdfs_path))
 
     # copy directories from local path to HDFS project path
     hdfs.put(full_local, hdfs_path)
 
-    print("Finished copying\n")
+    log.debug("Finished copying\n")
 
 
 def delete(hdfs_path, recursive=False):
@@ -310,7 +313,7 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
     if os.path.isfile(full_local) and not overwrite:
         sz = os.path.getsize(full_local)
         if hdfs_size == sz:
-            print("File " + project_hdfs_path + " is already localized, skipping download...")
+            log.info("File " + project_hdfs_path + " is already localized, skipping download...")
             return full_local
         else:
             os.remove(full_local)
@@ -319,13 +322,13 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
         try:
             localized = _is_same_directory(full_local, project_hdfs_path)
             if localized:
-                print("Full directory subtree already on local disk and unchanged. Set overwrite=True to force download")
+                log.info("Full directory subtree already on local disk and unchanged. Set overwrite=True to force download")
                 return full_local
             else:
                 shutil.rmtree(full_local)
         except Exception as e:
-            print("Failed while checking directory structure to avoid re-downloading dataset, falling back to downloading")
-            print(e)
+            log.error("Failed while checking directory structure to avoid re-downloading dataset, falling back to downloading")
+            log.error(e)
             shutil.rmtree(full_local)
 
     if hdfs_size > free_space_bytes:
@@ -337,11 +340,11 @@ def copy_to_local(hdfs_path, local_path="", overwrite=False, project=None):
         elif os.path.isfile(full_local):
             os.remove(full_local)
 
-    print("Started copying " + project_hdfs_path + " to local disk on path " + local_dir + "\n")
+    log.debug("Started copying " + project_hdfs_path + " to local disk on path " + local_dir + "\n")
 
     hdfs.get(project_hdfs_path, local_dir)
 
-    print("Finished copying\n")
+    log.debug("Finished copying\n")
 
     return full_local
 
@@ -861,7 +864,7 @@ def _reload(path):
         imported_module = importlib.import_module(module_name)
         importlib.reload(imported_module)
     except Exception as err:
-        print('Failed to automatically reload module on path {} with exception: {}'.format(path, err))
+        log.error('Failed to automatically reload module on path {} with exception: {}'.format(path, err))
 
 def is_tls_enabled():
     """

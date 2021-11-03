@@ -12,6 +12,8 @@ import time
 from hops import constants, util, project
 from hops.exceptions import RestAPIError
 
+import logging
+log = logging.getLogger(__name__)
 
 class HTTPUpload:
     size_last_chunk = 0
@@ -102,7 +104,7 @@ class HTTPUpload:
                                 self.resource, response.status_code, response.reason, error_code, error_msg, user_msg))
 
         progress = round(self.params['flowChunkNumber'] / self.params['flowTotalChunks'] * 100, 3)
-        print("Progress: " + str(progress) + "%")
+        log.info("Progress: " + str(progress) + "%")
         self.params['flowChunkNumber'] += 1
 
     def _read_chunk(self, chunk_size=1024):
@@ -162,15 +164,15 @@ class HTTPDownload:
                 downloaded = 0
                 file_size = response.headers.get('Content-Length')
                 if not file_size:
-                    print("Downloading file ...", end=" ")
+                    log.debug("Downloading file ...", end=" ")
                 for chunk in response.iter_content(chunk_size=self.chunk_size):
                     f.write(chunk)
                     downloaded += len(chunk)
                     if file_size:
                         progress = round(downloaded / int(file_size) * 100, 3)
-                        print("Progress: " + str(progress) + "%")
+                        log.info("Progress: " + str(progress) + "%")
                 if not file_size:
-                    print("DONE")
+                    log.debug("DONE")
     
 
 def upload(file, remote_path, chunk_size=None):
@@ -310,7 +312,7 @@ def delete(remote_path, project_name=None, block=True, timeout=30):
     if block:
         count = 0
         while count < timeout and path_exists(remote_path, project_name):
-            print("Waiting for deletion...")
+            log.debug("Waiting for deletion...")
             count += 1
             time.sleep(1)
 
@@ -394,10 +396,10 @@ def _archive(remote_path, project_name=None, block=False, timeout=120, action='z
             zip_state = dir_status['zipState'] if 'zipState' in dir_status else None
 
             if zip_exists and zip_state == 'NONE' :
-                print("Zipping completed.")
+                log.info("Zipping completed.")
                 return
             else:
-                print("Zipping...")
+                log.info("Zipping...")
                 time.sleep(1)
             count += 1
         raise CompressTimeout("Timeout of {} seconds exceeded while compressing {}.".format(timeout, remote_path))
