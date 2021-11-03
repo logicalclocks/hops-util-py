@@ -6,6 +6,8 @@ Utility functions to manage users in Hopsworks.
 import json
 from hops import constants, util
 
+import logging
+log = logging.getLogger(__name__)
 
 def create_user(new_user):
     """
@@ -65,4 +67,4 @@ def create_user(new_user):
                          headers=headers,
                          method=constants.HTTP_CONFIG.HTTP_PUT,
                          data=json.dumps(user_profile))
-    print(response)
+    log.info(response)
