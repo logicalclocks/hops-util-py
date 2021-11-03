@@ -23,6 +23,9 @@ from hops.experiment_impl.util import experiment_utils
 from hops.experiment_impl.distribute import parameter_server as ps_impl, mirrored as mirrored_impl
 from hops import util
 
+import logging
+log = logging.getLogger(__name__)
+
 import time
 import atexit
 import json
@@ -549,7 +552,7 @@ def _exception_handler(duration):
             exp_ml_id = app_id + "_" + str(run_id)
             experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'FULL_UPDATE')
     except Exception as err:
-        print(err)
+        log.error(err)
         pass
 
 def _exit_handler():
@@ -566,7 +569,7 @@ def _exit_handler():
             exp_ml_id = app_id + "_" + str(run_id)
             experiment_utils._attach_experiment_xattr(exp_ml_id, experiment_json, 'FULL_UPDATE')
     except Exception as err:
-        print(err)
+        log.error(err)
         pass
 
 def _start_run():

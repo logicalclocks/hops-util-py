@@ -3,9 +3,14 @@ Utility functions to export models to the Models dataset and get information abo
 in the project.
 """
 
+
+
 from hops import hdfs, constants, util, exceptions, kafka
 import json
 import re
+
+import logging
+log = logging.getLogger(__name__)
 
 
 def exists(serving_name):
@@ -26,7 +31,7 @@ def exists(serving_name):
     try:
         return get_id(serving_name) is not None
     except ServingNotFound:
-        print("No serving with name {} was found in the project {}".format(serving_name, hdfs.project_name()))
+        log.info("No serving with name {} was found in the project {}".format(serving_name, hdfs.project_name()))
         return False
 
 
@@ -46,9 +51,9 @@ def delete(serving_name):
         None
     """
     serving_id = get_id(serving_name)
-    print("Deleting serving with name: {}...".format(serving_name))
+    log.debug("Deleting serving with name: {}...".format(serving_name))
     _delete_serving_rest(serving_id)
-    print("Serving with name: {} successfully deleted".format(serving_name))
+    log.info("Serving with name: {} successfully deleted".format(serving_name))
 
 
 def _delete_serving_rest(serving_id):
@@ -99,9 +104,9 @@ def start(serving_name):
         None
     """
     serving_id = get_id(serving_name)
-    print("Starting serving with name: {}...".format(serving_name))
+    log.debug("Starting serving with name: {}...".format(serving_name))
     _start_or_stop_serving_rest(serving_id, constants.MODEL_SERVING.SERVING_ACTION_START)
-    print("Serving with name: {} successfully started".format(serving_name))
+    log.info("Serving with name: {} successfully started".format(serving_name))
 
 
 def stop(serving_name):
@@ -120,9 +125,9 @@ def stop(serving_name):
         None
     """
     serving_id = get_id(serving_name)
-    print("Stopping serving with name: {}...".format(serving_name))
+    log.debug("Stopping serving with name: {}...".format(serving_name))
     _start_or_stop_serving_rest(serving_id, constants.MODEL_SERVING.SERVING_ACTION_STOP)
-    print("Serving with name: {} successfully stopped".format(serving_name))
+    log.info("Serving with name: {} successfully stopped".format(serving_name))
 
 
 def _start_or_stop_serving_rest(serving_id, action):
@@ -205,11 +210,11 @@ def create_or_update(serving_name, model_path, model_version=1, artifact_version
                                  predictor_resource_config)
     model_path = hdfs.get_plain_path(model_path)
     serving_id = get_id(serving_name)
-    print("Creating serving {} for artifact {} ...".format(serving_name, model_path))
+    log.debug("Creating serving {} for artifact {} ...".format(serving_name, model_path))
     _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config)
-    print("Serving {} successfully created".format(serving_name))
+    log.info("Serving {} successfully created".format(serving_name))
 
 
 def _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
@@ -385,7 +390,7 @@ def _detect_model_server(model_path):
     model_server = constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING
     if model_path.endswith(".py"):
         model_server = constants.MODEL_SERVING.MODEL_SERVER_FLASK
-    print("Inferring model server from artifact files: {}".format(model_server))
+    log.debug("Inferring model server from artifact files: {}".format(model_server))
     return model_server
 
 
@@ -628,7 +633,7 @@ def describe(serving_name):
     """
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
-    print(', '.join("%s: %s" % item for item in vars(serving).items()))
+    log.info(', '.join("%s: %s" % item for item in vars(serving).items()))
 
 
 def get_all():
