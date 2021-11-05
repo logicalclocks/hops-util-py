@@ -200,19 +200,24 @@ def create_or_update(serving_name, model_path, model_version=1, artifact_version
     if transformer is not None and kfserving is None:
         kfserving = True
 
-    _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+    plain_model_path = hdfs.get_plain_path(model_path)
+
+    # Path will be /Projects/projectName/Models/modelName
+    model_name = re.split("/+", plain_model_path)[4]
+
+    _validate_user_serving_input(serving_name, model_path, model_name, model_version, artifact_version, transformer, model_server, kfserving,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config)
-    model_path = hdfs.get_plain_path(model_path)
+
     serving_id = get_id(serving_name)
-    print("Creating serving {} for artifact {} ...".format(serving_name, model_path))
-    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+    print("Creating serving {} for artifact {} ...".format(serving_name, plain_model_path))
+    _create_or_update_serving_rest(serving_id, serving_name, plain_model_path, model_name, model_version, artifact_version, transformer, model_server, kfserving,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config)
     print("Serving {} successfully created".format(serving_name))
 
 
-def _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+def _validate_user_serving_input(serving_name, model_path, model_name, model_version, artifact_version, transformer, model_server, kfserving,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config):
     """
@@ -222,6 +227,7 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
     Args:
         :serving_name: the name of the serving to create
         :model_path: path to the model or artifact being served
+        :model_name: name of the model to serve
         :model_version: version of the model to serve
         :artifact_version: version of the artifact to serve
         :transformer: path to the transformer script
@@ -258,6 +264,8 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
     if inference_logging is not None and inference_logging not in constants.MODEL_SERVING.INFERENCE_LOGGING_MODES:
         raise ValueError("The provided inference_logging: {} is not supported, supported "
                          "inference logging modes are: {}".format(inference_logging, ",".join(constants.MODEL_SERVING.INFERENCE_LOGGING_MODES)))
+    if not isinstance(model_name, str):
+        raise ValueError("The model name must be an string, the provided name is not: {}".format(model_name))
     if not isinstance(model_version, int):
         raise ValueError("The model version must be an integer, the provided version is not: {}".format(model_version))
     if model_server == constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING:
@@ -297,7 +305,7 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
             raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
 
 
-def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_name, model_version, artifact_version, transformer, model_server, kfserving,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config):
     """
@@ -307,6 +315,7 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_v
         :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
         :serving_name: the name of the serving to create
         :model_path: path to the model or artifact being served
+        :model_name: name of the model to serve
         :model_version: version of the model to serve
         :artifact_version: version of the artifact to serve
         :transformer: path to the transformer script
@@ -336,6 +345,7 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_v
     json_contents = {
         constants.REST_CONFIG.JSON_SERVING_NAME: serving_name,
         constants.REST_CONFIG.JSON_SERVING_MODEL_PATH: model_path,
+        constants.REST_CONFIG.JSON_SERVING_MODEL_NAME: model_name,
         constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION: model_version,
         constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION: artifact_version,
         constants.REST_CONFIG.JSON_SERVING_TRANSFORMER: transformer,

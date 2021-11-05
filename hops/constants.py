@@ -516,6 +516,7 @@ class REST_CONFIG:
     JSON_SERVING_ID = "id"
     JSON_SERVING_NAME = "name"
     JSON_SERVING_MODEL_PATH = "modelPath"
+    JSON_SERVING_MODEL_NAME = "modelName"
     JSON_SERVING_MODEL_VERSION = "modelVersion"
     JSON_SERVING_MODEL_SERVER = "modelServer"
     JSON_SERVING_TOOL = "servingTool"
