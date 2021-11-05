@@ -3,11 +3,11 @@ Utility functions to export models to the Models dataset and get information abo
 in the project.
 """
 
-
-
-from hops import hdfs, constants, util, exceptions, kafka
+import os
 import json
 import re
+
+from hops import hdfs, constants, util, exceptions, kafka
 
 import logging
 log = logging.getLogger(__name__)
@@ -394,6 +394,29 @@ def _detect_model_server(model_path):
     return model_server
 
 
+def get(serving_name):
+    """
+    Gets the serving with a given name
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get
+
+    Returns:
+         the serving, None if Serving does not exist
+    """
+    try:
+        servings = get_all()
+        serving = _find_serving_with_name(serving_name, servings)
+        return serving
+    except ServingNotFound:
+        return None
+
+
 def get_id(serving_name):
     """
     Gets the id of a serving with a given name
@@ -435,6 +458,7 @@ def get_model_path(serving_name):
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
     return serving.model_path
+
 
 def get_model_name(serving_name):
     """
@@ -637,6 +661,34 @@ def get_predictor_resource_config(serving_name):
     return serving.predictor_resource_config
 
 
+def get_internal_endpoints(serving_name):
+    """
+    Gets the internal endpoints of a serving with a given name
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_internal_endpoints(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the internal endoints for
+
+    Returns:
+         internal endpoints
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)    
+    if serving.internal_path is None:
+        return None
+
+    protocol = "http"
+    endpoints = []
+    for ip in serving.internal_ips:
+        endpoints.append(protocol + "://" + ip + ":" + serving.internal_port)
+
+    return endpoints
+
+
 def describe(serving_name):
     """
     Describes the serving with a given name
@@ -772,7 +824,11 @@ def _make_inference_request_rest(serving_name, data, verb):
         :RestAPIError: if there was an error with the REST call to Hopsworks
     """
     json_embeddable = json.dumps(data)
+
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+    if constants.ENV_VARIABLES.SERVING_API_KEY_ENV_VAR in os.environ:
+        headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + os.environ[constants.ENV_VARIABLES.SERVING_API_KEY_ENV_VAR]
+
     method = constants.HTTP_CONFIG.HTTP_POST
     resource_url = (constants.DELIMITERS.SLASH_DELIMITER +
                     constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER +
@@ -833,6 +889,17 @@ class Serving(object):
 
         if constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO in serving_json:
             self.kafka_topic_dto = kafka.KafkaTopicDTO(serving_json[constants.REST_CONFIG.JSON_SERVING_KAFKA_TOPIC_DTO])
+
+        if constants.REST_CONFIG.JSON_SERVING_EXTERNAL_IP in serving_json:
+            self.external_ip = serving_json[constants.REST_CONFIG.JSON_SERVING_EXTERNAL_IP]
+        if constants.REST_CONFIG.JSON_SERVING_EXTERNAL_PORT in serving_json:
+            self.external_port = serving_json[constants.REST_CONFIG.JSON_SERVING_EXTERNAL_PORT]
+        if constants.REST_CONFIG.JSON_SERVING_INTERNAL_IPS in serving_json:
+            self.internal_ips = serving_json[constants.REST_CONFIG.JSON_SERVING_INTERNAL_IPS]
+        if constants.REST_CONFIG.JSON_SERVING_INTERNAL_PORT in serving_json:
+            self.internal_port = serving_json[constants.REST_CONFIG.JSON_SERVING_INTERNAL_PORT]
+        if constants.REST_CONFIG.JSON_SERVING_INTERNAL_PATH in serving_json:
+            self.internal_path = serving_json[constants.REST_CONFIG.JSON_SERVING_INTERNAL_PATH]
 
 
 class ServingNotFound(Exception):

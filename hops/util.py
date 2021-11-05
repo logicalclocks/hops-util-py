@@ -140,6 +140,8 @@ def connect(host=None, port=443, scheme="https", hostname_verification=False,
     else:
         try:
             os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = get_secret(secrets_store, 'api-key', api_key_file)
+            if constants.ENV_VARIABLES.SERVING_API_KEY_ENV_VAR not in os.environ:
+                os.environ[constants.ENV_VARIABLES.SERVING_API_KEY_ENV_VAR] = os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR]
         except APIKeyFileNotFound:
             warnings.warn("API key file was not found. Will use the provided api_key value as the API key")
             os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR] = api_key_file
@@ -157,6 +159,9 @@ def set_auth_header(headers):
     Args:
         http headers
     """
+    if constants.HTTP_CONFIG.HTTP_AUTHORIZATION in headers:
+        return  # auth header already set
+
     if constants.ENV_VARIABLES.API_KEY_ENV_VAR in os.environ:
         headers[constants.HTTP_CONFIG.HTTP_AUTHORIZATION] = "ApiKey " + \
             os.environ[constants.ENV_VARIABLES.API_KEY_ENV_VAR]
