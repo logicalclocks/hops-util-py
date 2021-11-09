@@ -784,6 +784,7 @@ class Serving(object):
         self.id = serving_json[constants.REST_CONFIG.JSON_SERVING_ID]
         self.name = serving_json[constants.REST_CONFIG.JSON_SERVING_NAME]
         self.model_path = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_PATH]
+        self.model_name = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_NAME]
         self.model_version = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION]
         self.artifact_version = serving_json[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION] \
             if constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION in serving_json \
