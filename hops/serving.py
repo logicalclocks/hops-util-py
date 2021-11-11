@@ -431,6 +431,25 @@ def get_model_path(serving_name):
     serving = _find_serving_with_name(serving_name, servings)
     return serving.model_path
 
+def get_model_name(serving_name):
+    """
+    Gets the name of the model served by a given serving instance
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_model_name(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the model name for
+
+    Returns:
+         the name of the model being served
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.model_version
+
 
 def get_model_version(serving_name):
     """
