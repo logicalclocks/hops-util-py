@@ -56,6 +56,31 @@ def _init_logger(exec_logdir, role=None, index=None):
 
     return logfile.replace(hdfs.project_path(), '')
 
+def get_model_registry_id(project_name):
+    model_registry_id = None
+    if project_name is None:
+        return hdfs.project_id()
+    else:
+        headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
+        resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
+                       constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                       constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                       hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                       constants.REST_CONFIG.HOPSWORKS_MODEL_REGISTRY_RESOURCE
+
+        response = util.send_request('GET', resource_url, headers=headers)
+        response_object = response.json()
+        if response.status_code >= 400:
+            error_code, error_msg, user_msg = util._parse_rest_error(response_object)
+            raise RestAPIError("Could not get model registries (url: {}), server response: \n "
+                               "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}"
+                .format(resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+        else:
+            for registry in response_object['items']:
+                if registry['name'] == project_name:
+                    return registry['id']
+            raise RestAPIError('Could not find model registry shared from project {}'.format(project_name))
+
 def log(log_entry):
     """
     Logs a string to the log file
@@ -457,7 +482,7 @@ def _attach_experiment_xattr(ml_id, json_data, op_type):
     else:
         return response_object
 
-def _attach_model_xattr(ml_id, json_data):
+def _attach_model_xattr(ml_id, json_data, project_name):
     """
     Utility method for putting JSON data into elastic search
 
@@ -475,6 +500,8 @@ def _attach_model_xattr(ml_id, json_data):
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_MODEL_REGISTRY_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   str(get_model_registry_id(project_name)) + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    ml_id
 
