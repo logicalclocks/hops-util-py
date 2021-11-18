@@ -64,6 +64,8 @@ def get_best_model(name, metric, direction):
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_MODEL_REGISTRY_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + \
                    "?filter_by=name_eq:" + name + "&sort_by=" + metric + ":" + direction + "&limit=1"
 
@@ -100,15 +102,15 @@ def get_model(name, version, project_name=None):
     """
 
     headers = {constants.HTTP_CONFIG.HTTP_CONTENT_TYPE: constants.HTTP_CONFIG.HTTP_APPLICATION_JSON}
-    project_id = project.project_id_as_shared(project_name)
     resource_url = constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_REST_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_PROJECT_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
                    hdfs.project_id() + constants.DELIMITERS.SLASH_DELIMITER + \
+                   constants.REST_CONFIG.HOPSWORKS_MODEL_REGISTRY_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
+                   str(experiment_utils.get_model_registry_id(project_name)) + constants.DELIMITERS.SLASH_DELIMITER + \
                    constants.REST_CONFIG.HOPSWORKS_MODELS_RESOURCE + constants.DELIMITERS.SLASH_DELIMITER + \
-                   str(name) + "_" + str(version) + "?filter_by=endpoint_id:" + project_id
+                   str(name) + "_" + str(version)
 
-    print("get model:" + resource_url)
     response_object = util.send_request('GET', resource_url, headers=headers)
 
     if response_object.ok:
@@ -299,7 +301,7 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         experiment_utils._attach_experiment_xattr(os.environ['ML_ID'], experiment_json, 'MODEL_UPDATE')
 
     # Attach model metadata to models version folder
-    experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary))
+    experiment_utils._attach_model_xattr(model_name + "_" + str(model_version), experiment_utils.dumps(model_summary), model_project_name)
 
     # Model metadata is attached asynchronously by Epipe, therefore this necessary to ensure following steps in a pipeline will not fail
     if synchronous:
