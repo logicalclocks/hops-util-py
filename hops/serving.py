@@ -163,7 +163,7 @@ def _start_or_stop_serving_rest(serving_id, action):
                                                             response.reason, error_code, error_msg, user_msg))
 
 
-def create_or_update(serving_name, model_path, model_version=1, artifact_version=None, transformer=None, model_server=None, kfserving=None,
+def create_or_update(serving_name, model_path, model_server, model_version=1, artifact_version=None, predictor=None, transformer=None, kfserving=None,
                      batching_enabled=False, topic_name="CREATE", num_partitions=1, num_replicas=1, inference_logging=constants.MODEL_SERVING.INFERENCE_LOGGING_ALL,
                      instances=1, transformer_instances=None, predictor_resource_config=None):
     """
@@ -178,11 +178,12 @@ def create_or_update(serving_name, model_path, model_version=1, artifact_version
 
     Args:
         :serving_name: name of the serving to create
-        :model_path: path to the artifact to serve (tf model dir or python script implementing the Predict class)
+        :model_path: path to the model directory
+        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "PYTHON"
         :model_version: version of the model to serve
         :artifact_version: version of the artifact to serve (Kubernetes only), e.g "CREATE", "MODEL-ONLY" or version number.
+        :predictor: path to the predictor script (python script implementing the Predict class).
         :transformer: path to the transformer script (python script implementing the Transformer class).
-        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for the inference requests
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
@@ -200,24 +201,22 @@ def create_or_update(serving_name, model_path, model_version=1, artifact_version
           None
     """
     model_path = hdfs._expand_path(model_path)
-    if model_server is None:
-        model_server = _detect_model_server(model_path)
     if transformer is not None and kfserving is None:
         kfserving = True
 
-    _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+    _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config)
     model_path = hdfs.get_plain_path(model_path)
     serving_id = get_id(serving_name)
     log.debug("Creating serving {} for artifact {} ...".format(serving_name, model_path))
-    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config)
     log.info("Serving {} successfully created".format(serving_name))
 
 
-def _validate_user_serving_input(serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+def _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config):
     """
@@ -226,11 +225,12 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
 
     Args:
         :serving_name: the name of the serving to create
-        :model_path: path to the model or artifact being served
+        :model_path: path to the model directory
+        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "PYTHON"
         :model_version: version of the model to serve
         :artifact_version: version of the artifact to serve
+        :predictor: path to the predictor script
         :transformer: path to the transformer script
-        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
@@ -257,6 +257,9 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
     if not hdfs.exists(model_path):
         raise ValueError("The model/artifact path must exist in HDFS, the provided path: {} "
                          "does not exist".format(model_path))
+    if model_server is None:
+        raise ValueError("Model server not provided, supported "
+                         "model servers are: {}".format(",".join(constants.MODEL_SERVING.MODEL_SERVERS)))
     if model_server not in constants.MODEL_SERVING.MODEL_SERVERS:
         raise ValueError("The provided model_server: {} is not supported, supported "
                          "model servers are: {}".format(model_server, ",".join(constants.MODEL_SERVING.MODEL_SERVERS)))
@@ -275,11 +278,11 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
         if not isinstance(batching_enabled, bool):
             raise ValueError("Batching enabled must be a boolean, the provided value "
                              "is not: {}".format(batching_enabled))
+        if predictor is not None:
+            raise ValueError("Predictors are not supported with Tensorflow Serving")
         if kfserving and batching_enabled:
             raise ValueError("Batching requests is currently not supported in KFServing deployments")
 
-    if kfserving and model_server == constants.MODEL_SERVING.MODEL_SERVER_FLASK:
-        raise ValueError("Flask is currently not supported for KFServing deployments")
     if not isinstance(instances, int):
         raise ValueError("The number of serving instances must be an integer, "
                          "the provided version is not: {}".format(instances))
@@ -302,7 +305,7 @@ def _validate_user_serving_input(serving_name, model_path, model_version, artifa
             raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
 
 
-def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_version, artifact_version, transformer, model_server, kfserving,
+def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config):
     """
@@ -311,11 +314,12 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_v
     Args:
         :serving_id: the id of the serving in case of UPDATE, if serving_id is None, it is a CREATE operation.
         :serving_name: the name of the serving to create
-        :model_path: path to the model or artifact being served
+        :model_path: path to the model directory
+        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "PYTHON"
         :model_version: version of the model to serve
         :artifact_version: version of the artifact to serve
+        :predictor: path to the predictor script
         :transformer: path to the transformer script
-        :model_server: name of the model server to deploy, e.g "TENSORFLOW_SERVING" or "FLASK"
         :kfserving: boolean flag whether to serve the model using KFServing serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
@@ -343,6 +347,7 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_v
         constants.REST_CONFIG.JSON_SERVING_MODEL_PATH: model_path,
         constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION: model_version,
         constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION: artifact_version,
+        constants.REST_CONFIG.JSON_SERVING_PREDICTOR: predictor,
         constants.REST_CONFIG.JSON_SERVING_TRANSFORMER: transformer,
         constants.REST_CONFIG.JSON_SERVING_MODEL_SERVER: model_server,
         constants.REST_CONFIG.JSON_SERVING_TOOL: serving_tool,
@@ -384,14 +389,6 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_v
                                       "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, "
                                       "user msg: {}".format(resource_url, response.status_code, response.reason,
                                                             error_code, error_msg, user_msg))
-
-
-def _detect_model_server(model_path):
-    model_server = constants.MODEL_SERVING.MODEL_SERVER_TENSORFLOW_SERVING
-    if model_path.endswith(".py"):
-        model_server = constants.MODEL_SERVING.MODEL_SERVER_FLASK
-    log.debug("Inferring model server from artifact files: {}".format(model_server))
-    return model_server
 
 
 def get(serving_name):
@@ -520,6 +517,26 @@ def get_artifact_version(serving_name):
     return serving.artifact_version
 
 
+def get_predictor(serving_name):
+    """
+    Gets the predictor filename used in a given serving instance
+
+    Example use-case:
+
+    >>> from hops import serving
+    >>> serving.get_predictor(serving_name)
+
+    Args:
+        :serving_name: name of the serving to get the predictor for
+
+    Returns:
+         the predictor filename
+    """
+    servings = get_all()
+    serving = _find_serving_with_name(serving_name, servings)
+    return serving.predictor
+
+
 def get_transformer(serving_name):
     """
     Gets the transformer filename used in a given serving instance
@@ -530,7 +547,7 @@ def get_transformer(serving_name):
     >>> serving.get_transformer(serving_name)
 
     Args:
-        :serving_name: name of the serving to get the version for
+        :serving_name: name of the serving to get the transformer for
 
     Returns:
          the transformer filename
@@ -553,7 +570,7 @@ def get_model_server(serving_name):
         :serving_name: name of the serving
 
     Returns:
-         the model server (e.g Tensorflow Serving or Flask)
+         the model server (e.g Tensorflow Serving or Python)
     """
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
@@ -868,6 +885,9 @@ class Serving(object):
         self.model_version = serving_json[constants.REST_CONFIG.JSON_SERVING_MODEL_VERSION]
         self.artifact_version = serving_json[constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION] \
             if constants.REST_CONFIG.JSON_SERVING_ARTIFACT_VERSION in serving_json \
+            else None
+        self.predictor = serving_json[constants.REST_CONFIG.JSON_SERVING_PREDICTOR] \
+            if constants.REST_CONFIG.JSON_SERVING_PREDICTOR in serving_json \
             else None
         self.transformer = serving_json[constants.REST_CONFIG.JSON_SERVING_TRANSFORMER] \
             if constants.REST_CONFIG.JSON_SERVING_TRANSFORMER in serving_json \
