@@ -10,6 +10,9 @@ import os
 from pynvml import *
 import fnmatch
 
+import logging
+log = logging.getLogger(__name__)
+
 def _get_gpu_info():
     """
     Get the gpu information
@@ -32,7 +35,7 @@ def _get_gpu_info():
             gpu_str += '-----------------------------------------------------------------------------------\n'
             return gpu_str
         except Exception as err:
-            print(err)
+            log.error(err)
             pass
         finally:
             try:
@@ -61,13 +64,13 @@ def _get_nvidia_gpu_util():
         gpu_str += '-----------------------------------------------------------------------------------\n'
         return gpu_str
     except Exception as err:
-        print(err)
+        log.error(err)
         pass
     finally:
         try:
             nvmlShutdown()
         except Exception as err:
-            print(err)
+            log.error(err)
             pass
 
     return 'No GPU utilization information available, failed to initialize NVML'

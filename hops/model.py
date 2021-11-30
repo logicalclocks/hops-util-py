@@ -14,6 +14,9 @@ import time
 import six
 from six import string_types
 
+import logging
+log = logging.getLogger(__name__)
+
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
 
@@ -162,9 +165,9 @@ def download_model(name, version=None, project_name=None, overwrite=False):
         else:
             raise ModelArchiveExists("Model archive file already exists at {}. Either set overwrite=True or remove the file manually.".format(archive_path))
 
-    print("Preparing the model archive...")
+    log.debug("Preparing the model archive...")
     dataset.compress(model_dir, block=True, project_name=project_name)
-    print("Downloading the model archive...")
+    log.debug("Downloading the model archive...")
     dataset.download(archive_path, file = name)
 
 
@@ -283,8 +286,6 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     else:
         export_dir=_export_hdfs_model(model_path, model_version_dir_hdfs, overwrite)
 
-    print("Exported model " + model_name + " as version " + str(model_version) + " successfully.")
-
     # Attach modelName_modelVersion to experiment directory
     if project is None:
         model_project_name = hdfs.project_name()
@@ -310,15 +311,15 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
         for i in range(int(synchronous_timeout/sleep_seconds)):
             try:
                 time.sleep(sleep_seconds)
-                print("Polling " + model_name + " version " + str(model_version) + " for model availability.")
+                log.info("Polling " + model_name + " version " + str(model_version) + " for model availability.")
                 resp = get_model(model_name, model_version, project_name=project)
                 if resp.ok:
-                    print("Model now available.")
+                    log.info("Exported model " + model_name + " as version " + str(model_version) + " successfully.")
                     return
-                print(model_name + " not ready yet, retrying in " + str(sleep_seconds) + " seconds.")
+                log.warn(model_name + " not ready yet, retrying in " + str(sleep_seconds) + " seconds.")
             except ModelNotFound:
                 pass
-        print("Model not available during polling, set a higher value for synchronous_timeout to wait longer.")
+        log.warn("Model not available during polling, set a higher value for synchronous_timeout to wait longer.")
 
     return export_dir
 
