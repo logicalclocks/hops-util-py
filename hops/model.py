@@ -217,7 +217,6 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     Raises:
         :ValueError: if there was an error with the model due to invalid user input
         :ModelNotFound: if the model was not found
-        :MultipleModelFilesFound: if multiple model files are found
     """
 
     # Make sure model name is a string, users could supply numbers
@@ -236,8 +235,6 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
     if not hdfs.exists(model_path) and not os.path.exists(model_path):
         raise ValueError("the provided model_path: {} , does not exist in HDFS or on the local filesystem".format(
             model_path))
-
-    _check_model_file(model_path)
 
     # make sure metrics are numbers
     if metrics:
@@ -327,41 +324,6 @@ def export(model_path, model_name, model_version=None, overwrite=False, metrics=
 
     return export_dir
 
-def _check_model_file(model_path):
-    """Checks the existance of a single model file
-
-     Args:
-        :model_path: the path to model files
-
-     Returns:
-        The model file path
-     Raises:
-        :MultipleModelFilesFound: if multiple model files are found
-    """
-
-    MODEL_FILE_EXTENSIONS = [".pb", ".joblib", ".pkl", ".pickle"]
-
-    files = None
-    model_files_path = os.path.join(model_path, "*")
-    if os.path.exists(model_path):  # local
-        if os.path.isdir(model_path):
-            files = glob.iglob(model_files_path)
-    else:
-        if hdfs.isdir(model_path):  # hdfs
-            files = hdfs.glob(model_files_path)
-
-    if files is None:
-        return
-
-    model_file = None
-    for path in files:
-        ext = os.path.splitext(path)[1]
-        if ext in MODEL_FILE_EXTENSIONS:
-            if model_file is not None:
-                raise MultipleModelFilesFound("Multiple model files found in the model path")
-            model_file = os.path.split(path)[1]
-    return model_file
-
 def _export_local_model(local_model_path, model_dir_hdfs, overwrite):
     """
     Exports a local directory of model files to Hopsworks "Models" dataset
@@ -433,7 +395,3 @@ class ModelNotFound(Exception):
 
 class ModelArchiveExists(Exception):
     """This exception will be raised if the model archive already exists."""
-
-
-class MultipleModelFilesFound(Exception):
-    """This exception will be raised if multiple model files are found"""
