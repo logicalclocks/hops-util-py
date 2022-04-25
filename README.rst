@@ -220,8 +220,8 @@ In the `serving` module you can find an API for creating/starting/stopping/updat
   model_path="/Models/mnist/"
   SERVING_NAME="mnist"
   serving.create_or_update(SERVING_NAME, model_path, model_server="TENSORFLOW_SERVING", model_version=1)
-  # Alternatively, the kfserving flag can be set to deploy the model server using this serving tool
-  serving.create_or_update(SERVING_NAME, model_path, model_server="TENSORFLOW_SERVING", model_version=1, kfserving=True)
+  # Alternatively, the kserve flag can be set to deploy the model server using this serving tool
+  serving.create_or_update(SERVING_NAME, model_path, model_server="TENSORFLOW_SERVING", model_version=1, kserve=True)
   if serving.get_status("mnist") == 'Stopped':
       serving.start("mnist")
   data = {"signature_name": 'predict_images', "instances": [np.random.rand(784).tolist()]}
