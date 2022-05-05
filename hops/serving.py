@@ -163,13 +163,13 @@ def _start_or_stop_serving_rest(serving_id, action):
                                                             response.reason, error_code, error_msg, user_msg))
 
 
-def create_or_update(serving_name, model_path, model_server, model_version=1, artifact_version=None, predictor=None, transformer=None, kfserving=None,
+def create_or_update(serving_name, model_path, model_server, model_version=1, artifact_version=None, predictor=None, transformer=None, kserve=None,
                      batching_enabled=False, topic_name="CREATE", num_partitions=1, num_replicas=1, inference_logging=constants.MODEL_SERVING.INFERENCE_LOGGING_ALL,
                      instances=1, transformer_instances=None, predictor_resource_config=None):
     """
     Creates a serving in Hopsworks if it does not exist, otherwise update the existing one.
     In case model server is not specified, it is inferred from the artifact files.
-    If a transformer is specified, KFServing is enabled by default.
+    If a transformer is specified, KServe is enabled by default.
 
     Example use-case:
 
@@ -184,7 +184,7 @@ def create_or_update(serving_name, model_path, model_server, model_version=1, ar
         :artifact_version: version of the artifact to serve (Kubernetes only), e.g "CREATE", "MODEL-ONLY" or version number.
         :predictor: path to the predictor script (python script implementing the Predict class).
         :transformer: path to the transformer script (python script implementing the Transformer class).
-        :kfserving: boolean flag whether to serve the model using KFServing serving tool
+        :kserve: boolean flag whether to serve the model using KServe serving tool
         :batching_enabled: boolean flag whether to enable batching for the inference requests
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
         :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
@@ -201,22 +201,22 @@ def create_or_update(serving_name, model_path, model_server, model_version=1, ar
           None
     """
     model_path = hdfs._expand_path(model_path)
-    if transformer is not None and kfserving is None:
-        kfserving = True
+    if transformer is not None and kserve is None:
+        kserve = True
 
-    _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
+    _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kserve,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config)
     model_path = hdfs.get_plain_path(model_path)
     serving_id = get_id(serving_name)
     log.debug("Creating serving {} for artifact {} ...".format(serving_name, model_path))
-    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
+    _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kserve,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config)
     log.info("Serving {} successfully created".format(serving_name))
 
 
-def _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
+def _validate_user_serving_input(serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kserve,
                                  batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                  predictor_resource_config):
     """
@@ -231,7 +231,7 @@ def _validate_user_serving_input(serving_name, model_path, model_server, model_v
         :artifact_version: version of the artifact to serve
         :predictor: path to the predictor script
         :transformer: path to the transformer script
-        :kfserving: boolean flag whether to serve the model using KFServing serving tool
+        :kserve: boolean flag whether to serve the model using KServe serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
         :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
@@ -280,20 +280,20 @@ def _validate_user_serving_input(serving_name, model_path, model_server, model_v
                              "is not: {}".format(batching_enabled))
         if predictor is not None:
             raise ValueError("Predictors are not supported with Tensorflow Serving")
-        if kfserving and batching_enabled:
-            raise ValueError("Batching requests is currently not supported in KFServing deployments")
+        if kserve and batching_enabled:
+            raise ValueError("Batching requests is currently not supported in KServe deployments")
 
     if not isinstance(instances, int):
         raise ValueError("The number of serving instances must be an integer, "
                          "the provided version is not: {}".format(instances))
 
-    if not kfserving:
+    if not kserve:
         if inference_logging is not None and inference_logging != constants.MODEL_SERVING.INFERENCE_LOGGING_ALL:
-            raise ValueError("Fine-grained inference logging is only supported in KFServing deployments")
+            raise ValueError("Fine-grained inference logging is only supported in KServe deployments")
         if topic_name is not None and topic_name != "NONE" and inference_logging != constants.MODEL_SERVING.INFERENCE_LOGGING_ALL:
-            raise ValueError("Inference logging mode 'ALL' is the only mode supported for non-KFServing deployments")
+            raise ValueError("Inference logging mode 'ALL' is the only mode supported for non-KServe deployments")
 
-    if kfserving:
+    if kserve:
         if topic_name is not None and topic_name != "NONE" and inference_logging is None:
             raise ValueError("Inference logging must be defined. Supported inference "
                              "logging modes are: {}".format(",".join(constants.MODEL_SERVING.INFERENCE_LOGGING_MODES)))
@@ -305,7 +305,7 @@ def _validate_user_serving_input(serving_name, model_path, model_server, model_v
             raise ValueError("predictor_resource_config must contain the keys 'memory' and 'cores'")
 
 
-def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kfserving,
+def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_server, model_version, artifact_version, predictor, transformer, kserve,
                                    batching_enabled, topic_name, num_partitions, num_replicas, inference_logging, instances, transformer_instances,
                                    predictor_resource_config):
     """
@@ -320,7 +320,7 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_s
         :artifact_version: version of the artifact to serve
         :predictor: path to the predictor script
         :transformer: path to the transformer script
-        :kfserving: boolean flag whether to serve the model using KFServing serving tool
+        :kserve: boolean flag whether to serve the model using KServe serving tool
         :batching_enabled: boolean flag whether to enable batching for inference requests to the serving
         :topic_name: name of the kafka topic for inference logging, e.g "CREATE" to create a new one, "NONE" to not use kafka topic or an existent topic name
         :num_partitions: if a new kafka topic is to created, number of partitions of the new topic
@@ -340,7 +340,7 @@ def _create_or_update_serving_rest(serving_id, serving_name, model_path, model_s
         :RestAPIError: if there was an error with the REST call to Hopsworks
     """
 
-    serving_tool = constants.MODEL_SERVING.SERVING_TOOL_KFSERVING if kfserving else constants.MODEL_SERVING.SERVING_TOOL_DEFAULT
+    serving_tool = constants.MODEL_SERVING.SERVING_TOOL_KSERVE if kserve else constants.MODEL_SERVING.SERVING_TOOL_DEFAULT
 
     json_contents = {
         constants.REST_CONFIG.JSON_SERVING_NAME: serving_name,
@@ -590,7 +590,7 @@ def get_serving_tool(serving_name):
         :serving_name: name of the serving
 
     Returns:
-         the serving tool (e.g DEFAULT or KFSERVING)
+         the serving tool (e.g DEFAULT or KSERVE)
     """
     servings = get_all()
     serving = _find_serving_with_name(serving_name, servings)
