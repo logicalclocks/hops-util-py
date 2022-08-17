@@ -27,6 +27,8 @@ from json.decoder import JSONDecodeError
 from hops.exceptions import RestAPIError
 from hops.exceptions import APIKeyFileNotFound
 
+import logging
+from notebook.notebookapp import list_running_servers
 
 verify = None
 #! Needed for hops library backwards compatability
@@ -534,6 +536,37 @@ def write_b64_cert_to_bytes(b64_string, path):
     with open(path, 'wb') as f:
         cert_b64 = base64.b64decode(b64_string)
         f.write(cert_b64)
+
+def notebook_post_save(relative_path):
+    """attach xattr after saving a notebook"""
+    logging.info("Attaching notebook configuration to file " + relative_path)
+    kernel_id = get_notebook_kernel_id(relative_path)
+    if kernel_id != "":
+        logging.info("Kernel id for {} is {}".format(relative_path, kernel_id))
+        try:
+            attach_jupyter_configuration_to_notebook(kernel_id)
+            logging.info("Notebook configuration successfully attached for file {} attached".format(relative_path))
+        except Exception as e:
+            logging.error("Failed to attach notebook configuration: " + str(e))
+    else:
+        logging.error("No kernel id found for notebook " + relative_path)
+    return
+
+def get_notebook_kernel_id(path):
+    """
+    Return the kernel_id of the jupyter notebook if it was opened or run.
+    """
+    if path != "":
+        for server in list_running_servers():
+            url = server['url'] + 'api/sessions?token=' + server.get('token', '')
+            req = requests.Request('GET', url)
+            prepped = session.prepare_request(req)
+            response = session.send(prepped, verify=verify, stream=False)
+            if response.ok:
+                for notebook_session in json.loads(response.content):
+                    if notebook_session['notebook']['path'] == path:
+                        return notebook_session['kernel']['id']
+    return ""
 
 def attach_jupyter_configuration_to_notebook(kernel_id):
     method = constants.HTTP_CONFIG.HTTP_PUT

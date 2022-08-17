@@ -25,7 +25,7 @@ def _get_key_store_path():
     k_certificate = Path(constants.SSL_CONFIG.K_CERTIFICATE_CONFIG)
     if k_certificate.exists():
         return k_certificate
-    else: 
+    else:
         username = os.environ['HADOOP_USER_NAME']
         material_directory = Path(os.environ['MATERIAL_DIRECTORY'])
         return material_directory.joinpath(username + constants.SSL_CONFIG.KEYSTORE_SUFFIX)
@@ -45,7 +45,7 @@ def _get_trust_store_path():
     t_certificate = Path(constants.SSL_CONFIG.T_CERTIFICATE_CONFIG)
     if t_certificate.exists():
         return str(t_certificate)
-    else: 
+    else:
         username = os.environ['HADOOP_USER_NAME']
         material_directory = Path(os.environ['MATERIAL_DIRECTORY'])
         return str(material_directory.joinpath(username + constants.SSL_CONFIG.TRUSTSTORE_SUFFIX))
@@ -79,7 +79,7 @@ def get_key_store_cert():
     Returns:
         Certificate password
     """
-    cert_path = _get_key_store_path() 
+    cert_path = _get_key_store_path()
 
     if not cert_path.exists():
         raise AssertionError('k_certificate is not present in directory: {}'.format(str(cert_path)))
@@ -165,7 +165,8 @@ def _convert_jks_to_pem(jks_path, keystore_pw):
     return private_keys_certs, private_keys, ca_certs
 
 
-def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path, ca_cert_path):
+def _write_pem(jks_key_store_path, jks_trust_store_path, keystore_pw, client_key_cert_path, client_key_path,
+               ca_cert_path):
     """
     Converts the JKS keystore, JKS truststore, and the root ca.pem
     client certificate, client key, and ca certificate
@@ -196,8 +197,8 @@ def get_client_certificate_location():
     Returns:
         string path to client certificate in PEM format
     """
-    certificate_path = Path(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
-    if not certificate_path.exists(): 
+    certificate_path = pems_dir(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
+    if not certificate_path.exists():
         _write_pems()
     return str(certificate_path)
 
@@ -211,7 +212,7 @@ def get_client_key_location():
         string path to client private key in PEM format
     """
     # Convert JKS to PEMs if they don't exists already
-    key_path = Path(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
+    key_path = pems_dir(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
     if not key_path.exists():
         _write_pems()
     return str(key_path)
@@ -226,22 +227,31 @@ def get_ca_chain_location():
     Returns:
          string path to ca chain of certificate
     """
-    ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG) 
+    ca_chain_path = pems_dir(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
     if not ca_chain_path.exists():
         _write_pems()
     return str(ca_chain_path)
+
+
+def pems_dir(pem):
+    """
+    Get location of a pem file
+
+    Returns:
+         path to a pem file
+    """
+    pem_dir = Path(constants.SSL_CONFIG.PEM_DIR)
+    return pem_dir.joinpath(pem)
 
 
 def _write_pems():
     """
     Converts JKS keystore file into PEM to be compatible with Python libraries
     """
-    t_jks_path = get_trust_store() 
-    k_jks_path = get_key_store() 
-
-    client_certificate_path = Path(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
-    client_key_path = Path(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
-    ca_chain_path = Path(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
+    t_jks_path = get_trust_store()
+    k_jks_path = get_key_store()
+    client_certificate_path = pems_dir(constants.SSL_CONFIG.PEM_CLIENT_CERTIFICATE_CONFIG)
+    client_key_path = pems_dir(constants.SSL_CONFIG.PEM_CLIENT_KEY_CONFIG)
+    ca_chain_path = pems_dir(constants.SSL_CONFIG.PEM_CA_CHAIN_CERTIFICATE_CONFIG)
 
     _write_pem(k_jks_path, t_jks_path, get_key_store_pwd(), client_certificate_path, client_key_path, ca_chain_path)
-

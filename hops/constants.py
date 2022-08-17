@@ -88,6 +88,7 @@ class SSL_CONFIG:
     K_CERTIFICATE_CONFIG = "k_certificate"
     T_CERTIFICATE_CONFIG = "t_certificate"
     PEM_CLIENT_CERTIFICATE_CONFIG = "client.pem"
+    PEM_DIR = "/tmp"
     PEM_CLIENT_KEY_CONFIG = "client_key.pem"
     PEM_CA_CHAIN_CERTIFICATE_CONFIG = "ca_chain.pem"
     DOMAIN_CA_TRUSTSTORE = "domain_ca_truststore"
