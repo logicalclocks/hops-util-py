@@ -473,12 +473,16 @@ def _attach_experiment_xattr(ml_id, json_data, op_type):
 
     response = util.send_request('PUT', resource_url, data=json_data, headers=headers)
 
-    response_object = response.json()
+    try:
+        response_object = response.json()
+    except ValueError:
+        response_object = {}
+
     if response.status_code >= 400:
         error_code, error_msg, user_msg = util._parse_rest_error(response_object)
         raise RestAPIError("Could not create experiment (url: {}), server response: \n "
-                           "HTTP code: {}, HTTP reason: {}, error code: {}, error msg: {}, user msg: {}".format(
-            resource_url, response.status_code, response.reason, error_code, error_msg, user_msg))
+                           "HTTP code: {}, HTTP reason: {}, body: {}, error code: {}, error msg: {}, user msg: {}".format(
+            resource_url, response.status_code, response.reason, response.content, error_code, error_msg, user_msg))
     else:
         return response_object
 
