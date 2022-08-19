@@ -768,9 +768,9 @@ def _set_ml_id(app_id, run_id):
 def _get_metric(return_dict, metric_key):
     if return_dict and metric_key:
         assert metric_key in return_dict.keys(), 'Supplied metric_key {} is not in returned dict {}'.format(metric_key, return_dict)
-        return str(return_dict[metric_key])
+        return str(return_dict[metric_key]) if return_dict[metric_key] != None else None
     elif return_dict is not None and len(return_dict.keys()) == 2 and 'metric' in return_dict.keys():
-        return str(return_dict['metric'])
+        return str(return_dict['metric']) if return_dict['metric'] != None else None
     else:
         return None
 
