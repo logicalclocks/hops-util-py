@@ -49,9 +49,8 @@ API documentation is available here: API-docs_
 
 
 .. _hops-examples: https://github.com/logicalclocks/hops-examples
-.. _hopsML: https://hops.readthedocs.io/en/latest/hopsml/hopsML.html
-.. _API-docs: http://hops-py.logicalclocks.com/
-
+.. _hopsML: https://github.com/logicalclocks/machine-learning-api
+.. _API-docs: https://docs.hopsworks.ai/machine-learning-api/3.0/generated/connection_api/
 
 
 ------------------------------------
@@ -200,7 +199,7 @@ The featurestore serves as a natural interface between data engineering and data
 
 The feature store can be accessed through the new `HSFS client libraries`_, available for Python and Scala.
 
-.. _HSFS client libraries: https://docs.hopsworks.ai/
+.. _HSFS client libraries: https://docs.hopsworks.ai/feature-store-api/3.0/generated/api/connection_api/
 
 Model Serving API
 --------------------------------------------------------------------
