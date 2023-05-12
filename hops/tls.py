@@ -8,6 +8,7 @@ import textwrap
 from hops import constants
 import os
 from pathlib import Path
+import tempfile
 
 try:
     import jks
@@ -240,7 +241,7 @@ def pems_dir(pem):
     Returns:
          path to a pem file
     """
-    pem_dir = Path(constants.SSL_CONFIG.PEM_DIR)
+    pem_dir = Path(tempfile.gettempdir())
     return pem_dir.joinpath(pem)
 
 
