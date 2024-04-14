@@ -21,7 +21,7 @@ setup(
         'pyopenssl',
         'idna',
         'cryptography',
-        'dnspython==1.16.0',
+        'dnspython==2.6.1',
         'nvidia-ml-py3==7.352.0',
         'requests'
     ],
